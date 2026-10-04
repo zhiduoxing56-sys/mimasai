@@ -1,6 +1,12 @@
 # 图隐私计算工程
 
-本机半诚实五节点验证现已接通真实共享训练、持续共享发布、受保护同态两层推理和秘密近似概率。当前是受约束协议原型；安全假设和规模限制见 [本轮验收](docs/trained-he-acceptance.md)。完整入口：`sh scripts/run_trained_he.sh`；扩展对数独立入口：`python3 verification/extended_log.py`。
+真实Cora数据入口现支持16、32和64节点诱导图，使用自有两层GCN、两进程共享训练、持续共享发布、受保护同态推理及秘密近似概率。完整运行：
+
+```sh
+sh scripts/run_application.sh --nodes 64 --steps 96 --validate --faults
+```
+
+操作与权限见[应用运行说明](docs/application.md)，数据语义及许可缺口见[数据说明](docs/real-data.md)。仅向公开授权目标交付最终概率份额，由独立接收端恢复；本机半诚实与可信非串谋离线假设，不是主动安全或跨机认证部署。原低交互密文转换仍安全阻塞。实际验收证据见[本轮报告](docs/unattended-acceptance.md)。
 
 以下保留历轮记录。
 
