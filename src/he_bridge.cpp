@@ -1,6 +1,7 @@
 // BFV coefficient aggregation. Evaluation mode never loads any SecretKey.
 #include <seal/seal.h>
 #include <seal/util/ntt.h>
+#include <seal/util/rlwe.h>
 #include <algorithm>
 #include <chrono>
 #include <filesystem>
@@ -18,6 +19,13 @@ std::vector<std::uint32_t> read32(const fs::path& p,std::size_t count){std::vect
 void write32(const fs::path& p,const std::vector<std::uint32_t>& a){std::ofstream f(p,std::ios::binary);f.write(reinterpret_cast<const char*>(a.data()),a.size()*4);check(bool(f),"HE_FILE_WRITE");fs::permissions(p,fs::perms::owner_read|fs::perms::owner_write);}
 EncryptionParameters parameters(const fs::path& d){EncryptionParameters p;std::ifstream f(d/"parameters.seal",std::ios::binary);check(bool(f),"HE_PARAMETERS_READ");p.load(f);check(f.peek()==EOF,"HE_PARAMETERS_TRAILING");return p;}
 long peak(){rusage r;getrusage(RUSAGE_SELF,&r);return r.ru_maxrss;}
+using Poly=std::vector<std::uint64_t>;
+Poly read64(const fs::path& path,std::size_t count){Poly v(count);std::ifstream f(path,std::ios::binary);check(bool(f),"RING_FILE_READ");f.read(reinterpret_cast<char*>(v.data()),count*8);check(std::size_t(f.gcount())==count*8&&f.peek()==EOF,"RING_FILE_LENGTH");return v;}
+void write64(const fs::path& path,const Poly& v){check(!fs::exists(path),"RING_IMMUTABLE_FILE");std::ofstream f(path,std::ios::binary);f.write(reinterpret_cast<const char*>(v.data()),v.size()*8);check(bool(f),"RING_FILE_WRITE");fs::permissions(path,fs::perms::owner_read|fs::perms::owner_write);}
+void canonical(const Poly& a,const SEALContext& ctx){auto d=ctx.first_context_data();auto n=d->parms().poly_modulus_degree();const auto& qs=d->parms().coeff_modulus();check(a.size()==n*qs.size(),"RING_SHAPE");for(std::size_t l=0;l<qs.size();l++)for(std::size_t j=0;j<n;j++)check(a[l*n+j]<qs[l].value(),"RING_RESIDUE");}
+Poly ringmul(Poly a,Poly b,const SEALContext& ctx){canonical(a,ctx);canonical(b,ctx);auto d=ctx.first_context_data();auto n=d->parms().poly_modulus_degree();const auto& qs=d->parms().coeff_modulus();for(std::size_t l=0;l<qs.size();l++){util::ntt_negacyclic_harvey(a.data()+l*n,d->small_ntt_tables()[l]);util::ntt_negacyclic_harvey(b.data()+l*n,d->small_ntt_tables()[l]);for(std::size_t j=0;j<n;j++)a[l*n+j]=std::uint64_t(__uint128_t(a[l*n+j])*b[l*n+j]%qs[l].value());util::inverse_ntt_negacyclic_harvey(a.data()+l*n,d->small_ntt_tables()[l]);}return a;}
+Poly randompoly(const SEALContext& ctx){const auto& p=ctx.first_context_data()->parms();Poly a(p.poly_modulus_degree()*p.coeff_modulus().size());auto rng=p.random_generator()->create();util::sample_poly_uniform(rng,p,a.data());return a;}
+void moduli_json(const SEALContext& ctx){std::cout<<"[";bool first=true;for(const auto& q:ctx.first_context_data()->parms().coeff_modulus()){if(!first)std::cout<<",";std::cout<<q.value();first=false;}std::cout<<"]";}
 // ExtractConst: sample (c0[0], c1[0], -c1[N-1],..., -c1[1]).
 // Reverse embed is exactly (c0[0],c1); q-limb division by N followed by trace.
 Ciphertext project(const Ciphertext& in,const SEALContext& ctx,Evaluator& ev,const GaloisKeys& gk,const std::vector<std::uint32_t>& els){
@@ -46,6 +54,20 @@ int main(int argc,char** argv){
    std::cout<<"{\"status\":\"KEYS_AND_NEIGHBORHOODS_READY\",\"security_bits\":128,\"degree\":"<<degree<<",\"galois_elements\":"<<els.size()<<",\"public_key_bytes\":"<<pkbytes<<",\"secret_key_bytes\":"<<skbytes<<",\"evaluation_key_bytes\":"<<gkbytes<<",\"neighborhood_bytes\":"<<rowbytes<<",\"elapsed_seconds\":"<<seconds(begin)<<",\"peak_rss_kib\":"<<peak()<<"}\n";return 0;
   }
   auto p=parameters(dir);SEALContext ctx(p,true,sec_level_type::tc128);check(ctx.parameters_set(),ctx.parameter_error_message());auto degree=p.poly_modulus_degree();check(p.plain_modulus().value()==(std::uint64_t(1)<<32),"HE_RING_MISMATCH");
+  if(mode=="metadata"){check(argc==3,"RING_METADATA_USAGE");std::cout<<"{\"degree\":"<<degree<<",\"security_bits\":128,\"data_moduli\":";moduli_json(ctx);std::cout<<"}\n";return 0;}
+  if(mode=="ring_preprocess"){
+   check(argc==4,"RING_PREPROCESS_USAGE");auto count=std::stoul(argv[3]);auto data=ctx.first_context_data();auto n=data->parms().poly_modulus_degree();const auto& qs=data->parms().coeff_modulus();
+   for(std::size_t i=0;i<count;i++){auto a=randompoly(ctx),b=randompoly(ctx),c=ringmul(a,b,ctx);std::vector<Poly> full={a,b,c};for(std::size_t k=0;k<3;k++){auto share=randompoly(ctx);Poly peer(share.size());for(std::size_t l=0;l<qs.size();l++)for(std::size_t j=0;j<n;j++){auto idx=l*n+j;peer[idx]=(full[k][idx]+qs[l].value()-share[idx])%qs[l].value();}for(int role=0;role<2;role++){auto folder=dir/("S"+std::to_string(role))/"ring-preprocessing"/std::to_string(i);fs::create_directories(folder);fs::permissions(folder,fs::perms::owner_all);write64(folder/(std::string(1,"abc"[k])+".bin"),role==0?share:peer);}}}
+   std::cout<<"{\"status\":\"INPUT_INDEPENDENT_RING_TRIPLES\",\"items\":"<<count<<",\"degree\":"<<degree<<",\"security_bits\":128,\"data_moduli\":";moduli_json(ctx);std::cout<<",\"elapsed_seconds\":"<<seconds(begin)<<"}\n";return 0;
+  }
+  if(mode=="ring_evaluate"){
+   check(argc==7,"RING_EVALUATE_USAGE");int role=std::stoi(argv[3]);check(role==0||role==1,"RING_ROLE");auto n=degree;const auto& qs=ctx.first_context_data()->parms().coeff_modulus();auto count=n*qs.size();auto d=read64(dir/"ring-work/d.bin",count),e=read64(dir/"ring-work/e.bin",count);fs::path triple=argv[4];auto a=read64(triple/"a.bin",count),b=read64(triple/"b.bin",count),c=read64(triple/"c.bin",count);canonical(c,ctx);auto db=ringmul(d,b,ctx),ea=ringmul(e,a,ctx);Poly de(count);if(role==0)de=ringmul(d,e,ctx);for(std::size_t l=0;l<qs.size();l++)for(std::size_t j=0;j<n;j++){auto i=l*n+j;c[i]=(c[i]+db[i]+ea[i]+de[i])%qs[l].value();}write64(argv[5],c);check(std::string(argv[6])=="no_decryption","RING_MODE");std::cout<<"{\"status\":\"SHARED_RING_PRODUCT\",\"elapsed_seconds\":"<<seconds(begin)<<"}\n";return 0;
+  }
+  if(mode=="export_ring_inputs"){
+   check(argc==4,"RING_EXPORT_USAGE");auto cols=std::stoul(argv[3]);auto size=degree*ctx.first_context_data()->parms().coeff_modulus().size();auto sk=load<SecretKey>(ctx,dir/"peer.sk");Poly secret(sk.data().data(),sk.data().data()+size);for(std::size_t l=0;l<size/degree;l++)util::inverse_ntt_negacyclic_harvey(secret.data()+l*degree,ctx.key_context_data()->small_ntt_tables()[l]);canonical(secret,ctx);write64(dir/"peer-key-coefficients.bin",secret);
+   for(std::size_t col=0;col<cols;col++){auto ct=load<Ciphertext>(ctx,dir/"send"/(std::to_string(col)+".ct"));check(ct.size()==2&&!ct.is_ntt_form()&&ct.parms_id()==ctx.first_parms_id(),"RING_EXPORT_LEVEL");for(std::size_t k=0;k<2;k++)write64(dir/("cipher-"+std::to_string(col)+"-"+std::to_string(k)+".bin"),Poly(ct.data(k),ct.data(k)+size));}
+   std::cout<<"{\"status\":\"LOCAL_COMPONENTS_ONLY_NO_DECRYPTION\",\"data_moduli\":";moduli_json(ctx);std::cout<<"}\n";return 0;
+  }
   if(mode=="eval"){
    check(argc==5,"HE_EVAL_USAGE");auto nodes=std::stoul(argv[3]),cols=std::stoul(argv[4]);check(nodes<=degree&&cols>0,"HE_INPUT_SHAPE");auto pk=load<PublicKey>(ctx,dir/"eval.pk");auto gk=load<GaloisKeys>(ctx,dir/"eval.gk");auto x=read32(dir/"features.bin",nodes*cols);auto masks=read32(dir/"masks.bin",degree*cols);Evaluator ev(ctx);Encryptor zero_encryptor(ctx,pk);std::vector<std::uint32_t> els;for(auto d=degree;d>=2;d/=2)els.push_back(d+1);fs::create_directories(dir/"trace");fs::create_directories(dir/"send");double multiply=0,extract=0,pack=0,mask=0;std::uint64_t ctbytes=0;
    std::vector<Ciphertext> rows;for(std::size_t i=0;i<nodes;i++)rows.push_back(load<Ciphertext>(ctx,dir/"rows"/(std::to_string(i)+".ct")));

@@ -1,0 +1,25 @@
+# 自有源码审阅入口与发现
+
+|主题|准确源码入口|验证入口|
+|---|---|---|
+|真实同态聚合与旧转换|src/he.py:aggregate；src/he_bridge.cpp 的 eval、extract/pack、decrypt|verification/stage3.py、two_layer_he.py（旧转换仅诊断）|
+|新私有输入解密|src/he_secure.py:secure_convert、round_phase、add_bits；he_bridge.cpp 的 ring_preprocess/ring_evaluate/export_ring_inputs|verification/bfv_round.py、he_private_decryption.py|
+|持久消费/通信/精确截断|src/mpc.py:Materials、Channel、Engine；src/offline.py；src/mpc_worker.py|verification/stage2.py|
+|缩位范围与激活|src/mpc.py 的 range/relu；src/fss.py；src/mpc_worker.py 分派|verification/stage2_round2.py、paper_activation.py|
+|秘密索引|src/operators.py:gather、indexed_aggregate|verification/operators.py、training.py --indexed|
+|共享训练|src/operators.py:train_step、bounded_matrix、cross_entropy、convergence_step|verification/training.py、loss_domain.py|
+|持续共享发布|src/model.py:publish、load、binding|verification/publication.py|
+|秘密概率|src/operators.py:probability、divide_unsigned、maximum|verification/operators.py|
+
+执行 `python3 scripts/build_review.py` 输出 review/privacy-gnn-source-review.tar.gz 与 SHA-256 文件清单，严格只选 Git 跟踪自有源码、公共配置、合成验证夹具、脚本及说明。拒绝符号链接与未知扩展。不包含第三方论文/作者实现、密钥、份额、预处理、多项式工作文件、掩码、账本、结果载荷或构建产物。源码中测试恢复函数属于独立验证端，审阅包包含它以供检查，不表示服务器可调用。
+
+本轮审阅发现与修复：
+
+* 早期源码未完整跟踪，已补齐完整基线；依赖锁原在 ignored results 中，移到 config 唯一锁文件；旧 provenance 脚本会覆盖锁，改为只写观测 inventory。
+* 旧 HE 路径把求值密文发送给交叉私钥持有者，完整误差视图缺乏保护；旧路径保留明确标记，新增不发送求值密文的私有解密。转换类型现在必须显式指定，禁止默认静默回退旧路径。
+* 新大环预处理增加全局随机 material_id 的持久唯一预留，跨批次重贴标签也拒绝；全部在连接前预留，失败后不能回收未使用部分。主动攻击者篡改 ID、回滚数据库、复制主机不在半诚实保证内。
+* 服务器只由 settings() 读公共配置；参考 config() 及明文夹具在验证端。worker 的审计 hook 拒绝读取 results/verification fixtures/另一方私有目录；实际轨迹验证只读取自身文件。该 hook 不是 OS 隔离或恶意代码防护。
+* 新服务器原生路径 export_ring_inputs/ring_evaluate 不调用 Decryptor，private_decryption 在进入旧 decrypt 分支前返回。公开通信仅掩码打开值及结构，独立验证端才运行 official decode/noise oracle 和恢复输出。原生程序包含测试 oracle 命令，不代表在线服务器使用它。
+* 正式共享模型 ID 是独立随机值，公开绑定只有结构/数值/顺序/版本。HE 参数/公钥摘要是公开材料摘要。own he.json 的 peer.sk 完整性摘要属于仅本地私有文件，不发送或记录到普通消息；不把该摘要当成认证或秘密内容无泄露的公共标识。参考模型权重摘要保留验证端范围。
+
+审阅未发现新增在线恢复或明文代算。服务器 Python 与原生子进程共用一个角色目录；本机同一 Unix 用户可绕过该约束，部署认证与用户隔离仍待实现。协议采用可信设置且离线方不观察在线消息，不能宣称主动安全。

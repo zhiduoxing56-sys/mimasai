@@ -43,7 +43,10 @@ def main():
             if kind in ('add','sub','mul'):
                 require(len(x)==len(y)==op['count'],'INPUT_SHAPE')
             elif kind in ('truncate','public_mul','sign','relu','range','checked_relu','select','fss_relu'): require(len(x)==op['count'],'INPUT_SHAPE')
-            if kind=='precision_up':
+            if kind=='bfv_round':
+                from .he_secure import round_phase
+                out=round_phase(engine,op['q_share'],int(op['ciphertext_modulus']))
+            elif kind=='precision_up':
                 shift=op['fraction']-op['source_fraction'];k=op['source_fraction']+settings()['range_policy']['operand_bound_exponents']['score']+1
                 require(shift>=0 and k+shift<=engine.bits,'PRECISION_SCALE_BOUND');engine.check_range(x,k);out=engine.public_mul(x,1<<shift)
             elif kind=='publish':

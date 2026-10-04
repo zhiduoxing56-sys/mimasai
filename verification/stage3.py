@@ -51,7 +51,7 @@ def prepare(n,activation='boolean',end_to_end=False):
     if end_to_end:
         assert inputs is not None
         plan.append(dict(type='matmul',dims=[n,len(inputs['weights'][0]),WIDTH],fraction=f));values.append({'x':[v for row in inputs['features'] for v in row],'y':[v for row in inputs['weights'][0] for v in row]});expected.append([v for row in tt for v in row])
-    plan.append(dict(type='he_aggregate',count=n*WIDTH,fraction=f,k=k,activation=activation,he=public,use_previous=end_to_end));values.append({'x':[] if end_to_end else [v for row in tt for v in row]});expected.append([v for rows in (raw,z,h) for row in rows for v in row])
+    plan.append(dict(type='he_aggregate',conversion='legacy_ciphertext',count=n*WIDTH,fraction=f,k=k,activation=activation,he=public,use_previous=end_to_end));values.append({'x':[] if end_to_end else [v for row in tt for v in row]});expected.append([v for rows in (raw,z,h) for row in rows for v in row])
     private_write(d/'public-plan.json',dict(session=sid,bits=C['ring_bits'],plan=plan))
     start=time.perf_counter();p=subprocess.run([sys.executable,'-m','src.offline',str(d),str(d/'public-plan.json')],cwd=ROOT,capture_output=True,text=True,check=True);offline=json.loads(p.stdout);offline['wall_seconds']=time.perf_counter()-start
     jobs=[[],[]]

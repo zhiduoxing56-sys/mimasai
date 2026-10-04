@@ -37,6 +37,7 @@ class Materials:
     def __init__(self,path,role,session,bits):
         self.data=json.loads(Path(path).read_text())
         require(self.data['version']==VERSION and self.data['role']==role and self.data['session']==session and self.data['bits']==bits,'PREPROCESSING_BINDING')
+        self.directory=Path(path).parent
         self.role=role; self.session=session; self.batch=self.data['batch']
         ledger=ROOT/'state/mpc'/('S'+str(role)+'-ledger.sqlite')
         ledger.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
@@ -49,6 +50,13 @@ class Materials:
             with self.db: self.db.execute('INSERT INTO batches VALUES (?,?,?)',(self.batch,session,'reserved_burn_on_abort'))
         except sqlite3.IntegrityError: raise ProtocolError('BATCH_ALREADY_RESERVED') from None
         self.db.execute('CREATE TABLE IF NOT EXISTS he_masks (direction TEXT, mask_id TEXT, session TEXT, batch TEXT, PRIMARY KEY(direction,mask_id))')
+        self.db.execute('CREATE TABLE IF NOT EXISTS ring_materials (material_id TEXT PRIMARY KEY, session TEXT, batch TEXT)')
+        ring_ids=[item['material_id'] for item in self.data['materials'].get('rlwe_product',[])]
+        require(len(set(ring_ids))==len(ring_ids) and all(isinstance(v,str) and len(v)==32 for v in ring_ids),'RING_MATERIAL_IDS')
+        try:
+            with self.db:
+                for value in ring_ids:self.db.execute('INSERT INTO ring_materials VALUES (?,?,?)',(value,session,self.batch))
+        except sqlite3.IntegrityError:raise ProtocolError('RING_MATERIAL_REUSE') from None
         self.cursor={k:0 for k in self.data['materials']}
     def take(self,kind,count):
         require(type(count)==int and count>=0,'MATERIAL_COUNT')
@@ -138,7 +146,7 @@ class Channel:
     def metrics(self): return {'bytes_sent':self.sent,'bytes_received':self.received,'exchange_rounds':self.seq}
 
 def public_descriptor(job,batch):
-    plan=[{k:v for k,v in op.items() if k not in ('x','y','p','labels','indices','edge_weights')} for op in job['operations']]
+    plan=[{k:v for k,v in op.items() if k not in ('x','y','p','labels','indices','edge_weights','q_share')} for op in job['operations']]
     encoded=json.dumps(dict(version=VERSION,bits=job['bits'],batch=batch,plan=plan),sort_keys=True,separators=(',',':')).encode()
     # Hash of public schedule only, never of secret values/parameters.
     return list(struct.unpack('<8I',hashlib.sha256(encoded).digest()))
@@ -268,6 +276,11 @@ def costs(plan,bits):
     if any(op['type']=='publish' for op in plan):counts['refresh']=0
     for op in plan:
         kind=op['type'];n=op.get('count',0)
+        if kind=='bfv_round':
+            from .he_secure import round_cost
+            cc=round_cost(n,int(op['ciphertext_modulus']),bits)
+            for key in cc:counts[key]+=cc[key]
+            continue
         if kind=='precision_up':
             shift=op['fraction']-op['source_fraction'];k=op['source_fraction']+settings()['range_policy']['operand_bound_exponents']['score']+1
             require(shift>=0 and k+shift<=bits,'PRECISION_SCALE_BOUND')
@@ -308,7 +321,13 @@ def costs(plan,bits):
             counts['boolean']+=range_cost(n,bits,op['k']);counts['fss']+=n
         elif kind=='range': counts['boolean']+=range_cost(n,bits,op['k'])
         elif kind=='he_aggregate':
+            require(op.get('conversion') in ('legacy_ciphertext','private_decryption'),'HE_CONVERSION_TYPE')
             counts['he_mask']+=op['he']['shape'][1]
+            if op.get('conversion')=='private_decryption':
+                from .he_secure import round_cost
+                counts['rlwe_product']=counts.get('rlwe_product',0)+2*op['he']['shape'][1]
+                cc=round_cost(2*n,math.prod(op['he']['data_moduli']),bits)
+                for key in cc:counts[key]+=cc[key]
             sub=[dict(type='truncate',count=n,fraction=op['fraction'])]
             if op.get('activation','boolean')!='none':sub.append(dict(type=('fss_relu' if op.get('activation','boolean')=='fss' else 'checked_relu'),count=n,k=op['k']))
             cc=costs(sub,bits)

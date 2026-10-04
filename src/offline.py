@@ -9,14 +9,23 @@ from .mpc import VERSION, private_write, costs, require, fss_widths
 def generate(directory,session,bits,plan,limits=None):
     require(2<=bits<=32,'DEALER_BITS')
     for op in plan:
-        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree']),'DEALER_NONPUBLIC_FIELDS')
+        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus']),'DEALER_NONPUBLIC_FIELDS')
     counts=costs(plan,bits)
     if limits: counts.update(limits)
     mod=1<<bits; batch=secrets.token_hex(16)
     views=[{k:[] for k in counts} for _ in range(2)]
     widths=iter(fss_widths(plan));fss_seconds=0.0
+    ring_meta=None
+    if counts.get('rlwe_product',0):
+        from .he import native
+        ring_meta=native(['ring_preprocess',directory,counts['rlwe_product']])
+        require(all(op['he']['data_moduli']==ring_meta['data_moduli'] and op['he']['degree']==ring_meta['degree'] for op in plan if op['type']=='he_aggregate' and op.get('conversion')=='private_decryption'),'RING_DEALER_CONTEXT')
     for kind,count in counts.items():
-        for _ in range(count):
+        for index in range(count):
+            if kind=='rlwe_product':
+                material_id=secrets.token_hex(16)
+                for role in (0,1):views[role][kind].append(dict(material_id=material_id,folder='ring-preprocessing/'+str(index),degree=ring_meta['degree'],data_moduli=ring_meta['data_moduli']))
+                continue
             if kind=='arithmetic':
                 a=secrets.randbelow(mod);b=secrets.randbelow(mod); values=[a,b,a*b%mod]
                 share=[secrets.randbelow(mod) for v in values]

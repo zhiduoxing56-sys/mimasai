@@ -43,6 +43,11 @@ def aggregate(engine,own,op,x):
     binary_write(own/'masks.bin',struct.pack('<'+'I'*len(mask),*mask))
     mask_generation_seconds=time.perf_counter()-mask_started
     profile=native(['eval',own,n,c]);profile['mask_generation_and_input_io_seconds']=mask_generation_seconds
+    if op.get('conversion')=='private_decryption':
+        from .he_secure import secure_convert
+        result,converted=secure_convert(engine,own,op,mask,ids);profile.update(converted);profile.update(mask_coefficients=c*degree,mask_items_consumed=c,bridge_wall_seconds=time.perf_counter()-started)
+        return result,profile
+    require(op.get('conversion')=='legacy_ciphertext','HE_CONVERSION_TYPE')
     cts=[(own/'send'/f'{j}.ct').read_bytes() for j in range(c)]
     require(len(set(map(len,cts)))==1,'HE_PACKET_LENGTH')
     def header(role,nonce):return dict(version='privacy-gnn-he-convert-v1',session=engine.channel.session,operation=engine.op,role=role,key_id=public['key_ids'][role],package_id=public['package_id'],parameters_id=public['parameters_id'],shape=public['shape'],node_order=public['node_order'],column_order=public['column_order'],ciphertext_length=len(cts[0]),mask_ids=nonce)

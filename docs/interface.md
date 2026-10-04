@@ -111,3 +111,6 @@
 ## 持续推进更新（2026-10-04）
 
 新增train_step/gcn_scores/probability/gather/loss/convergence/publish/precision_up操作与additive-model-v1持久化。所有参数/数值集中config/phase0.json；正式ID随机，不公开秘密参数或图特征摘要。32/12→32/7用既有精确秘密floor，同环32/7→32/12只在秘密范围证明后乘公开32。字段、共享流向、激活与逐次截断见continuation.md。
+
+
+本轮更新（2026-10-04）：完整源码基线与新私有 BFV 解密转换见 [验收报告](security-round-acceptance.md)。旧发送求值密文路径仍是明确安全阻塞；新增路径保持模型数值规则并增加交互，半诚实、可信非串谋离线方假设不变。训练目标概率≥1/4限制未取消。

@@ -29,3 +29,6 @@
 ## 持续推进入口
 
 最新验收：[持续推进报告](docs/continuation-acceptance.md)，协议与范围：[实现说明](docs/continuation.md)。运行 `sh scripts/run_continuation.sh`，沿用阶段零依赖及阶段一/三夹具。当前受限全MPC闭环已运行；真实HE算术通过但转换密文视图安全阻塞，不称完整比赛系统完成。私有材料在build，耐久消费账本在state，二者不得提交或回滚。
+
+
+本轮更新（2026-10-04）：完整源码基线与新私有 BFV 解密转换见 [验收报告](docs/security-round-acceptance.md)。旧发送求值密文路径仍是明确安全阻塞；新增路径保持模型数值规则并增加交互，半诚实、可信非串谋离线方假设不变。训练目标概率≥1/4限制未取消。

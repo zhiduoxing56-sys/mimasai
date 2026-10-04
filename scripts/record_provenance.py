@@ -11,7 +11,7 @@ for file in sorted((root/"deps/downloads").iterdir()):
     if not file.is_file(): continue
     rows.append({"file":file.name,"sha256":hashlib.sha256(file.read_bytes()).hexdigest(),
                  "package":subprocess.check_output(["dpkg-deb","-f",str(file),"Package","Version"],text=True) if file.suffix==".deb" else None})
-(root/"config/dependencies.lock.json").write_text(json.dumps(rows,indent=2)+"\n")
+(root/"results/dependency-inventory.json").write_text(json.dumps(rows,indent=2)+"\n")
 manifest=[]
 base=Path("/mnt/e/WSL/GNN-Project/参考材料")
 for file in sorted((root/"参考资料").glob("*.pdf")):

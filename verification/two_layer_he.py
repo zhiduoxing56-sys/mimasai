@@ -16,7 +16,7 @@ def run(activation):
   b=own/'he-layer1';b.mkdir(mode=0o700);(b/'rows').mkdir(mode=0o700)
   for name in ['parameters.seal','eval.pk','eval.gk','peer.sk']+[f'rows/{j}.ct' for j in range(n)]:os.link(a/name,b/name)
   manifest=json.loads((a/'he.json').read_text());manifest['public']=pub2;private_write(b/'he.json',manifest)
- plan=[dict(type='matmul',dims=[n,len(inputs['weights'][0]),h],fraction=f),dict(type='he_aggregate',count=n*h,fraction=f,k=C['mpc']['activation_range_bits'],activation=activation,he=pub,use_previous=True,he_slot='he-layer0'),dict(type='matmul',dims=[n,h,classes],fraction=f,use_previous=True,previous_slice=[2*n*h,n*h]),dict(type='he_aggregate',count=n*classes,fraction=f,activation='none',he=pub2,use_previous=True,he_slot='he-layer1')]
+ plan=[dict(type='matmul',dims=[n,len(inputs['weights'][0]),h],fraction=f),dict(type='he_aggregate',conversion='legacy_ciphertext',count=n*h,fraction=f,k=C['mpc']['activation_range_bits'],activation=activation,he=pub,use_previous=True,he_slot='he-layer0'),dict(type='matmul',dims=[n,h,classes],fraction=f,use_previous=True,previous_slice=[2*n*h,n*h]),dict(type='he_aggregate',conversion='legacy_ciphertext',count=n*classes,fraction=f,activation='none',he=pub2,use_previous=True,he_slot='he-layer1')]
  private_write(d/'public-plan.json',dict(session=sid,bits=C['ring_bits'],plan=plan))
  dealer=subprocess.run([sys.executable,'-m','src.offline',str(d),str(d/'public-plan.json')],cwd=ROOT,capture_output=True,text=True,check=True);offline=json.loads(dealer.stdout)
  jobs=[copy.deepcopy(plan) for _ in (0,1)]
