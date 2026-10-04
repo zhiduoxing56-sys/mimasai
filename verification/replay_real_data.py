@@ -3,7 +3,7 @@ import argparse,json,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'results/replay';OUT.mkdir(parents=True,exist_ok=True)
 p=argparse.ArgumentParser();p.add_argument('--secure-steps',type=int,required=True);args=p.parse_args();started=time.monotonic()
-for label,command in [('full-reference',[sys.executable,'verification/cora_full_reference.py']),('range',[sys.executable,'verification/range_budget.py']),('training',[sys.executable,'verification/real_data.py','--download','--secure-steps',str(args.secure_steps)]),('chain',[sys.executable,'verification/real_chain.py','--faults'])]:
+for label,command in [('full-reference',[sys.executable,'verification/cora_full_reference.py','--download']),('range',[sys.executable,'verification/range_budget.py']),('training',[sys.executable,'verification/real_data.py','--download','--secure-steps',str(args.secure_steps)]),('chain',[sys.executable,'verification/real_chain.py','--faults'])]:
  with (OUT/(label+'.log')).open('w') as log:subprocess.run(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
 full_reference=json.loads((ROOT/'results/real-data/full-reference.json').read_text())
 chain=json.loads((ROOT/'results/real-data/chain.json').read_text());train=json.loads((ROOT/'results/real-data/reference.json').read_text());publication=json.loads((ROOT/'results/real-data/publication.json').read_text());assert publication['source_training_session']==train['checkpoint']['directory'].split('/')[-1];assert chain['publication_session']==publication['session'];sessions=[step['session'] for step in train['secure_training']]+[publication['session']]+[r['session'] for r in chain['runs']]+[r['session'] for r in chain['faults']];assert len(sessions)==len(set(sessions))

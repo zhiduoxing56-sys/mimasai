@@ -88,3 +88,7 @@ GitHub网页工具首次获取SEAL/ArcEDB指定页面返回cache miss，采用�
 本轮无新增安装，仅Python3.12标准库和既有SEAL4.1.0。本轮补取SEAF固定提交的fp-math.cpp、fixed-point.cpp及作者Chapter5原文，只作依据未链接第三方内核；函数调用、位宽、常量、MIT许可与PDF403失败结果见continuation.md和results/continuation/acceptance.json sources。
 
 本轮将唯一依赖锁移到版本管理config/dependencies.lock.json。runtime离线恢复只校验并解包锁内44份deb/SEAL归档，缺少任一必需包会列名报错。可选论文、作者代码与PDF/Python分析依赖不属于最小运行恢复；未声称所有系统依赖可离线从源码重建。
+
+## 真实数据实验更新
+
+未新增GCN框架依赖：自有GCN、稀疏浮点/定点参考均使用Python标准库。Cora官方归档下载源、SHA256和固定预处理规则集中在config/phase0.json与src/data.py；它是数据输入而非GCN模型。原数据README未明示再分发许可，原归档和衍生真实数据不纳入源码仓库或审阅包。空缓存重新下载并完成完整性检查已通过，记录见results/real-data/download-check.json。44份锁定运行归档已用于干净检出重建，未宣称系统全部依赖具备离线源码重建闭包。
