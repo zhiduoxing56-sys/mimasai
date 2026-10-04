@@ -18,6 +18,10 @@ def validate_delivery(job,authorization=None):
     require(final.get('targets')==targets and final.get('receiver_id')==policy['receiver_id'] and final.get('model')==policy['model'],'QUERY_AUTHORIZATION')
     require(final.get('dims')==[len(nodes),classes] and final.get('use_previous') is True and 'previous_slice' not in final,'QUERY_OUTPUT_SHAPE')
     require(len(ops)>1 and ops[-2]['type']=='probability' and ops[-2]['dims']==final['dims'] and ops[-2]['fraction']==policy['model']['probability_fraction_bits'],'QUERY_PROBABILITY_REQUIRED')
+    # Computation scales are public parts of the authorized model contract.
+    f=policy['model']['fraction_bits'];pf=policy['model']['probability_fraction_bits']
+    require(all(op.get('fraction')==f for op in ops if op['type'] in ('matmul','shared_aggregate','he_aggregate')),'QUERY_SCALE_BINDING')
+    require(all(op.get('source_fraction')==f and op.get('fraction')==pf for op in ops if op['type']=='precision_up'),'QUERY_SCALE_BINDING')
     # Every model-bearing computation is bound to the authorized model.
     require(all(op.get('model',policy['model'])==policy['model'] for op in ops),'QUERY_MODEL_BINDING')
 

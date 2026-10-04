@@ -41,7 +41,7 @@ python3 -m src.application execute --experiment <实验ID> --request <请求ID>
 python3 -m src.receiver <receiver_directory>
 ```
 
-`train --checkpoint-report <真实共享训练报告>`可接入已有真实检查点，必须状态为SHARED_TRAINING_PASS且编号顺序、规模匹配；它不接收浮点模型或参考初始化替代品。该选项用于本轮持续运行训练接入应用，无参数恢复再共享。测试验证与正式发布源码分离：src.application.publish不恢复权重，verification/application.py才可为对照恢复。
+`train --checkpoint-report <真实共享训练报告>`可接入已有真实检查点，必须状态为SHARED_TRAINING_PASS或已有成功检查点的SHARED_TRAINING_STOPPED，且编号顺序、规模匹配；后者必须明确保留失败与实际成功轮数；它不接收浮点模型或参考初始化替代品。该选项用于本轮持续运行训练接入应用，无参数恢复再共享。测试验证与正式发布源码分离：src.application.publish不恢复权重，verification/application.py才可为对照恢复。
 
 ## 权限、消息与交付
 
@@ -49,7 +49,7 @@ python3 -m src.receiver <receiver_directory>
 
 所有中间值仅留在线进程内。delivery模式的服务器output只包含最后一个目标概率份额向量；不会写全图概率、隐藏层或模型参数给接收者。查询者目录只接收授权最终结果的两个份额文件，接收端审计禁止读取build/state/其他results。模型权重文件仅在服务器目录持续使用；完整状态恢复由单独verification进程进行，其输出不进入接收者目录。
 
-每次请求单独生成Boolean/arith/daBit/FSS、R_Q三元组和掩码种子；离线准备先于在线input.json。请求开始与离线开始标志持久记录，服务端连接前预留整批，全局材料标识继续防跨批次重贴标签。失败不交付结果，原材料不能重试；创建新请求获取新材料。模型、公钥/交叉私钥和原始图密文可持续复用，不复用求值工作目录或请求随机量。程序没有legacy自动回退。
+每次请求单独生成Boolean/arith/daBit/FSS、R_Q三元组和掩码消费标识（标识不是种子，实际全系数掩码由各在线服务器的密码学随机源独立生成）；离线准备先于在线input.json。请求开始与离线开始标志持久记录，服务端连接前预留整批，全局材料标识继续防跨批次重贴标签。失败不交付结果，原材料不能重试；创建新请求获取新材料。模型、公钥/交叉私钥和原始图密文可持续复用，不复用求值工作目录或请求随机量。程序没有legacy自动回退。
 
 无网页：当前仍同一Unix用户和应用层审计，未完成操作系统角色权限隔离；保留CLI，避免页面获得拥有者或验证端权限。CLI每次实际调用后端计算并由独立接收端恢复，不播放预先结果。
 
