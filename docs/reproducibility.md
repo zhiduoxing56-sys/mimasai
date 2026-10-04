@@ -7,3 +7,5 @@
 运行基础：Linux amd64、系统 /usr/bin/python3（已测3.12.3）、Git、dpkg-deb 以及基础 Linux 动态加载器/libc。编译器/CMake/make 采用项目内部锁定工具路径。当前44个必要归档齐全；这证明运行时源码最小复跑，不证明宿主操作系统或全部研究资料都能离线重建。锁文件还记载早期分析附件，最小复跑不要求它们。`record_provenance.py` 只写 results 中的观测清单，不自动覆盖锁定版本。
 
 results/reproducibility/clean-replay.json 记录实际提交、目录、会话和用时；失败日志不包含私有载荷。state/deps/build/results/参考资料/review 均排除 Git。state 中已有及本轮账本永久保留，不能通过删除或重置重跑同一材料。
+
+最终保护路径复跑实测：检出 0728b3ffb6bc9088d9cec34aa2b93dc84840a80e，总用时 128.977 秒，44归档全部可用，最小复跑包含5个全新会话通过；详细账本目录见本轮验收报告。
