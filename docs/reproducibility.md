@@ -9,3 +9,5 @@
 results/reproducibility/clean-replay.json 记录实际提交、目录、会话和用时；失败日志不包含私有载荷。state/deps/build/results/参考资料/review 均排除 Git。state 中已有及本轮账本永久保留，不能通过删除或重置重跑同一材料。
 
 最终保护路径复跑实测：检出 0728b3ffb6bc9088d9cec34aa2b93dc84840a80e，总用时 128.977 秒，44归档全部可用，最小复跑包含5个全新会话通过；详细账本目录见本轮验收报告。
+
+本轮完整链复跑更新：a39df6238ed9890a0edc1ba9aa384803bb03abc0，178.959秒，包含真实训练检查点接入保护HE及秘密概率，详见trained-he-acceptance.md。早期缺少结果目录的失败未删除账本；修复后新检出复跑通过。
