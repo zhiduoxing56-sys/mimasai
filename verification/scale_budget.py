@@ -3,7 +3,7 @@ import json,sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from src.data import cora
-from src.reference import config,Fixed,transpose
+from src.reference import config,Fixed,transpose,ROOT
 from src.mpc import costs
 
 def main():
@@ -18,5 +18,5 @@ def main():
   for _ in range(c['approximation']['exp_halving_bits']):e=e*e//s
   precision.append(dict(fraction=f,minimum_exponential_units=e,classes=7,probability_unit_lower_bound=e//7,largest_exp_product=s*s,signed32_product_safe=s*s<1<<31,protocol_status='current f12 probability and log' if f==12 else 'numeric candidate only; log currently capped at f12; mixed precision training not implemented'))
  r=dict(status='PUBLIC_BUDGET_AND_NUMERIC_CANDIDATES_ONLY',scales=rows,probability_precision=precision,limitations=['Range observations are owner-side; online guard remains mandatory','64-node numbers are planned, not an executed secure experiment','Full Cora dense first transform alone has 2708*1432*3*8 bytes, beyond the current 4 MiB frame','Wider ring requires protected conversion; blockwise floor changes semantics'])
- Path('results/real-data/scale-budget.json').write_text(json.dumps(r,indent=2)+'\n');print(json.dumps(r,indent=2))
+ out=ROOT/'results/real-data/scale-budget.json';out.parent.mkdir(parents=True,exist_ok=True);out.write_text(json.dumps(r,indent=2)+'\n');print(json.dumps(r,indent=2))
 if __name__=='__main__':main()

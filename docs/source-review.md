@@ -29,3 +29,5 @@
 扩展对数旧失败初始化真实训练入口：verification/extended_failed_training.py；只从合成初始化构造训练输入，使用真实两进程共享协议，独立验证端恢复完整状态进行对照，不参与主链路模型替换。
 
 真实数据轮新增：`src/data.py:cora` 仅为拥有者导入；在线 worker 审计拒绝 data 与下载档案目录。`src/operators.py:check_dot_range` 在执行点积前验证秘密行L1界；`verification/range_budget.py` 覆盖安全接受、越界拒绝、持久重放及连续消费区间。`verification/real_data.py` 每轮把同角色上一检查点的权重份额送入新会话，验证恢复不作为模型输入。`verification/real_chain.py` 的 owner_bundle 直接编码本 Cora 传播矩阵，不调用合成 `fixture(16)`；`verification/trained_he_chain.py:run` 复用统一推理流程。模型文件只同角色复制。`scripts/run_real_data.sh` 是统一入口。数据、训练完整状态和原始档案仍不进审阅包。
+
+新增布局审阅：src/model.py 的 additive-model-v2绑定 feature_order/class_order；mpc_worker 首层核对公开特征顺序，he.aggregate 核对输出列。旧v1历史文件不会作为新模型加载。src/sparse_reference.py及cora_full_reference.py只有拥有者/验证端入口，worker不会导入；full_domain_audit.py的定位数据只在ignored验证结果。HE_PUBLIC_DOT_BOUND_UNSAFE是合法归一化P输入假设下的公开整数预算，并非加密P范围证明。
