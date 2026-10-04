@@ -5,7 +5,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from src.reference import Fixed,graph,loss_grad
 from src.numerical import training_reference
 from verification.stage2 import C,ROOT,session,launch,verify
-OUT=ROOT/'results/continuation'
+OUT=ROOT/'results/continuation';OUT.mkdir(parents=True,exist_ok=True)
 def main():
  args=argparse.ArgumentParser();args.add_argument('--indexed',action='store_true');args.add_argument('--extended-log',action='store_true');args=args.parse_args()
  cc=copy.deepcopy(C)

@@ -6,7 +6,7 @@ from verification.stage2 import C,ROOT,session,launch
 from src.model import binding
 from src.reference import Fixed,graph,precise_softmax
 from src.numerical import probability_reference
-OUT=ROOT/'results/continuation'
+OUT=ROOT/'results/continuation';OUT.mkdir(parents=True,exist_ok=True)
 def main():
  args=argparse.ArgumentParser();args.add_argument('--indexed',action='store_true');args=args.parse_args()
  train=json.loads((OUT/('training-indexed.json' if args.indexed else 'training.json')).read_text());ftrain=C['training_reference']['fraction_bits'];f=C['fraction_bits'];dims=[C['graph_reference']['nodes'],len(C['graph_reference']['features'][0]),C['model_reference']['hidden_width'],C['model_reference']['classes']];n,features,h,classes=dims;count=features*h+h*classes;node_order=C['graph_reference']['node_order'];b12=binding(secrets.token_hex(16),node_order,features,h,classes,ftrain);b7=binding(secrets.token_hex(16),node_order,features,h,classes,f)

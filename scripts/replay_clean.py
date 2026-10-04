@@ -15,6 +15,12 @@ for row in required:
  source=ROOT/'deps/downloads'/row['file'];assert hashlib.sha256(source.read_bytes()).hexdigest()==row['sha256'];shutil.copyfile(source,work/'deps/downloads'/row['file'])
 (work/'results').mkdir()
 for label,command in [('restore',[sys.executable,'scripts/unpack_deps.py']),('seal-build',['sh','scripts/build_he.sh']),('bridge-build',['sh','scripts/build_stage3.sh']),('replay',[sys.executable,'verification/replay_minimal.py'])]:
- with (OUT/(label+'.log')).open('w') as log:subprocess.run(command,cwd=work,stdout=log,stderr=subprocess.STDOUT,check=True)
+ try:
+  with (OUT/(label+'.log')).open('w') as log:subprocess.run(command,cwd=work,stdout=log,stderr=subprocess.STDOUT,check=True)
+ except subprocess.CalledProcessError as error:
+  report.update(status='FAILED_CLEAN_REPLAY',failed_step=label,exit_code=error.returncode,ledger_retained=str(work/'state/mpc'))
+  (OUT/'clean-replay.json').write_text(json.dumps(report,indent=2)+'\n')
+  (OUT/('failure-'+work.name+'.json')).write_text(json.dumps(report,indent=2)+'\n')
+  raise
 replay=json.loads((work/'results/replay/summary.json').read_text());assert len(set(replay['sessions']))==len(replay['sessions']);report.update(status=replay['status'],replay=replay,locked_runtime_archives_restored=len(required),seal_rebuilt_from_locked_source=True,wall_seconds=time.monotonic()-started,ledger_retained=str(work/'state/mpc'))
 (OUT/'clean-replay.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report,indent=2))
