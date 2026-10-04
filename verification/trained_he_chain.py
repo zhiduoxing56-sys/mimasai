@@ -8,13 +8,14 @@ from verification.he_private_decryption import oracle_round,audit_ring
 from src.he import native
 from src.mpc import VERSION,private_write
 from src.numerical import probability_reference
+from src.ranges import operand,bit_width
 OUT=ROOT/'results/trained-he';OUT.mkdir(parents=True,exist_ok=True);MOD=1<<32
 flat=lambda rows:[v for row in rows for v in row]
 signed=lambda v:v if v<1<<31 else v-MOD
 
 def run(pub_report,route,activation,fault=None,*,bundle_factory=None,output_directory=OUT):
  output_directory.mkdir(parents=True,exist_ok=True)
- d,sid,pub,setup,p,_,inputs=(bundle_factory() if bundle_factory else bundle(5));n=len(p);f=C['fraction_bits'];pf=C['probability_fraction_bits'];model=pub_report['models'][-1];ff,h,c=model['dimensions'];source=Path(pub_report['directory']) if 'directory' in pub_report else ROOT/'build/stage2'/pub_report['session'];trace=pub_report['reference'];bounds=C['range_policy']['operand_bound_exponents'];k=lambda name:f+bounds[name]+1
+ d,sid,pub,setup,p,_,inputs=(bundle_factory() if bundle_factory else bundle(5));n=len(p);f=C['fraction_bits'];pf=C['probability_fraction_bits'];model=pub_report['models'][-1];ff,h,c=model['dimensions'];source=Path(pub_report['directory']) if 'directory' in pub_report else ROOT/'build/stage2'/pub_report['session'];trace=pub_report['reference'];k=lambda name:operand(name,f)
  qs=native(['metadata',d/'S0'])['data_moduli'];pub['data_moduli']=qs
  os.link(d/'S0/parameters.seal',d/'parameters.seal');pub2=copy.deepcopy(pub);pub2.update(shape=[n,c],column_order=model['class_order'])
  for role in (0,1):

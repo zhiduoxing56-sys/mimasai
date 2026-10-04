@@ -3,6 +3,7 @@ All arithmetic outputs are additive shares; no reconstruction in this module.
 """
 import math
 from .mpc import require,range_cost,settings
+from .ranges import operand,radius,bit_width
 
 def public(e,v,n):return [v%e.mod if e.role==0 else 0]*n
 def invert(e,a):return [v^int(e.role==0) for v in a]
@@ -73,7 +74,8 @@ def probability(e,scores,rows,classes,fraction,guard=True):
     require(classes>=2 and rows>0 and fraction>=halving and 2*fraction+1<e.bits,'PROBABILITY_DOMAIN');s=1<<fraction
     require(0<approx['exp_clip_real']<=1<<(halving-1) and classes*s<1<<(e.bits-1),'PROBABILITY_PUBLIC_BOUND')
     require(len(scores)==rows*classes,'PROBABILITY_SHAPE')
-    if guard:e.check_range(scores,fraction+5) # [-16,16) in real units
+    require(2*radius(operand('score',fraction))<1<<(e.bits-1),'SCORE_DIFFERENCE_BOUND')
+    if guard:e.check_range(scores,operand('score',fraction))
     maxima=[scores[i*classes] for i in range(rows)]
     for j in range(1,classes):maxima=maximum(e,maxima,[scores[i*classes+j] for i in range(rows)])
     diff=e.sub(scores,[v for v in maxima for _ in range(classes)])
@@ -91,7 +93,7 @@ def probability(e,scores,rows,classes,fraction,guard=True):
 def check_dot_range(e,a,b,dims,kx,ky):
     """Secret pre-multiplication bound; no product or truncated output opened."""
     rows,inner,cols=dims
-    limit=1<<(e.bits-1);amax=1<<(kx-1);bmax=1<<(ky-1)
+    limit=1<<(e.bits-1);amax=radius(kx);bmax=radius(ky)
     strategy=getattr(e,'range_strategy','dimension');require(strategy in ('dimension','row_l1'),'MATRIX_RANGE_STRATEGY')
     if inner*amax*bmax>=limit:
         require(strategy=='row_l1' and inner*amax<limit,'PUBLIC_DOT_BOUND_UNSAFE')
@@ -141,7 +143,11 @@ class CostCounter:
     def a2b(self,a):self.counts['boolean']+=2*(self.bits-1)*len(a);return [[0]*len(a) for _ in range(self.bits)]
     def b2a(self,a):self.counts['dabit']+=len(a)*len(a[0]);return [[0]*len(a[0]) for _ in a]
     def truncate(self,a,f):self.counts['boolean']+=2*(self.bits-1)*len(a);self.counts['dabit']+=(self.bits-f)*len(a);return [0]*len(a)
-    def check_range(self,a,k):self.counts['boolean']+=range_cost(len(a),self.bits,k);return []
+    def check_range(self,a,k):
+        if isinstance(k,dict):
+            from .ranges import check_interval
+            return check_interval(self,a,k)
+        self.counts['boolean']+=range_cost(len(a),self.bits,k);return []
     def measured(self,name,fn):return fn()
     def matrix(self,a,b,dims,f):
         from .mpc import Engine
@@ -191,7 +197,7 @@ def cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode="quarter_taylo
     return loss
 
 def train_step(e,x,p,w,labels,dims,fraction,mask,neighbors=None,loss_mode="quarter_taylor"):
-    n,features,hidden,classes=dims;s=1<<fraction;policy=settings()['range_policy']['operand_bound_exponents'];bounds=lambda name:fraction+policy[name]+1
+    n,features,hidden,classes=dims;s=1<<fraction;bounds=lambda name:operand(name,fraction)
     require(len(x)==n*features and (len(p)==n*n or neighbors is not None) and len(w)==features*hidden+hidden*classes and len(labels)==n*classes,'TRAIN_SHAPE');require(len(mask)==n and all(type(v)==bool for v in mask),'TRAIN_MASK')
     count=sum(mask);require(count>0,'TRAIN_EMPTY_MASK')
     a=w[:features*hidden];b=w[features*hidden:]
@@ -235,7 +241,7 @@ def plan_operator(op,bits):
     return e.counts
 
 def inference_scores(e,x,p,w,dims,fraction):
-    n,features,h,c=dims;policy=settings()['range_policy']['operand_bound_exponents'];bounds=lambda name:fraction+policy[name]+1
+    n,features,h,c=dims;bounds=lambda name:operand(name,fraction)
     a=w[:features*h];b=w[features*h:];mat=lambda aa,bb,dd,ka,kb:bounded_matrix(e,aa,bb,dd,fraction,bounds(ka),bounds(kb))
     t0=e.measured('inference_XW0',lambda:mat(x,a,[n,features,h],'feature','weight'))
     z0=e.measured('inference_PT0',lambda:mat(p,t0,[n,n,h],'propagation','state'));e.check_range(z0,bounds('state'));hidden=e.relu(z0)
@@ -245,10 +251,15 @@ def inference_scores(e,x,p,w,dims,fraction):
 
 def indexed_aggregate(e,states,indices,weights,n,width,degree,fraction):
     """Secret neighbor lookup + weighted dot, once-only rescale of each dot."""
-    b=settings()['range_policy']['operand_bound_exponents'];kx=fraction+b['state']+1;kw=fraction+b['propagation']+1
+    kx=operand('state',fraction);kw=operand('propagation',fraction)
     require(len(indices)==len(weights)==n*degree and len(states)==n*width,'INDEXED_GRAPH_SHAPE')
-    require(degree*(1<<(kx-1))*(1<<(kw-1))<(1<<(e.bits-1)),'PUBLIC_GRAPH_BOUND_UNSAFE')
     e.check_range(states,kx);e.check_range(weights,kw)
+    if degree*radius(kx)*radius(kw)>=1<<(e.bits-1):
+        require(getattr(e,'range_strategy','dimension')=='row_l1' and degree*radius(kw)<1<<(e.bits-1),'PUBLIC_GRAPH_BOUND_UNSAFE')
+        negative=e.sign(weights);absolute=e.sub(weights,e.public_mul(e.multiply(weights,negative),2))
+        norms=[sum(absolute[i*degree:(i+1)*degree])%e.mod for i in range(n)]
+        cap=((1<<(e.bits-1))-1)//radius(kx)
+        assert_batch(e,compare_boolean(e,public(e,cap,n),norms),'DOT_L1_BOUND_REJECTED')
     selected=gather(e,states,indices,n,width);expanded=[value for value in weights for _ in range(width)]
     products=e.multiply(expanded,selected);raw=[sum(products[(i*degree+j)*width+c] for j in range(degree))%e.mod for i in range(n) for c in range(width)]
     return e.truncate(raw,fraction)

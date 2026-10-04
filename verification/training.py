@@ -20,7 +20,7 @@ def main():
   initialW=copy.deepcopy(W);trace,W,audit=training_reference(P,X,W,m['labels'],mask,cc);expected=[v for row in trace.values() for v in row];refs.append(trace);audits.extend(audit)
   plain.append(dict(type='train_step',dims=[n,features,h,classes],fraction=f,training_mask=mask,weights_previous=it>0,x=flat(X),p=flat(P),labels=flat(labels),y=flat(initialW[0])+flat(initialW[1]) if it==0 else [],expected=expected))
  if args.indexed:
-  for op in plain:op.update(aggregation='indexed',degree=degree,indices=indices,edge_weights=edge_weights,p=[])
+  for op in plain:op.update(range_strategy='row_l1',aggregation='indexed',degree=degree,indices=indices,edge_weights=edge_weights,p=[])
  if args.extended_log:
   for op in plain:op['loss_mode']='range_reduced'
  d,s,dealer=session(32,plain);attempt,metrics=launch(d,s,32,timeout=180);assert all(x['success'] for x in metrics),metrics

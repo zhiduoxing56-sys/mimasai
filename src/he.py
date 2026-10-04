@@ -35,7 +35,8 @@ def aggregate(engine,own,op,x):
     if 'input_bound' in op:
         # Valid normalized nonnegative P has coefficients in [0,input_scale].
         # This input-preparation contract is not a proof about encrypted P.
-        require(1<=op['input_bound']<=engine.bits and n*public['input_scale']*(1<<(op['input_bound']-1))<1<<(engine.bits-1),'HE_PUBLIC_DOT_BOUND_UNSAFE')
+        from .ranges import radius,bit_width
+        require(1<=bit_width(op['input_bound'])<=engine.bits and n*public['input_scale']*radius(op['input_bound'])<1<<(engine.bits-1),'HE_PUBLIC_DOT_BOUND_UNSAFE')
     require(public['ring_bits']==engine.bits and public['input_scale']==1<<op['fraction'] and public['output_scale']==1<<(2*op['fraction']),'HE_SCALE_BINDING')
     require(not (own/'self.sk').exists(),'HE_FORBIDDEN_SAME_KEY_SECRET')
     # Local bundle integrity. Secret-key checksum stays private, never in messages/logs.

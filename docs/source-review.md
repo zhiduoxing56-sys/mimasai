@@ -35,3 +35,5 @@
 无人值守轮：src/application.py提供拥有者/可信离线/本机调度命令；src/runtime.py抽取原有launch，不新增通信协议。src/query.py验证本机授权策略及最终选择，mpc_worker的delivery只落盘最后一项，src/receiver.py只允许读取目标份额交付目录。verification/application.py负责完整模型/相位/状态恢复对照，与接收者隔离。src/operators.py:average_signed为任意正样本数精确向下平均，train_step后向输入改用在线验证的backprop_state界；verification/average.py覆盖MIN、小环穷举和三样本真实训练。所有原材料、历史账本及已有角色私有文件保持原位，不纳入审阅包。
 
 协调器视图修复：初版src.application曾在循环中解析两方检查点/目标结果，虽未调用恢复，其完整视图仍不符合最小角色原则。现在src/role_io.py在分别受审计的独立角色进程里准备发布输入和查询输入、导出自身最终目标份额；协调器仅收取公共状态，不解析这些秘密文件。模型资产同角色硬链接无需读参数。旧临时5轮实验保留为正确性诊断，新版本再用新材料验收。物理UID权限仍非隔离证明。
+
+范围政策衔接：src/ranges.py唯一从operand_bounds_real导出整数半开区间与包围位宽；Engine/CostCounter共同调用已有秘密有符号比较实现非二次幂验证。训练传播以真实radius计算L1限额，HE也用同一radius证明并在线检查输入，不仅按包围幂计算。score32的稳定概率先验证差分不越环，近似核未改变。公开数值配置绑定握手。V验证同时检查原检查点→刷新f12→秘密floor5并刷新f7三者完整值一致，正式协调器仍不解析参数。

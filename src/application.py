@@ -8,6 +8,7 @@ from .mpc import ROOT,VERSION,private_write,settings,require
 from .reference import Fixed
 from .data import cora
 from .model import binding
+from .ranges import operand,bit_width
 from .runtime import launch
 from .he import native,binary_write,file_hash
 
@@ -37,7 +38,7 @@ def command(args):
             first=[secrets.randbelow(mod) for _ in values];second=[(v-a)%mod for v,a in zip(values,first)]
             for role,shares in enumerate((first,second)):pairs[role][name]=shares
         for role in (0,1):write(root/f'S{role}/input-shares.json',pairs[role])
-        targets=args.target or [data['node_order'][0]]
+        targets=args.target or [data['node_order'][data['splits']['test'][0]]]
         require(len(set(targets))==len(targets) and all(t in data['node_order'] for t in targets),'QUERY_TARGETS')
         report=dict(experiment_id=eid,version='cora-local-application-v1',nodes=len(data['node_order']),dimensions=[len(data['node_order']),len(data['feature_columns']),c['model_reference']['hidden_width'],len(data['label_names'])],data={k:v for k,v in data.items() if k not in ('features','propagation','labels','edges')},allowed_targets=targets,receiver_id=args.receiver,owner_preparation_seconds=time.perf_counter()-started,privacy='Public Cora owner-side normalization; not private normalization',authorization='Local controlled policy files, no cryptographic authentication')
         save(eid,report);return dict(experiment_id=eid,command='prepare',manifest=str(report_path(eid)))
@@ -101,7 +102,7 @@ def command(args):
         started=time.perf_counter();attempt,metrics=launch(d,sid,c['ring_bits'],timeout=300);request['attempt']=attempt;request['online']=statistics(metrics,time.perf_counter()-started);request['success']=all(m['success'] for m in metrics);write(out/f'request-{sid}.json',request);require(request['success'],'REQUEST_FAILED')
         received=out/'receiver'/sid;received.mkdir(parents=True,mode=0o700)
         for role in (0,1):role_io('export',role,d,received,attempt)
-        return dict(command='execute',request=sid,status='TARGET_SHARES_DELIVERED',receiver_directory=str(received),online=request['online'])
+        return dict(command='execute',request=sid,status='TARGET_SHARES_DELIVERED',receiver_directory=str(received),online={k:v for k,v in request['online'].items() if k!='servers'})
     raise ValueError('unknown application command')
 
 def role_io(operation,role,source,destination,attempt=None):
@@ -116,10 +117,10 @@ def dealer(directory,sid,plan):
     started=time.perf_counter();write(directory/'public-plan.json',dict(session=sid,bits=settings()['ring_bits'],plan=plan));p=subprocess.run([sys.executable,'-m','src.offline',str(directory),str(directory/'public-plan.json')],cwd=ROOT,capture_output=True,text=True,check=True);result=json.loads(p.stdout);result['offline_wall_seconds']=time.perf_counter()-started;return result
 
 def inference_plan(report,route,activation,targets):
-    c=settings();model=report['publication']['models'][-1];n,ff,h,classes=report['dimensions'];f=c['fraction_bits'];pf=c['probability_fraction_bits'];b=c['range_policy']['operand_bound_exponents'];k=lambda key:f+b[key]+1
+    c=settings();model=report['publication']['models'][-1];n,ff,h,classes=report['dimensions'];f=c['fraction_bits'];pf=c['probability_fraction_bits'];k=lambda key:operand(key,f)
     plan=[dict(type='matmul',model=model,model_layer=0,input_feature_order=model['feature_order'],dims=[n,ff,h],fraction=f,bounds=[k('feature'),k('weight')],range_strategy='row_l1')]
     for layer,width in ((0,h),(1,classes)):
-        common=dict(count=n*width,fraction=f,k=k('state'),activation=activation if layer==0 else 'none',use_previous=True,range_strategy='row_l1')
+        common=dict(count=n*width,fraction=f,k=bit_width(k('state')),activation=activation if layer==0 else 'none',use_previous=True,range_strategy='row_l1')
         if route=='he':
             public=copy.deepcopy(report['he_setup']['public']);public.update(shape=[n,width],column_order=public['column_order'] if layer==0 else model['class_order']);op=dict(common,type='he_aggregate',model=model,model_layer=layer,he=public,he_slot=f'he-layer{layer}',conversion='private_decryption',input_bound=k('state'))
         else:op=dict(common,type='shared_aggregate',dims=[n,n,width],bounds=[k('propagation'),k('state')])

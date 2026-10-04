@@ -97,15 +97,15 @@
     "convergence_window": 3
   },
   "range_policy": {
-    "operand_bound_exponents": {
-      "feature": 1,
-      "weight": 2,
-      "propagation": 1,
-      "state": 4,
-      "error": -1,
-      "backprop_state": 0,
-      "gradient": 7,
-      "score": 4
+    "operand_bounds_real": {
+      "feature": 2,
+      "weight": 4,
+      "propagation": 2,
+      "state": 24,
+      "error": 0.5,
+      "backprop_state": 1,
+      "gradient": 128,
+      "score": 32
     }
   },
   "probability_fraction_bits": 12,

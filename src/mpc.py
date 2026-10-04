@@ -152,7 +152,7 @@ class Channel:
 
 def public_descriptor(job,batch):
     plan=[{k:v for k,v in op.items() if k not in ('x','y','p','labels','indices','edge_weights','q_share')} for op in job['operations']]
-    encoded=json.dumps(dict(version=VERSION,bits=job['bits'],batch=batch,plan=plan,delivery=job.get('delivery')),sort_keys=True,separators=(',',':')).encode()
+    encoded=json.dumps(dict(version=VERSION,bits=job['bits'],batch=batch,plan=plan,delivery=job.get('delivery'),numerics={key:settings()[key] for key in ('ring_bits','fraction_bits','training_reference','probability_fraction_bits','range_policy','approximation','model_reference')}),sort_keys=True,separators=(',',':')).encode()
     # Hash of public schedule only, never of secret values/parameters.
     return list(struct.unpack('<8I',hashlib.sha256(encoded).digest()))
 
@@ -226,6 +226,9 @@ class Engine:
         nonnegative=[(int(self.role==0)-v)%self.mod for v in negative]
         return self.measured('select',lambda:self.select(x,nonnegative))
     def check_range(self,x,k):
+        if isinstance(k,dict):
+            from .ranges import check_interval
+            return check_interval(self,x,k)
         require(type(k)==int and 1<=k<=self.bits and len(x)>0,'RANGE_ARGUMENT')
         if k==self.bits:
             valid=int(self.role==0)
@@ -309,11 +312,15 @@ def costs(plan,bits):
             for key in cc:counts[key]+=cc[key]
             continue
         if kind=='precision_up':
-            shift=op['fraction']-op['source_fraction'];k=op['source_fraction']+settings()['range_policy']['operand_bound_exponents']['score']+1
+            shift=op['fraction']-op['source_fraction'];from .ranges import operand;k=operand('score',op['source_fraction'])
             require(shift>=0 and k+shift<=bits,'PRECISION_SCALE_BOUND')
             counts['boolean']+=range_cost(n,bits,k);continue
         if kind=='publish':
-            counts['refresh']+=n;counts['boolean']+=range_cost(n,bits,op['source_fraction']+3)+range_cost(n,bits,op['model']['fraction_bits']+3)
+            from .operators import CostCounter
+            from .ranges import operand
+            e=CostCounter(bits);e.check_range([0]*n,operand('weight',op['source_fraction']));e.check_range([0]*n,operand('weight',op['model']['fraction_bits']))
+            for key in e.counts:counts[key]+=e.counts[key]
+            counts['refresh']+=n
             drop=op['source_fraction']-op['model']['fraction_bits']
             require(drop>=0,'UNVERIFIED_PRECISION_INCREASE')
             if drop:counts['boolean']+=2*(bits-1)*n;counts['dabit']+=(bits-drop)*n
@@ -346,11 +353,17 @@ def costs(plan,bits):
             if kind=='checked_relu':counts['boolean']+=range_cost(n,bits,op['k'])
         elif kind=='fss_relu':
             counts['boolean']+=range_cost(n,bits,op['k']);counts['fss']+=n
-        elif kind=='range': counts['boolean']+=range_cost(n,bits,op['k'])
+        elif kind=='range':
+            from .operators import CostCounter
+            e=CostCounter(bits);e.check_range([0]*n,op['k'])
+            for key in e.counts:counts[key]+=e.counts[key]
         elif kind=='he_aggregate':
             require(op.get('conversion') in ('legacy_ciphertext','private_decryption'),'HE_CONVERSION_TYPE')
             counts['he_mask']+=op['he']['shape'][1]
-            if 'input_bound' in op:counts['boolean']+=range_cost(n,bits,op['input_bound'])
+            if 'input_bound' in op:
+                from .operators import CostCounter
+                e=CostCounter(bits);e.check_range([0]*n,op['input_bound'])
+                for key in e.counts:counts[key]+=e.counts[key]
             if op.get('conversion')=='private_decryption':
                 from .he_secure import round_cost
                 counts['rlwe_product']=counts.get('rlwe_product',0)+2*op['he']['shape'][1]

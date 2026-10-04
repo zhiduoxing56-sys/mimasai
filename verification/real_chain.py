@@ -6,6 +6,7 @@ from src.data import cora
 from src.reference import config,Fixed,precise_softmax
 from src.numerical import probability_reference
 from src.model import binding
+from src.ranges import operand,bit_width
 from src.mpc import private_write
 from src.he import native,binary_write,file_hash
 from verification.stage2 import ROOT,session,launch
@@ -23,7 +24,7 @@ def publish(train,data):
  outs=[json.loads((d/f'S{r}/output-{attempt}.json').read_text())['shares'] for r in (0,1)]
  for i,op in enumerate(plain):assert [(a+b)%MOD for a,b in zip(outs[0][i],outs[1][i])]==[v%MOD for v in op['expected']],i
  assert all(m['preprocessing']['consumed']==dealer['generated'] for m in metrics)
- high=precise_softmax(fx.decode(trace['logits']));error=max(abs(a/(1<<pf)-float(b)) for row,rr in zip(prob,high) for a,b in zip(row,rr));report=dict(status='PASS_REAL_SHARED_CHECKPOINT_PUBLICATION',source_training_session=checkpoint['session'] if 'session' in checkpoint else source.name,source_training_iteration=checkpoint['iteration'],session=s,models=[b12,b7],activation_bits=f+c['range_policy']['operand_bound_exponents']['state']+1,dealer=dealer,servers=metrics,wall_seconds=time.perf_counter()-started,wire_bytes=sum(m['communication']['bytes_sent'] for m in metrics),rounds=metrics[0]['communication']['exchange_rounds'],probability_error=error,classification_equal=all(row.index(max(row))==max(range(len(rr)),key=lambda j:float(rr[j])) for row,rr in zip(prob,high)),reference=trace,range_audit=fx.audit,probability_sums=[sum(row)/(1<<pf) for row in prob]);(OUT/'publication.json').write_text(json.dumps(report,indent=2)+'\n');return report
+ high=precise_softmax(fx.decode(trace['logits']));error=max(abs(a/(1<<pf)-float(b)) for row,rr in zip(prob,high) for a,b in zip(row,rr));report=dict(status='PASS_REAL_SHARED_CHECKPOINT_PUBLICATION',source_training_session=checkpoint['session'] if 'session' in checkpoint else source.name,source_training_iteration=checkpoint['iteration'],session=s,models=[b12,b7],activation_bits=bit_width(operand('state',f)),dealer=dealer,servers=metrics,wall_seconds=time.perf_counter()-started,wire_bytes=sum(m['communication']['bytes_sent'] for m in metrics),rounds=metrics[0]['communication']['exchange_rounds'],probability_error=error,classification_equal=all(row.index(max(row))==max(range(len(rr)),key=lambda j:float(rr[j])) for row,rr in zip(prob,high)),reference=trace,range_audit=fx.audit,probability_sums=[sum(row)/(1<<pf) for row in prob]);(OUT/'publication.json').write_text(json.dumps(report,indent=2)+'\n');return report
 
 def owner_bundle(data):
  c=config();fx=Fixed(c);p=fx.encode(data['propagation']);assert all(0<=v<=fx.scale for row in p for v in row);n=len(p);h=c['model_reference']['hidden_width'];sid=secrets.token_hex(16);d=ROOT/'build/stage3'/sid

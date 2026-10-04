@@ -59,7 +59,7 @@ def main():
                 from .he_secure import round_phase
                 out=round_phase(engine,op['q_share'],int(op['ciphertext_modulus']))
             elif kind=='precision_up':
-                shift=op['fraction']-op['source_fraction'];k=op['source_fraction']+settings()['range_policy']['operand_bound_exponents']['score']+1
+                shift=op['fraction']-op['source_fraction'];from .ranges import operand;k=operand('score',op['source_fraction'])
                 require(shift>=0 and k+shift<=engine.bits,'PRECISION_SCALE_BOUND');engine.check_range(x,k);out=engine.public_mul(x,1<<shift)
             elif kind=='publish':
                 from .model import publish
@@ -159,7 +159,7 @@ def main():
     finally:
         if active and channel and material:
             idx,kind,started,start,before=active;after=channel.metrics()
-            stages.append(dict(operation=idx,type=kind,error=code,elapsed_seconds=time.perf_counter()-started,bytes_sent=after['bytes_sent']-start['bytes_sent'],rounds=after['exchange_rounds']-start['exchange_rounds'],consumed={k:material.cursor[k]-before[k] for k in before}))
+            stages.append(dict(operation=idx,type=kind,error=code,elapsed_seconds=time.perf_counter()-started,bytes_sent=after['bytes_sent']-start['bytes_sent'],rounds=after['exchange_rounds']-start['exchange_rounds'],consumed={k:material.cursor[k]-before[k] for k in before},components=engine.components))
         if material: material.finish(success)
         if channel: channel.sock.close()
     metric={'pid':os.getpid(),'role':role,'session':args.session,'success':success,'error':code,'communication':channel.metrics() if channel else None,'preprocessing':material.metrics() if material else None,'operations':stages,'message_trace':channel.trace if channel else [],'loaded_private_files':private_reads,'peak_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}

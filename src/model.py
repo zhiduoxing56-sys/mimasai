@@ -15,11 +15,11 @@ def validate(doc):
  require(len(doc['model_id'])==32 and len(set(doc['node_order']))==len(doc['node_order']),'MODEL_IDENTIFIER')
  require(doc['ring_bits']==32 and 0<doc['fraction_bits']<doc['ring_bits'] and doc['bias']=='public_fixed_zero','MODEL_NUMERICS')
 def publish(e,own,weights,op):
- from .operators import public
+ from .ranges import operand
  model=op['model'];validate(model);f=model['fraction_bits'];source=op['source_fraction'];count=op['count']
  require(len(weights)==count and count==model['dimensions'][0]*model['dimensions'][1]+model['dimensions'][1]*model['dimensions'][2],'MODEL_SHAPE')
- require(source>=f,'UNVERIFIED_PRECISION_INCREASE');e.check_range(weights,source+3)
- converted=e.truncate(weights,source-f) if source>f else weights[:];e.check_range(converted,f+3)
+ require(source>=f,'UNVERIFIED_PRECISION_INCREASE');e.check_range(weights,operand('weight',source))
+ converted=e.truncate(weights,source-f) if source>f else weights[:];e.check_range(converted,operand('weight',f))
  random,span=e.materials.take('refresh',count);peer=e.channel.exchange(e.op,'model_refresh_randomness',[count],random,span=span)
  refreshed=[(v+a-b)%e.mod for v,a,b in zip(converted,random,peer)]
  path=Path(own)/('model-'+model['model_id']+'.json');private_write(path,dict(version='additive-model-v2',role=e.role,binding=model,shares=refreshed))

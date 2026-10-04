@@ -24,7 +24,7 @@ def main():
     fr,fw,audit=step(pf,xf,fw,data['labels'],mask,fx,c['model_reference']['learning_rate'])
     groups={'transform0':'state','activation_input':'state','hidden':'state','transform1':'state','logits':'score','backprop1':'backprop_state','backprop_hidden':'state','backprop0':'state','gradient0':'gradient','gradient1':'gradient'}
     for key,role in groups.items():
-     bound=fx.scale*2**c['range_policy']['operand_bound_exponents'][role];values=[v for row in fr[key] for v in row]
+     bound=fx.scale*c['range_policy']['operand_bounds_real'][role];values=[v for row in fr[key] for v in row]
      if first_protocol_policy_violation is None and any(v< -bound or v>=bound for v in values):first_protocol_policy_violation=dict(iteration=it,group=key,min_units=min(values),max_units=max(values),bound_units=bound)
     entry.update(fixed_loss=fr['loss']/fx.scale,fixed_train_accuracy=accuracy(fr['probabilities'],data['labels'],data['splits']['train']),fixed_validation_accuracy=accuracy(fr['probabilities'],data['labels'],data['splits']['validation']),probability_max_error=max(abs(a/fx.scale-b) for aa,bb in zip(fr['probabilities'],tr['probabilities']) for a,b in zip(aa,bb)));ranges.extend(dict(iteration=it,**a) for a in audit)
    except (ValueError,OverflowError) as e:
