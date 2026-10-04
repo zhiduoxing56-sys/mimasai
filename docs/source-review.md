@@ -23,3 +23,5 @@
 * 正式共享模型 ID 是独立随机值，公开绑定只有结构/数值/顺序/版本。HE 参数/公钥摘要是公开材料摘要。own he.json 的 peer.sk 完整性摘要属于仅本地私有文件，不发送或记录到普通消息；不把该摘要当成认证或秘密内容无泄露的公共标识。参考模型权重摘要保留验证端范围。
 
 审阅未发现新增在线恢复或明文代算。服务器 Python 与原生子进程共用一个角色目录；本机同一 Unix 用户可绕过该约束，部署认证与用户隔离仍待实现。协议采用可信设置且离线方不观察在线消息，不能宣称主动安全。
+
+本轮新增审阅入口：verification/trained_he_chain.py与scripts/run_trained_he.sh展示真实训练份额→发布→在线本地load的完整证据；src/mpc_worker.py的matmul/model_layer与shared_aggregate、src/mpc.py的资源规划；src/operators.py:negative_log、cross_entropy(loss_mode)、src/numerical.py:negative_log_reference、verification/extended_log.py。测试调度launch在超时后终止所有子进程，永久保留预留账本。每操作/子项RSS记录是进程至该时点累计highwater，不能称为该算子独立峰值。

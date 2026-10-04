@@ -5,6 +5,7 @@ import json
 import hashlib
 import math
 import os
+import resource
 import socket
 import sqlite3
 import struct
@@ -209,7 +210,7 @@ class Engine:
     def measured(self,name,fn):
         started=time.perf_counter();before=self.channel.metrics();used=self.materials.cursor.copy()
         value=fn();after=self.channel.metrics()
-        self.components.append(dict(name=name,elapsed_seconds=time.perf_counter()-started,bytes_sent=after['bytes_sent']-before['bytes_sent'],rounds=after['exchange_rounds']-before['exchange_rounds'],consumed={k:self.materials.cursor[k]-used[k] for k in used}))
+        self.components.append(dict(name=name,process_highwater_rss_kib=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,children_highwater_rss_kib=resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss,elapsed_seconds=time.perf_counter()-started,bytes_sent=after['bytes_sent']-before['bytes_sent'],rounds=after['exchange_rounds']-before['exchange_rounds'],consumed={k:self.materials.cursor[k]-used[k] for k in used}))
         return value
     def sign(self,x):
         # Arithmetic bit 1 iff negative. No fractional scale.
@@ -276,6 +277,22 @@ def costs(plan,bits):
     if any(op['type']=='publish' for op in plan):counts['refresh']=0
     for op in plan:
         kind=op['type'];n=op.get('count',0)
+        if kind=='matmul' and 'model' in op:
+            from .operators import CostCounter,bounded_matrix
+            e=CostCounter(bits);r,k,c=op['dims'];bounded_matrix(e,[0]*(r*k),[0]*(k*c),op['dims'],op['fraction'],*op['bounds'])
+            for key in e.counts:counts[key]+=e.counts[key]
+            continue
+        if kind=='shared_aggregate':
+            r,k,c=op['dims'];sub=[dict(type='bounded_matmul',count=r*c,dims=op['dims'],fraction=op['fraction'],bounds=op['bounds'])]
+            if op.get('activation','none')!='none':sub.append(dict(type='fss_relu' if op['activation']=='fss' else 'checked_relu',count=r*c,k=op['k']))
+            cc=costs(sub,bits)
+            for key in cc:counts[key]+=cc[key]
+            continue
+        if kind=='negative_log':
+            from .operators import CostCounter,negative_log
+            e=CostCounter(bits);negative_log(e,[0]*n,op['fraction'])
+            for key in e.counts:counts[key]+=e.counts[key]
+            continue
         if kind=='bfv_round':
             from .he_secure import round_cost
             cc=round_cost(n,int(op['ciphertext_modulus']),bits)
@@ -323,6 +340,7 @@ def costs(plan,bits):
         elif kind=='he_aggregate':
             require(op.get('conversion') in ('legacy_ciphertext','private_decryption'),'HE_CONVERSION_TYPE')
             counts['he_mask']+=op['he']['shape'][1]
+            if 'input_bound' in op:counts['boolean']+=range_cost(n,bits,op['input_bound'])
             if op.get('conversion')=='private_decryption':
                 from .he_secure import round_cost
                 counts['rlwe_product']=counts.get('rlwe_product',0)+2*op['he']['shape'][1]
@@ -348,7 +366,7 @@ def costs(plan,bits):
 def fss_widths(plan):
     widths=[]
     for op in plan:
-        if op['type']=='he_aggregate' and op.get('activation','boolean')=='fss':widths.extend([op['k']]*op['count'])
+        if op['type'] in ('he_aggregate','shared_aggregate') and op.get('activation','boolean')=='fss':widths.extend([op['k']]*op['count'])
         elif op['type']=='fss_relu': widths.extend([op['k']]*op['count'])
         elif op['type']=='hidden' and op.get('activation','boolean')=='fss':widths.extend([op['k']]*(op['dims'][0]*op['dims'][2]))
     return widths

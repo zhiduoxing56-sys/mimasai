@@ -114,3 +114,9 @@
 
 
 本轮更新（2026-10-04）：完整源码基线与新私有 BFV 解密转换见 [验收报告](security-round-acceptance.md)。旧发送求值密文路径仍是明确安全阻塞；新增路径保持模型数值规则并增加交互，半诚实、可信非串谋离线方假设不变。训练目标概率≥1/4限制未取消。
+
+## 真实训练模型接入新转换
+
+`matmul`新增公开model/model_layer：在线从本方发布模型文件取该层参数，输入不得提供替代权重；验证维度、f7、模型绑定。trace_raw仅用于测试输出自身原始点积份额及截断份额。shared_aggregate作为同模型对照返回raw+z(+hidden)，he_aggregate/private_decryption返回同形状。两层最后输出直接precision_up与probability，保持零偏置与输出层无ReLU。准确运行及数据流见trained-he-chain.md。
+
+`negative_log`输入正f12概率共享，输出32/f12的范围归约近似负对数；loss/train_step可公开指定loss_mode=range_reduced。默认quarter_taylor保留既有已验收训练数值基线，扩展路径在独立入口验证，不静默更改主链路。不存在公开q/k或零概率钳位。协议见extended-secret-log.md。

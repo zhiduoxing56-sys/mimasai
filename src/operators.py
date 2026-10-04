@@ -122,7 +122,23 @@ class CostCounter:
     def sign(self,a):return self.b2a([self.a2b(a)[-1]])[0]
     def relu(self,a):return choose(self,self.sub(public(self,1,len(a)),self.sign(a)),a,[0]*len(a))
 
-def cross_entropy(e,prob,labels,n,classes,fraction,mask):
+def negative_log(e,q,fraction):
+    """Secret range-reduced -ln(q/2^f), q in [1,2^f]; zero rejects."""
+    require(2<=fraction<=12,'LOG_PRECISION_DOMAIN');n=len(q);s=1<<fraction
+    assert_batch(e,compare_boolean(e,q+public(e,s,n),public(e,1,n)+q),'LOG_POSITIVE_DOMAIN')
+    bits=e.a2b(q);seen=[0]*n;leaders=[]
+    for j in range(fraction,-1,-1):
+        lead=e.boolean_and(bits[j],invert(e,seen));leaders.append(lead);seen=[a^b for a,b in zip(seen,lead)]
+    units=e.b2a(leaders);products=e.multiply(q*(fraction+1),flatten(units));u=[0]*n;kshares=[0]*n
+    for index,j in enumerate(range(fraction,-1,-1)):
+        shift=max(0,fraction-1-j);u=e.add(u,e.public_mul(products[index*n:(index+1)*n],1<<shift));kshares=e.add(kshares,e.public_mul(units[index],shift))
+    v=e.sub(public(e,s,n),u);power=v[:];loss=e.public_mul(kshares,round(s*math.log(2)))
+    for j in range(1,settings()['approximation']['log_degree']+1):
+        loss=e.add(loss,e.truncate(e.public_mul(power,s//j),fraction))
+        if j<settings()['approximation']['log_degree']:power=e.truncate(e.multiply(power,v),fraction)
+    return loss
+
+def cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode="quarter_taylor"):
     s=1<<fraction;count=sum(mask);require(count>0 and count&(count-1)==0,'TRAIN_POWER_TWO_MASK_COUNT');shift=count.bit_length()-1
     require(len(prob)==len(labels)==n*classes and classes*s<1<<(e.bits-1),'LOSS_SHAPE')
     # Prove [0,S] probabilities and well-formed secret one-hot label words.
@@ -134,16 +150,19 @@ def cross_entropy(e,prob,labels,n,classes,fraction,mask):
     assert_batch(e,flatten(label_bits)+equal,'LABEL_ONE_HOT_DOMAIN')
     selected=e.truncate(e.multiply(prob,labels),fraction);truep=[sum(selected[i*classes:(i+1)*classes])%e.mod for i in range(n)]
     guarded=[truep[i] if mask[i] else (s if e.role==0 else 0) for i in range(n)]
-    low=round(settings()['approximation']['minimum_training_probability_real']*s)
-    assert_batch(e,compare_boolean(e,guarded,public(e,low,n)),'LOSS_PROBABILITY_DOMAIN')
-    v=e.sub(public(e,s,n),guarded);power=v[:];loss_terms=[0]*n
-    for j in range(1,settings()['approximation']['log_degree']+1):
-        term=e.truncate(e.public_mul(power,s//j),fraction);loss_terms=e.add(loss_terms,term)
-        if j<settings()['approximation']['log_degree']:power=e.truncate(e.multiply(power,v),fraction)
+    require(loss_mode in ('quarter_taylor','range_reduced'),'LOSS_ALGORITHM')
+    if loss_mode=='range_reduced':loss_terms=negative_log(e,guarded,fraction)
+    else:
+        low=round(settings()['approximation']['minimum_training_probability_real']*s)
+        assert_batch(e,compare_boolean(e,guarded,public(e,low,n)),'LOSS_PROBABILITY_DOMAIN')
+        v=e.sub(public(e,s,n),guarded);power=v[:];loss_terms=[0]*n
+        for j in range(1,settings()['approximation']['log_degree']+1):
+            term=e.truncate(e.public_mul(power,s//j),fraction);loss_terms=e.add(loss_terms,term)
+            if j<settings()['approximation']['log_degree']:power=e.truncate(e.multiply(power,v),fraction)
     loss=[sum(loss_terms[i] for i,on in enumerate(mask) if on)%e.mod];loss=e.truncate(loss,shift) if shift else loss
     return loss
 
-def train_step(e,x,p,w,labels,dims,fraction,mask,neighbors=None):
+def train_step(e,x,p,w,labels,dims,fraction,mask,neighbors=None,loss_mode="quarter_taylor"):
     n,features,hidden,classes=dims;s=1<<fraction;policy=settings()['range_policy']['operand_bound_exponents'];bounds=lambda name:fraction+policy[name]+1
     require(len(x)==n*features and (len(p)==n*n or neighbors is not None) and len(w)==features*hidden+hidden*classes and len(labels)==n*classes,'TRAIN_SHAPE');require(len(mask)==n and all(type(v)==bool for v in mask),'TRAIN_MASK')
     count=sum(mask);require(count>0 and count&(count-1)==0,'TRAIN_POWER_TWO_MASK_COUNT');shift=count.bit_length()-1
@@ -156,7 +175,7 @@ def train_step(e,x,p,w,labels,dims,fraction,mask,neighbors=None):
     t1=e.measured('train_HW1',lambda:mat(h,b,[n,hidden,classes],'state','weight'))
     z1=e.measured('train_PT1',lambda:aggregate(t1,classes))
     prob=e.measured('train_probability',lambda:probability(e,z1,n,classes,fraction))
-    loss=e.measured('train_loss',lambda:cross_entropy(e,prob,labels,n,classes,fraction,mask))
+    loss=e.measured('train_loss',lambda:cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode))
     d=e.sub(prob,labels);d=[v if mask[i//classes] else 0 for i,v in enumerate(d)];d=e.truncate(d,shift) if shift else d
     pt=transpose(p,n,n) if neighbors is None else None;dt1=e.measured('train_dT1',lambda:aggregate(d,classes) if neighbors is not None else mat(pt,d,[n,n,classes],'propagation','error'))
     dw1=e.measured('train_dW1',lambda:mat(transpose(h,n,hidden),dt1,[hidden,n,classes],'state','backprop_state'))
@@ -182,8 +201,8 @@ def convergence_step(e,previous,current,run,threshold,window,iteration,maximum):
 def plan_operator(op,bits):
     e=CostCounter(bits);kind=op['type'];n=op.get('count',0)
     if kind=='train_step':
-        nodes,features,h,c=op['dims'];neighbors=dict(indices=[0]*(nodes*op['degree']),weights=[0]*(nodes*op['degree']),degree=op['degree']) if op.get('aggregation','dense')=='indexed' else None;train_step(e,[0]*(nodes*features),[0]*(nodes*nodes),[0]*(features*h+h*c),[0]*(nodes*c),op['dims'],op['fraction'],op['training_mask'],neighbors)
-    elif kind=='loss':cross_entropy(e,[0]*n,[0]*n,*op['dims'],op['fraction'],op['training_mask'])
+        nodes,features,h,c=op['dims'];neighbors=dict(indices=[0]*(nodes*op['degree']),weights=[0]*(nodes*op['degree']),degree=op['degree']) if op.get('aggregation','dense')=='indexed' else None;train_step(e,[0]*(nodes*features),[0]*(nodes*nodes),[0]*(features*h+h*c),[0]*(nodes*c),op['dims'],op['fraction'],op['training_mask'],neighbors,op.get('loss_mode','quarter_taylor'))
+    elif kind=='loss':cross_entropy(e,[0]*n,[0]*n,*op['dims'],op['fraction'],op['training_mask'],op.get('loss_mode','quarter_taylor'))
     elif kind=='convergence':convergence_step(e,[0]*n,[0]*n,[0]*n,op['threshold'],op['window'],op['iteration'],op['maximum'])
     return e.counts
 

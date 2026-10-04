@@ -43,7 +43,10 @@ def main():
             if kind in ('add','sub','mul'):
                 require(len(x)==len(y)==op['count'],'INPUT_SHAPE')
             elif kind in ('truncate','public_mul','sign','relu','range','checked_relu','select','fss_relu'): require(len(x)==op['count'],'INPUT_SHAPE')
-            if kind=='bfv_round':
+            if kind=='negative_log':
+                from .operators import negative_log
+                out=negative_log(engine,x,op['fraction'])
+            elif kind=='bfv_round':
                 from .he_secure import round_phase
                 out=round_phase(engine,op['q_share'],int(op['ciphertext_modulus']))
             elif kind=='precision_up':
@@ -54,7 +57,7 @@ def main():
                 out=publish(engine,own,x,op)
             elif kind=='loss':
                 from .operators import cross_entropy
-                out=cross_entropy(engine,x,y,*op['dims'],op['fraction'],op['training_mask'])
+                out=cross_entropy(engine,x,y,*op['dims'],op['fraction'],op['training_mask'],op.get('loss_mode','quarter_taylor'))
             elif kind=='gcn_scores':
                 from .operators import inference_scores
                 from .model import load
@@ -66,7 +69,7 @@ def main():
                 nodes,features,width,classes=op['dims'];weights=outputs[-1][-(features*width+width*classes):] if op.get('weights_previous',False) else y
                 require(all(type(v)==int and 0<=v<engine.mod for v in op['p']+op['labels']+op.get('indices',[])+op.get('edge_weights',[])),'TRAIN_RESIDUE')
                 neighbors=dict(indices=op['indices'],weights=op['edge_weights'],degree=op['degree']) if op.get('aggregation','dense')=='indexed' else None
-                trace=train_step(engine,x,op['p'],weights,op['labels'],op['dims'],op['fraction'],op['training_mask'],neighbors);out=[v for row in trace.values() for v in row]
+                trace=train_step(engine,x,op['p'],weights,op['labels'],op['dims'],op['fraction'],op['training_mask'],neighbors,op.get('loss_mode','quarter_taylor'));out=[v for row in trace.values() for v in row]
             elif kind=='convergence':
                 from .operators import convergence_step
                 out_run,stop=convergence_step(engine,x,y,op['p'],op['threshold'],op['window'],op['iteration'],op['maximum']);out=out_run+stop
@@ -97,6 +100,7 @@ def main():
             elif kind=='he_aggregate':
                 from .he import aggregate
                 if 'he_slot' in op:require(Path(op['he_slot']).name==op['he_slot'] and not op['he_slot'].startswith('.'),'HE_SLOT_PATH')
+                if 'input_bound' in op:engine.measured('HE_input_range',lambda:engine.check_range(x,op['input_bound']))
                 raw,he_profile=engine.measured('homomorphic_aggregate_convert',lambda:aggregate(engine,own/op['he_slot'] if 'he_slot' in op else own,op,x))
                 engine.components[-1]['he_profile']=he_profile
                 z=engine.measured('aggregate_exact_truncate',lambda:engine.truncate(raw,op['fraction']))
@@ -113,11 +117,25 @@ def main():
                 z=engine.measured('P_T0',lambda:engine.matrix(pp,t,[nodes,nodes,width],op['fraction']))
                 engine.measured('range',lambda:engine.check_range(z,op['k']));h=engine.measured('fss_eval_select',lambda:engine.fss_relu(z,op['k'])) if op.get('activation','boolean')=='fss' else engine.relu(z)
                 out=t+z+h  # test shares only, separate verifier restores traces
-            elif kind=='matmul': out=engine.matrix(x,y,op['dims'],op.get('fraction',0))
+            elif kind in ('matmul','shared_aggregate'):
+                if 'model' in op:
+                    from .model import load
+                    model=op['model'];layer=op['model_layer'];ff,hh,cc=model['dimensions']
+                    require(layer in (0,1) and op['dims']==[len(model['node_order']),ff if layer==0 else hh,hh if layer==0 else cc] and op['fraction']==model['fraction_bits'],'INFERENCE_MODEL_BINDING')
+                    weights=load(role,own/('model-'+model['model_id']+'.json'),model)
+                    y=weights[:ff*hh] if layer==0 else weights[ff*hh:]
+                if kind=='shared_aggregate':x,y=op['p'],x
+                if 'bounds' in op:
+                    r,k,c=op['dims'];kx,ky=op['bounds'];require(k*(1<<(kx-1))*(1<<(ky-1))<1<<(engine.bits-1),'PUBLIC_DOT_BOUND_UNSAFE')
+                    engine.check_range(x,kx);engine.check_range(y,ky)
+                raw=engine.matrix(x,y,op['dims'],0);z=engine.truncate(raw,op.get('fraction',0)) if op.get('fraction',0) else raw
+                out=raw+z if op.get('trace_raw',False) else z
+                if kind=='shared_aggregate' and op.get('activation','none')!='none':
+                    engine.check_range(z,op['k']);out+=engine.fss_relu(z,op['k']) if op['activation']=='fss' else engine.relu(z)
             else: raise ProtocolError('OPERATION_TYPE')
             outputs.append(out)
             after=channel.metrics()
-            stages.append({'operation':idx,'type':kind,'bytes_sent':after['bytes_sent']-start['bytes_sent'],'rounds':after['exchange_rounds']-start['exchange_rounds'],'elapsed_seconds':time.perf_counter()-started,'components':engine.components,'consumed':{k:material.cursor[k]-before[k] for k in before}})
+            stages.append({'operation':idx,'type':kind,'bytes_sent':after['bytes_sent']-start['bytes_sent'],'rounds':after['exchange_rounds']-start['exchange_rounds'],'elapsed_seconds':time.perf_counter()-started,'components':engine.components,'process_highwater_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'children_highwater_rss_kib':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss,'consumed':{k:material.cursor[k]-before[k] for k in before}})
             active=None
         success=True
     except ProtocolError as e: code=e.code

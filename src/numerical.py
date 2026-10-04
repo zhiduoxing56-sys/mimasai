@@ -11,6 +11,17 @@ def probability_reference(scores,fraction):
         result.append([x*s//den for x in e]);traces.append(dict(maximum=m,difference=d,exponential=e,denominator=den))
     return result,traces
 
+def negative_log_reference(q,fraction):
+    s=1<<fraction
+    if not 1<=q<=s:raise ValueError('positive fixed probability required')
+    shift=0;u=q
+    while u<s//2:u*=2;shift+=1
+    v=s-u;power=v;out=shift*round(s*math.log(2))
+    for j in range(1,config()['approximation']['log_degree']+1):
+        out+=power*(s//j)//s
+        if j<config()['approximation']['log_degree']:power=power*v//s
+    return out
+
 def training_reference(p,x,w,labels,mask,c):
     fx=Fixed(c);s=fx.scale;mod=fx.mod;n=len(x);f=len(x[0]);h=len(w[0][0]);classes=len(w[1][0]);fraction=c['fraction_bits']
     t0=fx.mul(x,w[0],'train_XW0');z0=fx.mul(p,t0,'train_PT0');hidden=[[max(0,fx.signed(v)) for v in row] for row in z0]
@@ -19,7 +30,10 @@ def training_reference(p,x,w,labels,mask,c):
     losses=[]
     for i,on in enumerate(mask):
         if not on:losses.append(0);continue
-        q=prob[i][labels[i]];assert q>=round(c['approximation']['minimum_training_probability_real']*s)
+        q=prob[i][labels[i]]
+        if c['training_reference'].get('loss_mode')=='range_reduced':
+            losses.append(negative_log_reference(q,fraction));continue
+        assert q>=round(c['approximation']['minimum_training_probability_real']*s)
         v=s-q;power=v;loss=0
         for j in range(1,c['approximation']['log_degree']+1):
             loss+=fx.checked(power*(s//j),'loss product')//s

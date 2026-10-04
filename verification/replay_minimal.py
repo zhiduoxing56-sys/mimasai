@@ -1,17 +1,12 @@
-"""Clean-source replay: never copies historical shares, keys or ledgers."""
+"""Clean-source complete trained model -> protected HE -> secret probability."""
 import json,subprocess,sys,time
 from pathlib import Path
-ROOT=Path(__file__).resolve().parents[1];(ROOT/'results/continuation').mkdir(parents=True,exist_ok=True);OUT=ROOT/'results/replay';OUT.mkdir(parents=True,exist_ok=True)
+ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'results/replay';OUT.mkdir(parents=True,exist_ok=True)
 start=time.monotonic()
-for file,args in [('stage1.py',[]),('training.py',['--indexed']),('publication.py',['--indexed']),('two_layer_he.py',[]),('he_private_decryption.py',['--columns','3','--two-layers'])]:
- with (OUT/(file+'.log')).open('w') as log:
-  subprocess.run([sys.executable,str(ROOT/'verification'/file)]+args,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
-read=lambda name:json.loads((ROOT/'results/continuation'/name).read_text())
-train=read('training-indexed.json');pub=read('publication-indexed.json');he=read('two-layer-he.json')
-assert pub['source_training_session']==train['session']
-result=dict(status='PASS_CLEAN_SOURCE_FRESH_MATERIAL_REPLAY',scope='Existing shared train/publish/infer and real HE arithmetic; legacy HE view privacy still blocked',sessions=[train['session'],pub['session']]+[x['session'] for x in he['runs']],model_ids=[x['model_id'] for x in pub['models']],legacy_he_key_sizes=[x['setup'].get('public_key_bytes') for x in he['runs']],losses=train['losses'],probability_error=pub['probability_error'],he_status=he['status'],wall_seconds=time.monotonic()-start)
-protected=json.loads((ROOT/'results/security-round/he-private-two-layer-boolean.json').read_text())
-result.update(protected_he_status=protected['status'],protected_he_key_ids=protected['key_ids'],protected_he_wire_bytes=protected['wire_bytes'],protected_he_rounds=protected['rounds'])
-result['sessions'].append(protected['session'])
-result['scope']='Shared train/publish/infer and protected real HE two-layer scores; legacy conversion diagnostic only'
+for file,args in [('stage1.py',[]),('trained_he_chain.py',['--faults'])]:
+ with (OUT/(file+'.log')).open('w') as log:subprocess.run([sys.executable,str(ROOT/'verification'/file)]+args,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
+chain=json.loads((ROOT/'results/trained-he/summary.json').read_text());train=json.loads((ROOT/'results/continuation/training-indexed.json').read_text());publication=json.loads((ROOT/'results/continuation/publication-indexed.json').read_text())
+assert chain['source_training_session']==train['session'] and chain['publication_session']==publication['session']
+result=dict(status='PASS_CLEAN_SOURCE_FRESH_MATERIAL_REPLAY',scope='Actual shared training -> persisted published shares -> protected real HE two-layer scores -> secret approximate probabilities; both activations and same-model MPC comparison',sessions=[train['session'],publication['session']]+[r['session'] for r in chain['runs']]+[r['session'] for r in chain['faults']],model_ids=[chain['model_id']],protected_he_key_ids=[r['key_ids'] for r in chain['runs'] if r['route']=='he'],losses=train['losses'],probability_error=publication['probability_error'],chain_status=chain['status'],wall_seconds=time.monotonic()-start)
+assert len(set(result['sessions']))==len(result['sessions'])
 (OUT/'summary.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
