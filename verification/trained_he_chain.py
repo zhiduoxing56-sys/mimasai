@@ -12,8 +12,9 @@ OUT=ROOT/'results/trained-he';OUT.mkdir(parents=True,exist_ok=True);MOD=1<<32
 flat=lambda rows:[v for row in rows for v in row]
 signed=lambda v:v if v<1<<31 else v-MOD
 
-def run(pub_report,route,activation,fault=None):
- d,sid,pub,setup,p,_,inputs=bundle(5);n=len(p);f=C['fraction_bits'];pf=C['probability_fraction_bits'];model=pub_report['models'][-1];ff,h,c=model['dimensions'];source=ROOT/'build/stage2'/pub_report['session'];trace=pub_report['reference'];bounds=C['range_policy']['operand_bound_exponents'];k=lambda name:f+bounds[name]+1
+def run(pub_report,route,activation,fault=None,*,bundle_factory=None,output_directory=OUT):
+ output_directory.mkdir(parents=True,exist_ok=True)
+ d,sid,pub,setup,p,_,inputs=(bundle_factory() if bundle_factory else bundle(5));n=len(p);f=C['fraction_bits'];pf=C['probability_fraction_bits'];model=pub_report['models'][-1];ff,h,c=model['dimensions'];source=ROOT/'build/stage2'/pub_report['session'];trace=pub_report['reference'];bounds=C['range_policy']['operand_bound_exponents'];k=lambda name:f+bounds[name]+1
  qs=native(['metadata',d/'S0'])['data_moduli'];pub['data_moduli']=qs
  os.link(d/'S0/parameters.seal',d/'parameters.seal');pub2=copy.deepcopy(pub);pub2.update(shape=[n,c],column_order=[f'class-{i}' for i in range(c)])
  for role in (0,1):
@@ -25,7 +26,7 @@ def run(pub_report,route,activation,fault=None):
   doc['public']=pub2;private_write(b/'he.json',doc)
  plan=[dict(type='matmul',dims=[n,ff,h],fraction=f,model=model,model_layer=0,bounds=[k('feature'),k('weight')],trace_raw=True)]
  def aggregate(public,width,slot,activation,offset):
-  common=dict(count=n*width,fraction=f,k=C['mpc']['activation_range_bits'],activation=activation,use_previous=True,previous_slice=[offset,n*width])
+  common=dict(count=n*width,fraction=f,k=pub_report.get('activation_bits',C['mpc']['activation_range_bits']),activation=activation,use_previous=True,previous_slice=[offset,n*width])
   return dict(common,model=model,model_layer=0 if slot=='he-layer0' else 1,type='he_aggregate',conversion='private_decryption',he=public,he_slot=slot,input_bound=k('state')) if route=='he' else dict(common,type='shared_aggregate',dims=[n,n,width],bounds=[k('propagation'),k('state')],trace_raw=True)
  plan+=[aggregate(pub,h,'he-layer0',activation,n*h),dict(type='matmul',dims=[n,h,c],fraction=f,model=model,model_layer=1,bounds=[k('state'),k('weight')],trace_raw=True,use_previous=True,previous_slice=[2*n*h,n*h]),aggregate(pub2,c,'he-layer1','none',n*c),dict(type='precision_up',count=n*c,source_fraction=f,fraction=pf,use_previous=True,previous_slice=[n*c,n*c]),dict(type='probability',count=n*c,dims=[n,c],fraction=pf,use_previous=True)]
  private_write(d/'public-plan.json',dict(session=sid,bits=32,plan=plan));start=time.perf_counter();dealer=subprocess.run([sys.executable,'-m','src.offline',str(d),str(d/'public-plan.json')],cwd=ROOT,capture_output=True,text=True,check=True);offline=json.loads(dealer.stdout);offline_seconds=time.perf_counter()-start
@@ -57,7 +58,7 @@ def run(pub_report,route,activation,fault=None):
   for role in (0,1):
    path=d/f'S{role}/preprocessing.json';doc=json.loads(path.read_text());doc['batch']=new_batch;path.write_text(json.dumps(doc))
   _,relabeled=launch(d,sid,32);assert all(m['error']=='RING_MATERIAL_REUSE' for m in relabeled)
-  result=dict(fault=fault,status='PASS_NO_OUTPUT_FAILURE_AND_BURN',session=sid,errors=[m['error'] for m in metrics],restart=[m['error'] for m in restart],servers=metrics,relabel_errors=[m['error'] for m in relabeled]);(OUT/f'fault-{fault}.json').write_text(json.dumps(result,indent=2)+'\n');return result
+  result=dict(fault=fault,status='PASS_NO_OUTPUT_FAILURE_AND_BURN',session=sid,errors=[m['error'] for m in metrics],restart=[m['error'] for m in restart],servers=metrics,relabel_errors=[m['error'] for m in relabeled]);(output_directory/f'fault-{fault}.json').write_text(json.dumps(result,indent=2)+'\n');return result
  assert all(m['success'] for m in metrics),metrics
  outs=[json.loads((d/f'S{role}/output-{attempt}.json').read_text())['shares'] for role in (0,1)];restored=[[(a+b)%MOD for a,b in zip(*parts)] for parts in zip(*outs)]
  # Expected linear raw values from independently recovered *published* model.
@@ -86,7 +87,7 @@ def run(pub_report,route,activation,fault=None):
   assert not any(t['type']=='he_masked_ciphertexts' for m in metrics for t in m['message_trace'])
  _,restart=launch(d,sid,32);assert all(m['error']=='BATCH_ALREADY_RESERVED' for m in restart)
  result=dict(status='PASS_ACTUAL_PUBLISHED_TRAINED_MODEL_SCORES_AND_SECRET_PROBABILITY',route=route,activation=activation,session=sid,source_training_session=pub_report['source_training_session'],publication_session=pub_report['session'],model=model,own_persisted_files_transferred_without_reconstruction=True,offline_completed_before_model_and_inputs_written=True,key_ids=pub['key_ids'] if route=='he' else [],servers=metrics,offline=offline,offline_seconds=offline_seconds,wall_seconds=wall,wire_bytes=sum(m['communication']['bytes_sent'] for m in metrics),rounds=metrics[0]['communication']['exchange_rounds'],he_setup=setup if route=='he' else None,he_oracle=audits,official_phase_checks=checks,restored_verifier_traces=restored,classification_equal=pub_report['classification_equal'],probability_error=pub_report['probability_error'],restart_errors=[m['error'] for m in restart])
- (OUT/f'{route}-{activation}.json').write_text(json.dumps(result,indent=2)+'\n');return result
+ (output_directory/f'{route}-{activation}.json').write_text(json.dumps(result,indent=2)+'\n');return result
 
 def main():
  parser=argparse.ArgumentParser();parser.add_argument('--reuse-current-publication',action='store_true');parser.add_argument('--faults',action='store_true');args=parser.parse_args()

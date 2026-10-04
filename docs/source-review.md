@@ -27,3 +27,5 @@
 本轮新增审阅入口：verification/trained_he_chain.py与scripts/run_trained_he.sh展示真实训练份额→发布→在线本地load的完整证据；src/mpc_worker.py的matmul/model_layer与shared_aggregate、src/mpc.py的资源规划；src/operators.py:negative_log、cross_entropy(loss_mode)、src/numerical.py:negative_log_reference、verification/extended_log.py。测试调度launch在超时后终止所有子进程，永久保留预留账本。每操作/子项RSS记录是进程至该时点累计highwater，不能称为该算子独立峰值。
 
 扩展对数旧失败初始化真实训练入口：verification/extended_failed_training.py；只从合成初始化构造训练输入，使用真实两进程共享协议，独立验证端恢复完整状态进行对照，不参与主链路模型替换。
+
+真实数据轮新增：`src/data.py:cora` 仅为拥有者导入；在线 worker 审计拒绝 data 与下载档案目录。`src/operators.py:check_dot_range` 在执行点积前验证秘密行L1界；`verification/range_budget.py` 覆盖安全接受、越界拒绝、持久重放及连续消费区间。`verification/real_data.py` 每轮把同角色上一检查点的权重份额送入新会话，验证恢复不作为模型输入。`verification/real_chain.py` 的 owner_bundle 直接编码本 Cora 传播矩阵，不调用合成 `fixture(16)`；`verification/trained_he_chain.py:run` 复用统一推理流程。模型文件只同角色复制。`scripts/run_real_data.sh` 是统一入口。数据、训练完整状态和原始档案仍不进审阅包。

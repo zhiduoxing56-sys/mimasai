@@ -16,7 +16,7 @@ def main():
     def audit(event,event_args):
         if event=='open' and isinstance(event_args[0],(str,bytes)):
             path=Path(os.fsdecode(event_args[0])).resolve()
-            require(not any(path.is_relative_to(ROOT/folder) for folder in ('verification/fixtures','results','参考资料')),'REFERENCE_DATA_VIEW_VIOLATION')
+            require(not any(path.is_relative_to(ROOT/folder) for folder in ('verification/fixtures','results','参考资料','data','deps/downloads')),'REFERENCE_DATA_VIEW_VIOLATION')
             runtime=Path(args.directory).resolve()
             if path.is_relative_to(runtime) and path.relative_to(runtime).parts[0] in ('S0','S1','V'):
                 require(path.is_relative_to(own.resolve()),'PRIVATE_VIEW_VIOLATION')
@@ -33,7 +33,7 @@ def main():
         require(peer==descriptor,'PUBLIC_SCHEDULE_MISMATCH')
         engine=Engine(role,args.bits,material,channel)
         for idx,op in enumerate(job['operations']):
-            engine.op=idx;engine.components=[];started=time.perf_counter();start=channel.metrics().copy();before=material.cursor.copy()
+            engine.op=idx;engine.range_strategy=op.get('range_strategy','dimension');engine.components=[];started=time.perf_counter();start=channel.metrics().copy();before=material.cursor.copy()
             x=outputs[-1] if op.get('use_previous',False) and outputs else op['x'];y=op.get('y',[])
             require(not op.get('use_previous',False) or bool(outputs),'MISSING_PREVIOUS_OUTPUT')
             if 'previous_slice' in op:
@@ -127,8 +127,8 @@ def main():
                 if kind=='shared_aggregate':
                     x,y=op['p'],x;require(all(type(v)==int and 0<=v<engine.mod for v in x),'PROPAGATION_RESIDUE')
                 if 'bounds' in op:
-                    r,k,c=op['dims'];kx,ky=op['bounds'];require(k*(1<<(kx-1))*(1<<(ky-1))<1<<(engine.bits-1),'PUBLIC_DOT_BOUND_UNSAFE')
-                    engine.check_range(x,kx);engine.check_range(y,ky)
+                    from .operators import check_dot_range
+                    check_dot_range(engine,x,y,op['dims'],*op['bounds'])
                 raw=engine.matrix(x,y,op['dims'],0);z=engine.truncate(raw,op.get('fraction',0)) if op.get('fraction',0) else raw
                 out=raw+z if op.get('trace_raw',False) else z
                 if kind=='shared_aggregate' and op.get('activation','none')!='none':

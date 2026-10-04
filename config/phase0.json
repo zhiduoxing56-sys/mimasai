@@ -108,5 +108,24 @@
       "score": 4
     }
   },
-  "probability_fraction_bits": 12
+  "probability_fraction_bits": 12,
+  "data_experiment": {
+    "dataset": "Cora original citation benchmark",
+    "url": "https://linqs-data.soe.ucsc.edu/public/lbc/cora.tgz",
+    "sha256": "0d4ed463d1627bb7f3e8420effe8f5545fd492ae8f88dab44ce86cee7b26d7e8",
+    "nodes": 16,
+    "labels": [
+      "Case_Based",
+      "Genetic_Algorithms",
+      "Neural_Networks",
+      "Probabilistic_Methods",
+      "Reinforcement_Learning",
+      "Rule_Learning",
+      "Theory"
+    ],
+    "split_salt": "privacy-gnn-cora-split-v1:",
+    "initialization_seed": 20261004,
+    "maximum_reference_iterations": 160,
+    "secure_iteration_budget": 96
+  }
 }

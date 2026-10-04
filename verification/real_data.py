@@ -1,0 +1,40 @@
+"""Public-data reference and independent-process shared training entry."""
+import argparse,copy,json,math,random,time,sys
+from pathlib import Path
+sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
+from src.data import cora
+from src.reference import config,Fixed,loss_grad,forward
+from src.numerical import training_reference,probability_reference
+from verification.stage2 import session,launch,ROOT
+flat=lambda a:[v for row in a for v in row]
+
+def accuracy(prob,labels,indices):return sum(max(range(len(prob[i])),key=lambda j:prob[i][j])==labels[i] for i in indices)/len(indices)
+def run(args):
+ directory=ROOT/('results/real-data' if args.nodes is None or args.nodes==16 else f'results/real-data-{args.nodes}');directory.mkdir(parents=True,exist_ok=True)
+ old_result=json.loads((directory/'reference.json').read_text()) if args.resume else None
+ c=config();data=cora(args.archive,args.download,node_count=args.nodes);n=len(data['features']);f=len(data['feature_columns']);h=c['model_reference']['hidden_width'];classes=len(data['label_names']);mask=[i in data['splits']['train'] for i in range(n)];rng=random.Random(c['data_experiment']['initialization_seed']);w=[[[rng.gauss(0,.2) for j in range(h)] for i in range(f)],[[rng.gauss(0,.2) for j in range(classes)] for i in range(h)]];cc=copy.deepcopy(c);cc['fraction_bits']=c['training_reference']['fraction_bits'];cc['training_reference']['loss_mode']='range_reduced';fx=Fixed(cc);p=fx.encode(data['propagation']);x=fx.encode(data['features']);fixedw=[fx.encode(v) for v in w];initialfixed=copy.deepcopy(fixedw);curves=[];audits=[];refs=[];t=time.perf_counter();best=(float('inf'),0)
+ for it in range(c['data_experiment']['maximum_reference_iterations']):
+  loss,grad,floattrace=loss_grad(data['propagation'],data['features'],w,data['labels'],mask);tr,neww,audit=training_reference(p,x,fixedw,data['labels'],mask,cc);prob=[tr['probabilities'][i*classes:(i+1)*classes] for i in range(n)];val=sum(-math.log(max(floattrace['probabilities'][i][data['labels'][i]],1e-300)) for i in data['splits']['validation'])/len(data['splits']['validation'])
+  if val<best[0]:best=(val,it)
+  curves.append(dict(iteration=it,float_loss=loss,fixed_loss=tr['loss'][0]/fx.scale,float_train_accuracy=accuracy(floattrace['probabilities'],data['labels'],data['splits']['train']),fixed_train_accuracy=accuracy(prob,data['labels'],data['splits']['train']),float_validation_loss=val,float_validation_accuracy=accuracy(floattrace['probabilities'],data['labels'],data['splits']['validation']),fixed_validation_accuracy=accuracy(prob,data['labels'],data['splits']['validation']),probability_max_error=max(abs(a/fx.scale-b) for aa,bb in zip(prob,floattrace['probabilities']) for a,b in zip(aa,bb))))
+  refs.append(tr);audits.extend(dict(iteration=it,**{k:v for k,v in a.items() if k!='raw_accumulators'}) for a in audit);fixedw=neww;w=[[[v-c['model_reference']['learning_rate']*g for v,g in zip(row,grow)] for row,grow in zip(ww,gg)] for ww,gg in zip(w,grad)]
+ # Test is assessed once, after the fixed, validation-independent iteration budget.
+ finalfloat=forward(data['propagation'],data['features'],w);tempfx=Fixed(cc);finalfixed=tempfx.forward(p,x,fixedw,'transform_then_aggregate');finalprob,_=probability_reference([[tempfx.signed(v) for v in row] for row in finalfixed['logits']],cc['fraction_bits']);result=dict(status='REFERENCE_PASS',data={k:v for k,v in data.items() if k not in ('features','propagation','labels','edges')},dimensions=[n,f,h,classes],reference_seconds=time.perf_counter()-t,curves=curves,range_audits=audits,validation_best_float_iteration=best[1],test_assessed_at_iteration=len(curves),float_test_accuracy=accuracy(finalfloat['probabilities'],data['labels'],data['splits']['test']),fixed_test_accuracy=accuracy(finalprob,data['labels'],data['splits']['test']),limits=['Induced Cora subgraph and seven labels; not full benchmark accuracy','Approximate standard p-y update; not derivative of approximate probability/loss','Owner-side public preprocessing; not private graph normalization'])
+ out=directory/'reference.json';out.write_text(json.dumps(old_result if old_result else result,indent=2)+'\n');print(json.dumps({k:result[k] for k in ('status','dimensions','reference_seconds','float_test_accuracy','fixed_test_accuracy')},indent=2),flush=True)
+ if not args.secure_steps:return
+ steps=args.secure_steps;assert 0<steps<=len(refs); labels=[[fx.scale if j==data['labels'][i] else 0 for j in range(classes)] for i in range(n)];previous=None;secure=[];paramcount=f*h+h*classes
+ if old_result:
+  assert old_result['dimensions']==[n,f,h,classes] and old_result['data']['archive_sha256']==data['archive_sha256'] and old_result['data']['node_order']==data['node_order']
+  secure=old_result['secure_training'];checkpoint=old_result['checkpoint'];prior=Path(checkpoint['directory']);previous=[json.loads((prior/f'S{role}/output-{checkpoint["attempt"]}.json').read_text())['shares'][0] for role in (0,1)];assert [(a+b)%(1<<32) for a,b in zip(*previous)]==[v for trace in refs[len(secure)-1].values() for v in trace]
+ for it in range(len(secure),steps):
+  op=dict(type='train_step',dims=[n,f,h,classes],fraction=cc['fraction_bits'],training_mask=mask,aggregation='dense',range_strategy='row_l1',loss_mode='range_reduced',x=flat(x),p=flat(p),labels=flat(labels),y=flat(initialfixed[0])+flat(initialfixed[1]) if it==0 else [0]*paramcount,expected=[])
+  d,s,dealer=session(32,[op]);
+  if previous:
+   for role in (0,1):
+    job=d/f'S{role}/input.json';body=json.loads(job.read_text());body['operations'][0]['y']=previous[role][-paramcount:];job.write_text(json.dumps(body)+'\n')
+  started=time.perf_counter();attempt,metrics=launch(d,s,32,timeout=300);assert all(m['success'] for m in metrics),metrics
+  assert all(m['preprocessing']['consumed']==dealer['generated'] for m in metrics)
+  previous=[json.loads((d/f'S{role}/output-{attempt}.json').read_text())['shares'][0] for role in (0,1)];actual=[(a+b)%(1<<32) for a,b in zip(*previous)];expected=[v for trace in refs[it].values() for v in trace];assert actual==expected,(it,'shared trace mismatch')
+  entry=dict(iteration=it,directory=str(d),session=s,attempt=attempt,seconds=time.perf_counter()-started,loss=refs[it]['loss'][0]/fx.scale,dealer=dealer,servers=[{k:v for k,v in m.items() if k!='message_trace'} for m in metrics],wire_bytes=sum(m['communication']['bytes_sent'] for m in metrics),rounds=metrics[0]['communication']['exchange_rounds']);secure.append(entry);result.update(status='SHARED_TRAINING_PASS',secure_training=secure,checkpoint=dict(directory=str(d),attempt=attempt,parameter_count=paramcount,iteration=it+1),secure_steps=it+1);out.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(dict(iteration=it+1,loss=entry['loss'],seconds=entry['seconds'],bytes=entry['wire_bytes'],rounds=entry['rounds'])),flush=True)
+if __name__=='__main__':
+ p=argparse.ArgumentParser();p.add_argument('--download',action='store_true');p.add_argument('--archive');p.add_argument('--secure-steps',type=int,default=0);p.add_argument('--resume',action='store_true');p.add_argument('--nodes',type=int,choices=(16,32,64));run(p.parse_args())

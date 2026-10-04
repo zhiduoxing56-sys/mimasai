@@ -73,10 +73,22 @@ def probability(e,scores,rows,classes,fraction,guard=True):
     result=divide_unsigned(e,numerator,den,2*fraction+1,fraction+classes.bit_length())
     return result
 
-def bounded_matrix(e,a,b,dims,fraction,kx,ky):
+def check_dot_range(e,a,b,dims,kx,ky):
+    """Secret pre-multiplication bound; no product or truncated output opened."""
     rows,inner,cols=dims
-    require(inner*(1<<(kx-1))*(1<<(ky-1))<(1<<(e.bits-1)),'PUBLIC_DOT_BOUND_UNSAFE')
-    e.check_range(a,kx);e.check_range(b,ky)
+    limit=1<<(e.bits-1);amax=1<<(kx-1);bmax=1<<(ky-1)
+    strategy=getattr(e,'range_strategy','dimension');require(strategy in ('dimension','row_l1'),'MATRIX_RANGE_STRATEGY')
+    if inner*amax*bmax>=limit:
+        require(strategy=='row_l1' and inner*amax<limit,'PUBLIC_DOT_BOUND_UNSAFE')
+        e.check_range(a,kx);e.check_range(b,ky)
+        negative=e.b2a([e.a2b(a)[-1]])[0]
+        absolute=e.sub(a,e.public_mul(e.multiply(a,negative),2))
+        sums=[sum(absolute[i*inner:(i+1)*inner])%e.mod for i in range(rows)]
+        cap=(limit-1)//bmax
+        assert_batch(e,compare_boolean(e,public(e,cap,rows),sums),'DOT_L1_BOUND_REJECTED')
+    else:e.check_range(a,kx);e.check_range(b,ky)
+def bounded_matrix(e,a,b,dims,fraction,kx,ky):
+    check_dot_range(e,a,b,dims,kx,ky)
     return e.matrix(a,b,dims,fraction)
 
 def gather(e,array,indices,rows,cols):
@@ -199,7 +211,7 @@ def convergence_step(e,previous,current,run,threshold,window,iteration,maximum):
     return next_run,stop
 
 def plan_operator(op,bits):
-    e=CostCounter(bits);kind=op['type'];n=op.get('count',0)
+    e=CostCounter(bits);e.range_strategy=op.get('range_strategy','dimension');kind=op['type'];n=op.get('count',0)
     if kind=='train_step':
         nodes,features,h,c=op['dims'];neighbors=dict(indices=[0]*(nodes*op['degree']),weights=[0]*(nodes*op['degree']),degree=op['degree']) if op.get('aggregation','dense')=='indexed' else None;train_step(e,[0]*(nodes*features),[0]*(nodes*nodes),[0]*(features*h+h*c),[0]*(nodes*c),op['dims'],op['fraction'],op['training_mask'],neighbors,op.get('loss_mode','quarter_taylor'))
     elif kind=='loss':cross_entropy(e,[0]*n,[0]*n,*op['dims'],op['fraction'],op['training_mask'],op.get('loss_mode','quarter_taylor'))

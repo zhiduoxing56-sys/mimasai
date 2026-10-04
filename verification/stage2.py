@@ -177,7 +177,7 @@ def negative_tests(completed):
     ch.exchange(0,'arithmetic_masks',[2,1],[0,0],span=['arithmetic',0,1])
     proc.kill();proc.communicate(timeout=10);sock.close()
     db=sqlite3.connect(ROOT/'state/mpc/S1-ledger.sqlite')
-    used=db.execute('SELECT count(*) FROM consumption WHERE batch=? AND kind=?',(prep['batch'],'arithmetic')).fetchone()[0]
+    used=db.execute('SELECT coalesce(sum(count),0) FROM consumption_spans WHERE batch=? AND kind=?',(prep['batch'],'arithmetic')).fetchone()[0]
     state=db.execute('SELECT state FROM batches WHERE batch=?',(prep['batch'],)).fetchone()[0];db.close()
     assert used==1 and state=='reserved_burn_on_abort'
     proc,sock,attempt=launch(directory,sid,32,peer=False);proc.communicate(timeout=10);sock.close()

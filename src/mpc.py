@@ -44,9 +44,13 @@ class Materials:
         ledger.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
         self.db=sqlite3.connect(ledger,timeout=5)
         os.chmod(ledger,0o600)
+        # Retain rollback journaling: system SQLite 3.45.1 lacks the WAL-reset fix.
+        # Mode conversion checkpoints committed state; never remove sidecars.
+        require(self.db.execute('PRAGMA journal_mode=DELETE').fetchone()[0]=='delete','LEDGER_DURABILITY_MODE')
         self.db.execute('PRAGMA synchronous=FULL')
         self.db.execute('CREATE TABLE IF NOT EXISTS batches (batch TEXT PRIMARY KEY, session TEXT, state TEXT)')
         self.db.execute('CREATE TABLE IF NOT EXISTS consumption (batch TEXT, kind TEXT, idx INTEGER, PRIMARY KEY(batch,kind,idx))')
+        self.db.execute('CREATE TABLE IF NOT EXISTS consumption_spans (batch TEXT, kind TEXT, start INTEGER, count INTEGER, PRIMARY KEY(batch,kind,start))')
         try:
             with self.db: self.db.execute('INSERT INTO batches VALUES (?,?,?)',(self.batch,session,'reserved_burn_on_abort'))
         except sqlite3.IntegrityError: raise ProtocolError('BATCH_ALREADY_RESERVED') from None
@@ -65,8 +69,8 @@ class Materials:
         values=self.data['materials'].get(kind,[])
         require(start+count<=len(values),'PREPROCESSING_EXHAUSTED')
         with self.db:
-            for idx in range(start,start+count):
-                self.db.execute('INSERT INTO consumption VALUES (?,?,?)',(self.batch,kind,idx))
+            if count:
+                self.db.execute('INSERT INTO consumption_spans VALUES (?,?,?,?)',(self.batch,kind,start,count))
             if kind=='he_mask':self.claim_he_ids(values[start:start+count],'local')
         self.cursor[kind]=start+count
         return values[start:start+count],[kind,start,count]
@@ -279,11 +283,11 @@ def costs(plan,bits):
         kind=op['type'];n=op.get('count',0)
         if kind=='matmul' and 'model' in op:
             from .operators import CostCounter,bounded_matrix
-            e=CostCounter(bits);r,k,c=op['dims'];bounded_matrix(e,[0]*(r*k),[0]*(k*c),op['dims'],op['fraction'],*op['bounds'])
+            e=CostCounter(bits);e.range_strategy=op.get('range_strategy','dimension');r,k,c=op['dims'];bounded_matrix(e,[0]*(r*k),[0]*(k*c),op['dims'],op['fraction'],*op['bounds'])
             for key in e.counts:counts[key]+=e.counts[key]
             continue
         if kind=='shared_aggregate':
-            r,k,c=op['dims'];sub=[dict(type='bounded_matmul',count=r*c,dims=op['dims'],fraction=op['fraction'],bounds=op['bounds'])]
+            r,k,c=op['dims'];sub=[dict(type='bounded_matmul',count=r*c,dims=op['dims'],fraction=op['fraction'],bounds=op['bounds'],range_strategy=op.get('range_strategy','dimension'))]
             if op.get('activation','none')!='none':sub.append(dict(type='fss_relu' if op['activation']=='fss' else 'checked_relu',count=r*c,k=op['k']))
             cc=costs(sub,bits)
             for key in cc:counts[key]+=cc[key]
@@ -310,7 +314,7 @@ def costs(plan,bits):
             continue
         if kind=='gcn_scores':
             from .operators import CostCounter,inference_scores
-            e=CostCounter(bits);nn,ff,hh,cc=op['dims'];inference_scores(e,[0]*(nn*ff),[0]*(nn*nn),[0]*(ff*hh+hh*cc),op['dims'],op['fraction'])
+            e=CostCounter(bits);e.range_strategy=op.get('range_strategy','dimension');nn,ff,hh,cc=op['dims'];inference_scores(e,[0]*(nn*ff),[0]*(nn*nn),[0]*(ff*hh+hh*cc),op['dims'],op['fraction'])
             for key in counts:counts[key]+=e.counts.get(key,0)
             continue
         if kind in ('train_step','convergence','loss'):
@@ -320,7 +324,7 @@ def costs(plan,bits):
             continue
         if kind in ('compare','divide','probability','gather','bounded_matmul'):
             from .operators import CostCounter,compare,divide_unsigned,probability,gather,bounded_matrix,assert_batch,compare_boolean,public
-            e=CostCounter(bits);x=[0]*n
+            e=CostCounter(bits);e.range_strategy=op.get('range_strategy','dimension');x=[0]*n
             if kind=='compare':compare(e,x,x)
             elif kind=='divide':
                 e.check_range(x,op['nbits']+1);e.check_range(x,op['dbits']+1);assert_batch(e,compare_boolean(e,x,public(e,1,n)),'DIVISOR_NOT_POSITIVE');assert_batch(e,compare_boolean(e,x,public(e,0,n)),'NUMERATOR_NEGATIVE');divide_unsigned(e,x,x,op['nbits'],op['dbits'])
