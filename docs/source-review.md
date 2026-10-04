@@ -25,3 +25,5 @@
 审阅未发现新增在线恢复或明文代算。服务器 Python 与原生子进程共用一个角色目录；本机同一 Unix 用户可绕过该约束，部署认证与用户隔离仍待实现。协议采用可信设置且离线方不观察在线消息，不能宣称主动安全。
 
 本轮新增审阅入口：verification/trained_he_chain.py与scripts/run_trained_he.sh展示真实训练份额→发布→在线本地load的完整证据；src/mpc_worker.py的matmul/model_layer与shared_aggregate、src/mpc.py的资源规划；src/operators.py:negative_log、cross_entropy(loss_mode)、src/numerical.py:negative_log_reference、verification/extended_log.py。测试调度launch在超时后终止所有子进程，永久保留预留账本。每操作/子项RSS记录是进程至该时点累计highwater，不能称为该算子独立峰值。
+
+扩展对数旧失败初始化真实训练入口：verification/extended_failed_training.py；只从合成初始化构造训练输入，使用真实两进程共享协议，独立验证端恢复完整状态进行对照，不参与主链路模型替换。

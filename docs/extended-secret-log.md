@@ -11,3 +11,5 @@ Taylor实数截尾≤(1/2)^9/(9*(1−1/2))，外加ln2、系数和逐次floor误
 训练入口 `python3 verification/training.py --indexed --extended-log` 运行真实共享前向、损失、梯度和更新，逐项对照选择同一loss_mode的定点参考。当前有效初始化的三轮loss与旧版恰好逐位相同，不证明所有初始化损失相同。60组网格用于秘密损失定义域覆盖，不等于60组完整训练成功；所有类别概率量化为0仍是训练阻塞，尤其类别数增大时。f12及已验证范围不能直接推广到更高精度。
 
 实际4096单位、60组初始化均通过。独立60位Decimal高精度对照的最大绝对误差0.0019039560401546793；旧3组低于1/4的拒绝均解除，零等非法输入仍拒绝。有效初始化的三轮真正共享更新逐项通过，详细结果results/extended-log/summary.json和results/continuation/training-extended-log.json。
+
+补充验证：verification/extended_failed_training.py对旧3个失败初始化各完成一次真实共享梯度更新，前向、损失、所有梯度和更新后参数逐位通过。60组全部损失通过与3组完整一步训练是不同验收范围；尚无60组多轮收敛试验。
