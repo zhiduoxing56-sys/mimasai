@@ -8,7 +8,8 @@ def call(module,*args):
     return json.loads(p.stdout)
 
 def main():
-    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--nodes',type=int,choices=(16,32,64));p.add_argument('--steps',type=int);p.add_argument('--checkpoint-report');p.add_argument('--validate',action='store_true');p.add_argument('--faults',action='store_true');a=p.parse_args();started=time.perf_counter();prepare=['prepare','--download']
+    p=argparse.ArgumentParser(description=__doc__);p.add_argument('--nodes',type=int,choices=(16,32,64));p.add_argument('--steps',type=int);p.add_argument('--sampling',choices=('fixed_bfs','uniform','multi_start','stratified_frontier'),default='fixed_bfs');p.add_argument('--seed',type=int);p.add_argument('--checkpoint-report');p.add_argument('--validate',action='store_true');p.add_argument('--faults',action='store_true');a=p.parse_args();started=time.perf_counter();prepare=['prepare','--download','--sampling',a.sampling]
+    if a.seed is not None:prepare+=['--seed',a.seed]
     if a.nodes is not None:prepare+=['--nodes',a.nodes]
     public=call('src.application',*prepare);eid=public['experiment_id'];print(json.dumps(public),flush=True)
     train=['train','--experiment',eid]

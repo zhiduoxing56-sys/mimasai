@@ -157,7 +157,7 @@ class CostCounter:
 
 def negative_log(e,q,fraction):
     """Secret range-reduced -ln(q/2^f), q in [1,2^f]; zero rejects."""
-    require(2<=fraction<=12,'LOG_PRECISION_DOMAIN');n=len(q);s=1<<fraction
+    require(2<=fraction<=14 and (1<<fraction)**2<1<<(e.bits-1),'LOG_PRECISION_DOMAIN');n=len(q);s=1<<fraction
     assert_batch(e,compare_boolean(e,q+public(e,s,n),public(e,1,n)+q),'LOG_POSITIVE_DOMAIN')
     bits=e.a2b(q);seen=[0]*n;leaders=[]
     for j in range(fraction,-1,-1):
@@ -208,9 +208,23 @@ def train_step(e,x,p,w,labels,dims,fraction,mask,neighbors=None,loss_mode="quart
     e.check_range(z0,bounds('state'));h=e.measured('train_relu',lambda:e.relu(z0))
     t1=e.measured('train_HW1',lambda:mat(h,b,[n,hidden,classes],'state','weight'))
     z1=e.measured('train_PT1',lambda:aggregate(t1,classes))
-    prob=e.measured('train_probability',lambda:probability(e,z1,n,classes,fraction))
-    loss=e.measured('train_loss',lambda:cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode))
-    d=e.sub(prob,labels);d=[v if mask[i//classes] else 0 for i,v in enumerate(d)];d=average_signed(e,d,count)
+    pf=settings()['training_reference'].get('probability_fraction_bits',fraction)
+    require(fraction<=pf and 2*pf+1<e.bits,'TRAIN_PROBABILITY_SCALE')
+    shift=pf-fraction
+    if shift:
+        e.check_range(z1,operand('score',fraction))
+        require(bit_width(operand('score',fraction))+shift<=e.bits,'TRAIN_SCORE_LIFT_BOUND')
+        # Validate labels before public lifting so an invalid source cannot alias.
+        wires=e.a2b(labels);units=e.b2a([wires[fraction]])[0]
+        checks=flatten([invert(e,row) for j,row in enumerate(wires) if j!=fraction])
+        sums=[sum(units[i*classes:(i+1)*classes])%e.mod for i in range(n)]
+        checks+=compare_boolean(e,sums+public(e,1,n),public(e,1,n)+sums)
+        assert_batch(e,checks,'LABEL_ONE_HOT_DOMAIN')
+    prob=e.measured('train_probability',lambda:probability(e,e.public_mul(z1,1<<shift),n,classes,pf))
+    loss_pf=e.measured('train_loss',lambda:cross_entropy(e,prob,e.public_mul(labels,1<<shift),n,classes,pf,mask,loss_mode))
+    loss=e.truncate(loss_pf,shift) if shift else loss_pf
+    gradient_prob=e.truncate(prob,shift) if shift else prob
+    d=e.sub(gradient_prob,labels);d=[v if mask[i//classes] else 0 for i,v in enumerate(d)];d=average_signed(e,d,count)
     pt=transpose(p,n,n) if neighbors is None else None;dt1=e.measured('train_dT1',lambda:aggregate(d,classes) if neighbors is not None else mat(pt,d,[n,n,classes],'propagation','error'))
     dw1=e.measured('train_dW1',lambda:mat(transpose(h,n,hidden),dt1,[hidden,n,classes],'state','backprop_state'))
     dh=e.measured('train_dH',lambda:mat(dt1,transpose(b,hidden,classes),[n,classes,hidden],'backprop_state','weight'))

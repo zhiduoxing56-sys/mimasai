@@ -36,7 +36,7 @@
   ],
   "model_reference": {
     "version": "gcn-reference-v1",
-    "hidden_width": 3,
+    "hidden_width": 6,
     "classes": 2,
     "bias": "public_fixed_zero",
     "activations": [
@@ -94,7 +94,8 @@
     "fraction_bits": 12,
     "iterations": 3,
     "convergence_threshold_units": 1,
-    "convergence_window": 3
+    "convergence_window": 3,
+    "probability_fraction_bits": 14
   },
   "range_policy": {
     "operand_bounds_real": {
@@ -125,10 +126,42 @@
     ],
     "split_salt": "privacy-gnn-cora-split-v1:",
     "initialization_seed": 20261004,
-    "maximum_reference_iterations": 160,
-    "secure_iteration_budget": 96,
+    "maximum_reference_iterations": 320,
+    "secure_iteration_budget": 160,
     "full_reference_train_nodes": 256,
     "full_reference_validation_nodes": 512,
-    "maximum_full_reference_iterations": 1000
+    "maximum_full_reference_iterations": 1000,
+    "representative": {
+      "seeds": [
+        20261005,
+        20261006,
+        20261007
+      ],
+      "strategies": [
+        "uniform",
+        "multi_start",
+        "stratified_frontier"
+      ],
+      "candidate_hidden_widths": [
+        3,
+        6
+      ],
+      "candidate_learning_rates": [
+        0.25,
+        0.5
+      ],
+      "reference_budget": 640,
+      "evaluation_checkpoints": [
+        0,
+        32,
+        64,
+        96,
+        160,
+        320,
+        640
+      ],
+      "selection": "Mean validation macro F1 across the three predefined seeds; ties prefer smaller width then earlier budget; test withheld until freeze",
+      "primary_seed": 20261005
+    }
   }
 }

@@ -2,8 +2,8 @@
 import argparse,hashlib,json,secrets,shutil,subprocess,sys,time
 from pathlib import Path
 ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'results/reproducibility';OUT.mkdir(parents=True,exist_ok=True)
-parser=argparse.ArgumentParser();mode=parser.add_mutually_exclusive_group();mode.add_argument('--real-data',action='store_true');mode.add_argument('--application',action='store_true');parser.add_argument('--nodes',type=int,choices=(16,32,64),default=16);parser.add_argument('--secure-steps',type=int,default=16);args=parser.parse_args()
-report_file=OUT/('application-clean-replay.json' if args.application else 'real-data-clean-replay.json' if args.real_data else 'clean-replay.json')
+parser=argparse.ArgumentParser();mode=parser.add_mutually_exclusive_group();mode.add_argument('--real-data',action='store_true');mode.add_argument('--application',action='store_true');parser.add_argument('--nodes',type=int,choices=(16,32,64),default=16);parser.add_argument('--secure-steps',type=int,default=16);parser.add_argument('--sampling',choices=('fixed_bfs','uniform','multi_start','stratified_frontier'),default='fixed_bfs');parser.add_argument('--sampling-seed',type=int,default=20261005);args=parser.parse_args()
+report_file=OUT/(('representative-clean-replay.json' if args.sampling!='fixed_bfs' else 'application-clean-replay.json') if args.application else 'real-data-clean-replay.json' if args.real_data else 'clean-replay.json')
 commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
 work=ROOT.parent/('privacy_gnn-replay-'+secrets.token_hex(6));started=time.monotonic()
 subprocess.run(['git','worktree','add','--detach',str(work),commit],cwd=ROOT,check=True)
@@ -22,7 +22,7 @@ if args.real_data or args.application:
  else:report['locked_public_data_archive_copied']=False
  report['requested_secure_training_steps']=args.secure_steps
 (work/'results').mkdir()
-for label,command in [('restore',[sys.executable,'scripts/unpack_deps.py']),('seal-build',['sh','scripts/build_he.sh']),('bridge-build',['sh','scripts/build_stage3.sh']),('replay',[sys.executable,'scripts/run_application.py','--nodes',str(args.nodes),'--steps',str(args.secure_steps),'--validate','--faults'] if args.application else [sys.executable,'verification/replay_real_data.py','--secure-steps',str(args.secure_steps)] if args.real_data else [sys.executable,'verification/replay_minimal.py'])]:
+for label,command in [('restore',[sys.executable,'scripts/unpack_deps.py']),('seal-build',['sh','scripts/build_he.sh']),('bridge-build',['sh','scripts/build_stage3.sh']),('replay',[sys.executable,'scripts/run_application.py','--nodes',str(args.nodes),'--steps',str(args.secure_steps),'--sampling',args.sampling,'--seed',str(args.sampling_seed),'--validate','--faults'] if args.application else [sys.executable,'verification/replay_real_data.py','--secure-steps',str(args.secure_steps)] if args.real_data else [sys.executable,'verification/replay_minimal.py'])]:
  try:
   with (OUT/(work.name+'-'+label+'.log' if args.application else label+'.log')).open('w') as log:subprocess.run(command,cwd=work,stdout=log,stderr=subprocess.STDOUT,check=True)
  except subprocess.CalledProcessError as error:

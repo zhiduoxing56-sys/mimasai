@@ -25,16 +25,17 @@ def multiply(a,b,cols,fx=None,audit=None,name='dot'):
  if audit is not None:audit.append(dict(operation=name,max_abs_product=maxproduct,max_abs_partial_sum=maxpartial))
  return out
 
-def step(p,x,w,labels,mask,fx=None,learning_rate=.5):
+def step(p,x,w,labels,mask,fx=None,learning_rate=.5,probability_fraction=None):
  n=len(x);features=len(w[0]);hidden=len(w[0][0]);classes=len(w[1][0]);s=fx.scale if fx else 1;count=sum(mask);audit=[];mm=lambda a,b,cols,name:multiply(a,b,cols,fx,audit,name)
  t0=mm(x,sparse(w[0]),hidden,'XW0');z0=mm(p,sparse(t0),hidden,'PT0');h=[[max(0,v) for v in row] for row in z0];t1=mm(sparse(h),sparse(w[1]),classes,'HW1');z1=mm(p,sparse(t1),classes,'PT1')
- if fx:prob,_=probability_reference(z1,fx.scale.bit_length()-1);loss=sum(negative_log_reference(prob[i][labels[i]],fx.scale.bit_length()-1) for i in range(n) if mask[i])//count
+ if fx:
+  pf=probability_fraction if probability_fraction is not None else fx.scale.bit_length()-1;shift=pf-(fx.scale.bit_length()-1);prob,_=probability_reference([[v*(1<<shift) for v in row] for row in z1],pf);loss=sum(negative_log_reference(prob[i][labels[i]],pf) for i in range(n) if mask[i])//count//(1<<shift)
  else:
   prob=[];loss=0
   for i,row in enumerate(z1):
    ex=[math.exp(v-max(row)) for v in row];prob.append([v/sum(ex) for v in ex])
    if mask[i]:loss+=(max(row)+math.log(sum(ex))-row[labels[i]])/count
- d=[[(prob[i][j]-(s if j==labels[i] else 0))//count if fx else (prob[i][j]-int(j==labels[i]))/count for j in range(classes)] if mask[i] else [0]*classes for i in range(n)]
+ d=[[(prob[i][j]//(1<<shift)-(s if j==labels[i] else 0))//count if fx else (prob[i][j]-int(j==labels[i]))/count for j in range(classes)] if mask[i] else [0]*classes for i in range(n)]
  dt1=mm(trans(p,n),sparse(d),classes,'dT1');dw1=mm(trans(sparse(h),hidden),sparse(dt1),classes,'dW1');dh=mm(sparse(dt1),trans(sparse(w[1]),classes),hidden,'dH');dz0=[[v if z>0 else 0 for v,z in zip(row,zrow)] for row,zrow in zip(dh,z0)];dt0=mm(trans(p,n),sparse(dz0),hidden,'dT0');dw0=mm(trans(x,features),sparse(dt0),hidden,'dW0')
  if fx:
   rate=round(learning_rate*s);nextw=[[[fx.checked(v-fx.checked(g*rate,'update product')//s,'update') for v,g in zip(row,grow)] for row,grow in zip(ww,gg)] for ww,gg in zip(w,[dw0,dw1])]

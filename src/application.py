@@ -29,7 +29,7 @@ def save(identifier,report):write(report_path(identifier),report)
 def command(args):
     c=settings()
     if args.command=='prepare':
-        started=time.perf_counter();data=cora(args.archive,args.download,node_count=args.nodes);eid=secrets.token_hex(16);root,out=paths(eid);out.mkdir(parents=True)
+        started=time.perf_counter();data=cora(args.archive,args.download,node_count=args.nodes,sampling=args.sampling,seed=args.seed);eid=secrets.token_hex(16);root,out=paths(eid);out.mkdir(parents=True)
         for name in ('S0','S1','V'):(root/name).mkdir(parents=True,mode=0o700)
         write(root/'V/data.json',data)
         fx=Fixed(c);p=flat(fx.encode(data['propagation']));x=flat(fx.encode(data['features']));mod=1<<c['ring_bits']
@@ -46,9 +46,9 @@ def command(args):
     if args.command in ('reference','train'):
         destination=out/'training';destination.mkdir(exist_ok=True)
         if args.command=='train' and args.checkpoint_report:
-            trained=read(args.checkpoint_report);require(trained['status'] in ('SHARED_TRAINING_PASS','SHARED_TRAINING_STOPPED') and trained['secure_steps']>0 and trained['checkpoint']['iteration']==len(trained['secure_training']) and all(m['success'] for m in trained['secure_training'][-1]['servers']) and trained['data']['node_order']==report['data']['node_order'] and trained['dimensions']==report['dimensions'],'ACTUAL_CHECKPOINT_REQUIRED');write(destination/'reference.json',trained)
+            trained=read(args.checkpoint_report);require(trained['status'] in ('SHARED_TRAINING_PASS','SHARED_TRAINING_STOPPED') and trained['secure_steps']>0 and trained['checkpoint']['iteration']==len(trained['secure_training']) and all(m['success'] for m in trained['secure_training'][-1]['servers']) and trained['data']['node_order']==report['data']['node_order'] and trained['dimensions']==report['dimensions'] and all(trained['data'][key]==report['data'][key] for key in ('archive_sha256','feature_columns','label_names','preprocessing')),'ACTUAL_CHECKPOINT_REQUIRED');write(destination/'reference.json',trained)
         else:
-            cmd=[sys.executable,'verification/real_data.py','--nodes',str(report['nodes']),'--output-directory',str(destination)]
+            cmd=[sys.executable,'verification/real_data.py','--nodes',str(report['nodes']),'--output-directory',str(destination),'--sampling',report['data'].get('sampling','fixed_bfs'),'--sampling-seed',str(report['data'].get('sampling_seed',c['data_experiment']['representative']['primary_seed']))]
             if args.command=='train':cmd+=['--secure-steps',str(args.steps)]
             if args.resume:cmd+=['--resume']
             with (out/f'{args.command}.log').open('w') as log:subprocess.run(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
@@ -131,7 +131,7 @@ def inference_plan(report,route,activation,targets):
 
 def main():
     p=argparse.ArgumentParser(description=__doc__);s=p.add_subparsers(dest='command',required=True)
-    a=s.add_parser('prepare');a.add_argument('--nodes',type=int,choices=(16,32,64),default=settings()['data_experiment']['nodes']);a.add_argument('--download',action='store_true');a.add_argument('--archive');a.add_argument('--target',action='append');a.add_argument('--receiver',default='local-authorized-recipient')
+    a=s.add_parser('prepare');a.add_argument('--nodes',type=int,choices=(16,32,64),default=settings()['data_experiment']['nodes']);a.add_argument('--download',action='store_true');a.add_argument('--archive');a.add_argument('--sampling',choices=('fixed_bfs','uniform','multi_start','stratified_frontier'),default='fixed_bfs');a.add_argument('--seed',type=int);a.add_argument('--target',action='append');a.add_argument('--receiver',default='local-authorized-recipient')
     for name in ('reference','train','publish','provision','request','offline','execute'):
         a=s.add_parser(name);a.add_argument('--experiment',required=True)
         if name in ('reference','train'):a.add_argument('--resume',action='store_true')
