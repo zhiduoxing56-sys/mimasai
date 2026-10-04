@@ -1,0 +1,112 @@
+{
+  "status": "stage1_approved_plaintext_reference_semantics",
+  "ring_bits": 32,
+  "fraction_bits": 7,
+  "polynomial_degree_reference": 16,
+  "he_degrees": [
+    4096,
+    8192,
+    32768
+  ],
+  "he_coefficient_bits": [
+    55,
+    55,
+    54,
+    54
+  ],
+  "security_bits": 128,
+  "rounding": "nearest_ties_even_on_encoding_floor_on_rescale",
+  "graph_reference": {
+    "nodes": 5,
+    "node_order": [
+      "n0",
+      "n1",
+      "n2",
+      "n3",
+      "isolated"
+    ],
+    "duplicate_policy": "sum_weights",
+    "self_loop_policy": "reject_input_then_add_unit_once"
+  },
+  "activation_reference_bits": [
+    3,
+    4,
+    5,
+    6
+  ],
+  "model_reference": {
+    "version": "gcn-reference-v1",
+    "hidden_width": 3,
+    "classes": 2,
+    "bias": "public_fixed_zero",
+    "activations": [
+      "relu",
+      "softmax_without_relu"
+    ],
+    "query": "full_graph_then_select",
+    "inference_order": "transform_then_aggregate",
+    "training_mask": [
+      true,
+      true,
+      true,
+      true,
+      false
+    ],
+    "learning_rate": 0.5,
+    "iterations": 160,
+    "gradient_epsilon": 1e-06,
+    "convergence": {
+      "threshold": 1e-06,
+      "window": 3,
+      "max_iterations": 160
+    }
+  },
+  "mpc": {
+    "timeout_seconds": 5,
+    "max_frame_bytes": 4194304,
+    "random_verification_samples": 128,
+    "small_exhaustive_bits": [
+      3,
+      4,
+      5,
+      6
+    ],
+    "activation_verification_sizes": [
+      1,
+      16,
+      128
+    ],
+    "activation_range_bits": 10
+  },
+  "he_execution_degree": 8192,
+  "he_verification_nodes": [
+    5,
+    16,
+    32
+  ],
+  "approximation": {
+    "exp_clip_real": 8,
+    "exp_halving_bits": 4,
+    "log_degree": 8,
+    "minimum_training_probability_real": 0.25
+  },
+  "training_reference": {
+    "fraction_bits": 12,
+    "iterations": 3,
+    "convergence_threshold_units": 1,
+    "convergence_window": 3
+  },
+  "range_policy": {
+    "operand_bound_exponents": {
+      "feature": 1,
+      "weight": 2,
+      "propagation": 1,
+      "state": 3,
+      "error": -1,
+      "backprop_state": 0,
+      "gradient": 7,
+      "score": 4
+    }
+  },
+  "probability_fraction_bits": 12
+}
