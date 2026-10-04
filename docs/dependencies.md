@@ -17,7 +17,7 @@
 
 网络获取初始失败原因为沙箱代理127.0.0.1:12334不可达；升级联网后成功。部分apt索引版本（libc6-dev 2.39-0ubuntu8.8、linux-libc-dev 6.8.0-139.139）404，改获取镜像仍有的基础版本，没有执行apt系统更新。libopenjp2首次502，重试成功。SEAF按main查询404，官方元数据确认默认master后成功。上述失败未计为获取成功的依赖。
 
-下载包在 deps/downloads，哈希和版本在 results/dependency-lock.json。`python3 scripts/unpack_deps.py` 只核对并从已有包恢复本地依赖；不会联网或安装系统包。重取Ubuntu包用 `apt-get download 包名=锁定版本`，在deps/downloads执行。镜像将来若移除版本，须报告获取失败，不静默更新。PDF中文提取编译脚本源码为 scripts/pdf_text.cpp，构造GlobalParams时显式指定deps/toolchain/usr/share/poppler；初始工具默认系统路径失败的日志保留，不依赖乱码文本下结论。
+下载包在 deps/downloads，哈希和版本在 config/dependencies.lock.json。`python3 scripts/unpack_deps.py` 只核对并从已有包恢复本地依赖；不会联网或安装系统包。重取Ubuntu包用 `apt-get download 包名=锁定版本`，在deps/downloads执行。镜像将来若移除版本，须报告获取失败，不静默更新。PDF中文提取编译脚本源码为 scripts/pdf_text.cpp，构造GlobalParams时显式指定deps/toolchain/usr/share/poppler；初始工具默认系统路径失败的日志保留，不依赖乱码文本下结论。
 
 ## 训练协议来源及复用结论
 
@@ -86,3 +86,5 @@ GitHub网页工具首次获取SEAL/ArcEDB指定页面返回cache miss，采用�
 ## 持续推进更新（2026-10-04）
 
 本轮无新增安装，仅Python3.12标准库和既有SEAL4.1.0。本轮补取SEAF固定提交的fp-math.cpp、fixed-point.cpp及作者Chapter5原文，只作依据未链接第三方内核；函数调用、位宽、常量、MIT许可与PDF403失败结果见continuation.md和results/continuation/acceptance.json sources。
+
+本轮将唯一依赖锁移到版本管理config/dependencies.lock.json。runtime离线恢复只校验并解包锁内44份deb/SEAL归档，缺少任一必需包会列名报错。可选论文、作者代码与PDF/Python分析依赖不属于最小运行恢复；未声称所有系统依赖可离线从源码重建。
