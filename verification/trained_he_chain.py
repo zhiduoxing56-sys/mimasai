@@ -14,7 +14,7 @@ signed=lambda v:v if v<1<<31 else v-MOD
 
 def run(pub_report,route,activation,fault=None,*,bundle_factory=None,output_directory=OUT):
  output_directory.mkdir(parents=True,exist_ok=True)
- d,sid,pub,setup,p,_,inputs=(bundle_factory() if bundle_factory else bundle(5));n=len(p);f=C['fraction_bits'];pf=C['probability_fraction_bits'];model=pub_report['models'][-1];ff,h,c=model['dimensions'];source=ROOT/'build/stage2'/pub_report['session'];trace=pub_report['reference'];bounds=C['range_policy']['operand_bound_exponents'];k=lambda name:f+bounds[name]+1
+ d,sid,pub,setup,p,_,inputs=(bundle_factory() if bundle_factory else bundle(5));n=len(p);f=C['fraction_bits'];pf=C['probability_fraction_bits'];model=pub_report['models'][-1];ff,h,c=model['dimensions'];source=Path(pub_report['directory']) if 'directory' in pub_report else ROOT/'build/stage2'/pub_report['session'];trace=pub_report['reference'];bounds=C['range_policy']['operand_bound_exponents'];k=lambda name:f+bounds[name]+1
  qs=native(['metadata',d/'S0'])['data_moduli'];pub['data_moduli']=qs
  os.link(d/'S0/parameters.seal',d/'parameters.seal');pub2=copy.deepcopy(pub);pub2.update(shape=[n,c],column_order=model['class_order'])
  for role in (0,1):
@@ -36,7 +36,7 @@ def run(pub_report,route,activation,fault=None,*,bundle_factory=None,output_dire
   # Only role-to-same-role persisted publication is transferred. No parameter
   # reconstruction or re-sharing; independently checked by this verifier.
   original=source/f'S{role}/model-{model["model_id"]}.json';target=own/original.name;shutil.copyfile(original,target);os.chmod(target,0o600);assert target.read_bytes()==original.read_bytes()
-  old=json.loads((source/f'S{role}/input.json').read_text())['operations'][2]
+  old=json.loads((Path(pub_report['input_share_directory'])/f'S{role}/input-shares.json').read_text()) if 'input_share_directory' in pub_report else json.loads((source/f'S{role}/input.json').read_text())['operations'][2]
   for op in jobs[role]:op['x']=[]
   jobs[role][0]['x']=old['x'] # same authorized input share, not fixture read online
   if route=='shared':

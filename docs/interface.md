@@ -122,3 +122,7 @@
 `negative_log`输入正f12概率共享，输出32/f12的范围归约近似负对数；loss/train_step可公开指定loss_mode=range_reduced。默认quarter_taylor保留既有已验收训练数值基线，扩展路径在独立入口验证，不静默更改主链路。不存在公开q/k或零概率钳位。协议见extended-secret-log.md。
 
 真实数据轮：正式共享模型结构升级为 additive-model-v2，新增唯一 feature_order/class_order 绑定；首层输入声明和输出列核对这些顺序。旧v1历史文件保留且明确拒绝，不建立兼容加载器。公共状态界扩至16（原因及点积前证明见real-data.md），全位宽环、f12训练/f7发布、逐点积末尾截断不变。
+
+## 授权目标交付
+
+查询job顶层delivery绑定model/targets/receiver_id/request_id；每方本地query-policy.json控制允许目标和接收者，握手公开计划同时包含delivery。末项deliver必须由同尺度、同形状probability输出，只取公开授权编号对应行。delivery模式output的shares仅一个最终向量，不落盘中间结果。外部authorized-probability-shares-v1含随机request/model标识、角色、公共targets/classes、ring_bits/fraction和目标份额；src.receiver仅恢复这两个文件。控制文件属于本机权限边界，不是认证协议。原诊断job没有delivery时仍可向独立验证端输出完整状态，不能用作查询交付。

@@ -10,7 +10,7 @@ from .mpc import VERSION, private_write, costs, require, fss_widths
 def generate(directory,session,bits,plan,limits=None):
     require(2<=bits<=32,'DEALER_BITS')
     for op in plan:
-        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus','model_layer','trace_raw','input_bound','loss_mode','range_strategy','input_feature_order']),'DEALER_NONPUBLIC_FIELDS')
+        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus','model_layer','trace_raw','input_bound','loss_mode','range_strategy','input_feature_order','divisor','targets','receiver_id']),'DEALER_NONPUBLIC_FIELDS')
     counts=costs(plan,bits)
     if limits: counts.update(limits)
     mod=1<<bits; batch=secrets.token_hex(16)

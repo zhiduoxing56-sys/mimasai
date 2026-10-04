@@ -40,7 +40,7 @@ def divide_unsigned(e,numerator,denominator,nbits,dbits):
     """Exact floor for positive denominator; caller establishes public bounds.
     Restoring binary division with prefix subtraction and Boolean selection.
     """
-    require(0<nbits<e.bits and 0<dbits<e.bits,'DIVISION_WIDTH');n=len(numerator);require(len(denominator)==n,'DIVISION_SHAPE')
+    require(0<nbits<=e.bits and 0<dbits<e.bits,'DIVISION_WIDTH');n=len(numerator);require(len(denominator)==n,'DIVISION_SHAPE')
     wires=e.a2b(numerator+denominator);num=[row[:n] for row in wires[:nbits]];den=[row[n:] for row in wires[:dbits]]+[[0]*n];width=dbits+1
     remainder=[[0]*n for _ in range(width)];quotient=[]
     for bit in reversed(num):
@@ -49,6 +49,21 @@ def divide_unsigned(e,numerator,denominator,nbits,dbits):
         selected=e.boolean_and(diff,ge*width);remainder=[[a^b for a,b in zip(remainder[j],selected[j*n:(j+1)*n])] for j in range(width)]
         quotient.append(ge)
     ar=e.b2a(list(reversed(quotient)));return [sum(ar[j][i]*(1<<j) for j in range(nbits))%e.mod for i in range(n)]
+
+def average_signed(e, values, count):
+    """Exact signed floor / public positive count, all signed ring values.
+    Powers of two keep the existing signed shift. For other counts use
+    |x| + (count-1)*sign, unsigned restoring division, then restore sign.
+    |MIN|=2^(bits-1) is a valid unsigned ring word, not a signed abs value.
+    """
+    require(type(count)==int and 0<count<(1<<(e.bits-1)), 'AVERAGE_COUNT')
+    if count & (count-1)==0:
+        return e.truncate(values,count.bit_length()-1) if count>1 else values[:]
+    negative=e.sign(values)
+    magnitude=e.sub(values,e.public_mul(e.multiply(values,negative),2))
+    numerator=e.add(magnitude,e.public_mul(negative,count-1))
+    quotient=divide_unsigned(e,numerator,public(e,count,len(values)),e.bits,count.bit_length())
+    return e.sub(quotient,e.public_mul(e.multiply(quotient,negative),2))
 
 def probability(e,scores,rows,classes,fraction,guard=True):
     """Independent bounded approximation, NOT SEAF/Bolt/IRON softmax kernel.
@@ -151,7 +166,7 @@ def negative_log(e,q,fraction):
     return loss
 
 def cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode="quarter_taylor"):
-    s=1<<fraction;count=sum(mask);require(count>0 and count&(count-1)==0,'TRAIN_POWER_TWO_MASK_COUNT');shift=count.bit_length()-1
+    s=1<<fraction;count=sum(mask);require(count>0,'TRAIN_EMPTY_MASK')
     require(len(prob)==len(labels)==n*classes and classes*s<1<<(e.bits-1),'LOSS_SHAPE')
     # Prove [0,S] probabilities and well-formed secret one-hot label words.
     valid=compare_boolean(e,prob+public(e,s,len(prob)),public(e,0,len(prob))+prob)
@@ -171,13 +186,14 @@ def cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode="quarter_taylo
         for j in range(1,settings()['approximation']['log_degree']+1):
             term=e.truncate(e.public_mul(power,s//j),fraction);loss_terms=e.add(loss_terms,term)
             if j<settings()['approximation']['log_degree']:power=e.truncate(e.multiply(power,v),fraction)
-    loss=[sum(loss_terms[i] for i,on in enumerate(mask) if on)%e.mod];loss=e.truncate(loss,shift) if shift else loss
+    require(count*(fraction*round(s*math.log(2))+s)<1<<(e.bits-1),'LOSS_ACCUMULATION_BOUND')
+    loss=[sum(loss_terms[i] for i,on in enumerate(mask) if on)%e.mod];loss=average_signed(e,loss,count)
     return loss
 
 def train_step(e,x,p,w,labels,dims,fraction,mask,neighbors=None,loss_mode="quarter_taylor"):
     n,features,hidden,classes=dims;s=1<<fraction;policy=settings()['range_policy']['operand_bound_exponents'];bounds=lambda name:fraction+policy[name]+1
     require(len(x)==n*features and (len(p)==n*n or neighbors is not None) and len(w)==features*hidden+hidden*classes and len(labels)==n*classes,'TRAIN_SHAPE');require(len(mask)==n and all(type(v)==bool for v in mask),'TRAIN_MASK')
-    count=sum(mask);require(count>0 and count&(count-1)==0,'TRAIN_POWER_TWO_MASK_COUNT');shift=count.bit_length()-1
+    count=sum(mask);require(count>0,'TRAIN_EMPTY_MASK')
     a=w[:features*hidden];b=w[features*hidden:]
     mat=lambda aa,bb,dd,ka,kb:bounded_matrix(e,aa,bb,dd,fraction,bounds(ka),bounds(kb))
     aggregate=lambda states,width: indexed_aggregate(e,states,neighbors['indices'],neighbors['weights'],n,width,neighbors['degree'],fraction) if neighbors is not None else mat(p,states,[n,n,width],'propagation','state')
@@ -188,13 +204,13 @@ def train_step(e,x,p,w,labels,dims,fraction,mask,neighbors=None,loss_mode="quart
     z1=e.measured('train_PT1',lambda:aggregate(t1,classes))
     prob=e.measured('train_probability',lambda:probability(e,z1,n,classes,fraction))
     loss=e.measured('train_loss',lambda:cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode))
-    d=e.sub(prob,labels);d=[v if mask[i//classes] else 0 for i,v in enumerate(d)];d=e.truncate(d,shift) if shift else d
+    d=e.sub(prob,labels);d=[v if mask[i//classes] else 0 for i,v in enumerate(d)];d=average_signed(e,d,count)
     pt=transpose(p,n,n) if neighbors is None else None;dt1=e.measured('train_dT1',lambda:aggregate(d,classes) if neighbors is not None else mat(pt,d,[n,n,classes],'propagation','error'))
     dw1=e.measured('train_dW1',lambda:mat(transpose(h,n,hidden),dt1,[hidden,n,classes],'state','backprop_state'))
     dh=e.measured('train_dH',lambda:mat(dt1,transpose(b,hidden,classes),[n,classes,hidden],'backprop_state','weight'))
-    e.check_range(dh,bounds('state'));positive=compare(e,z0,public(e,1,len(z0)));dz0=e.multiply(dh,positive)
-    dt0=e.measured('train_dT0',lambda:aggregate(dz0,hidden) if neighbors is not None else mat(pt,dz0,[n,n,hidden],'propagation','state'))
-    dw0=e.measured('train_dW0',lambda:mat(transpose(x,n,features),dt0,[features,n,hidden],'feature','state'))
+    e.check_range(dh,bounds('backprop_state'));positive=compare(e,z0,public(e,1,len(z0)));dz0=e.multiply(dh,positive)
+    dt0=e.measured('train_dT0',lambda:aggregate(dz0,hidden) if neighbors is not None else mat(pt,dz0,[n,n,hidden],'propagation','backprop_state'))
+    dw0=e.measured('train_dW0',lambda:mat(transpose(x,n,features),dt0,[features,n,hidden],'feature','backprop_state'))
     gradients=dw0+dw1;e.check_range(gradients,bounds('gradient'))
     rate=round(settings()['model_reference']['learning_rate']*s)
     require((1<<(bounds('gradient')-1))*abs(rate)<1<<(e.bits-1),'LEARNING_RATE_PRODUCT_BOUND')

@@ -27,6 +27,9 @@ def main():
         material=Materials(own/'preprocessing.json',role,args.session,args.bits)
         job=json.loads((own/'input.json').read_text())
         require(job['version']==VERSION and job['session']==args.session and job['role']==role and job['bits']==args.bits,'INPUT_BINDING')
+        if 'delivery' in job:
+            from .query import validate_delivery
+            validate_delivery(job,json.loads((own/'query-policy.json').read_text()))
         channel=Channel(socket.socket(fileno=args.fd),role,args.session,settings()['mpc'])
         descriptor=public_descriptor(job,material.batch)
         peer=channel.exchange(-1,'hello',[8],descriptor)
@@ -43,7 +46,13 @@ def main():
             if kind in ('add','sub','mul'):
                 require(len(x)==len(y)==op['count'],'INPUT_SHAPE')
             elif kind in ('truncate','public_mul','sign','relu','range','checked_relu','select','fss_relu'): require(len(x)==op['count'],'INPUT_SHAPE')
-            if kind=='negative_log':
+            if kind=='average':
+                from .operators import average_signed
+                require(len(x)==op['count'],'INPUT_SHAPE');out=average_signed(engine,x,op['divisor'])
+            elif kind=='deliver':
+                from .query import select_result
+                out=select_result(job,op,x,idx)
+            elif kind=='negative_log':
                 from .operators import negative_log
                 out=negative_log(engine,x,op['fraction'])
             elif kind=='bfv_round':
@@ -140,6 +149,10 @@ def main():
             after=channel.metrics()
             stages.append({'operation':idx,'type':kind,'bytes_sent':after['bytes_sent']-start['bytes_sent'],'rounds':after['exchange_rounds']-start['exchange_rounds'],'elapsed_seconds':time.perf_counter()-started,'components':engine.components,'process_highwater_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'children_highwater_rss_kib':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss,'consumed':{k:material.cursor[k]-before[k] for k in before}})
             active=None
+        if 'delivery' in job:
+            from .query import validate_delivery
+            validate_delivery(job)
+            outputs=[outputs[-1]]
         success=True
     except ProtocolError as e: code=e.code
     except (OSError,ValueError,KeyError,TypeError,IndexError): code='LOCAL_INVALID_OR_IO'
@@ -151,7 +164,10 @@ def main():
         if channel: channel.sock.close()
     metric={'pid':os.getpid(),'role':role,'session':args.session,'success':success,'error':code,'communication':channel.metrics() if channel else None,'preprocessing':material.metrics() if material else None,'operations':stages,'message_trace':channel.trace if channel else [],'loaded_private_files':private_reads,'peak_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}
     private_write(own/('metrics-'+args.attempt+'.json'),metric)
-    if success: private_write(own/('output-'+args.attempt+'.json'),dict(version=VERSION,session=args.session,role=role,shares=outputs))
+    if success:
+        result=dict(version=VERSION,session=args.session,role=role,shares=outputs)
+        if 'delivery' in job:result['delivery']=job['delivery']
+        private_write(own/('output-'+args.attempt+'.json'),result)
     print(json.dumps({'role':role,'success':success,'error':code}))
     return 0 if success else 2
 if __name__=='__main__': raise SystemExit(main())

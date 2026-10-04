@@ -152,7 +152,7 @@ class Channel:
 
 def public_descriptor(job,batch):
     plan=[{k:v for k,v in op.items() if k not in ('x','y','p','labels','indices','edge_weights','q_share')} for op in job['operations']]
-    encoded=json.dumps(dict(version=VERSION,bits=job['bits'],batch=batch,plan=plan),sort_keys=True,separators=(',',':')).encode()
+    encoded=json.dumps(dict(version=VERSION,bits=job['bits'],batch=batch,plan=plan,delivery=job.get('delivery')),sort_keys=True,separators=(',',':')).encode()
     # Hash of public schedule only, never of secret values/parameters.
     return list(struct.unpack('<8I',hashlib.sha256(encoded).digest()))
 
@@ -292,6 +292,12 @@ def costs(plan,bits):
             cc=costs(sub,bits)
             for key in cc:counts[key]+=cc[key]
             continue
+        if kind=='average':
+            from .operators import CostCounter,average_signed
+            e=CostCounter(bits);average_signed(e,[0]*n,op['divisor'])
+            for key in e.counts:counts[key]+=e.counts[key]
+            continue
+        if kind=='deliver':continue
         if kind=='negative_log':
             from .operators import CostCounter,negative_log
             e=CostCounter(bits);negative_log(e,[0]*n,op['fraction'])
