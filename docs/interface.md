@@ -120,3 +120,5 @@
 `matmul`新增公开model/model_layer：在线从本方发布模型文件取该层参数，输入不得提供替代权重；验证维度、f7、模型绑定。trace_raw仅用于测试输出自身原始点积份额及截断份额。shared_aggregate作为同模型对照返回raw+z(+hidden)，he_aggregate/private_decryption返回同形状。两层最后输出直接precision_up与probability，保持零偏置与输出层无ReLU。准确运行及数据流见trained-he-chain.md。
 
 `negative_log`输入正f12概率共享，输出32/f12的范围归约近似负对数；loss/train_step可公开指定loss_mode=range_reduced。默认quarter_taylor保留既有已验收训练数值基线，扩展路径在独立入口验证，不静默更改主链路。不存在公开q/k或零概率钳位。协议见extended-secret-log.md。
+
+真实数据轮：正式共享模型结构升级为 additive-model-v2，新增唯一 feature_order/class_order 绑定；首层输入声明和输出列核对这些顺序。旧v1历史文件保留且明确拒绝，不建立兼容加载器。公共状态界扩至16（原因及点积前证明见real-data.md），全位宽环、f12训练/f7发布、逐点积末尾截断不变。

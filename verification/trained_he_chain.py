@@ -16,7 +16,7 @@ def run(pub_report,route,activation,fault=None,*,bundle_factory=None,output_dire
  output_directory.mkdir(parents=True,exist_ok=True)
  d,sid,pub,setup,p,_,inputs=(bundle_factory() if bundle_factory else bundle(5));n=len(p);f=C['fraction_bits'];pf=C['probability_fraction_bits'];model=pub_report['models'][-1];ff,h,c=model['dimensions'];source=ROOT/'build/stage2'/pub_report['session'];trace=pub_report['reference'];bounds=C['range_policy']['operand_bound_exponents'];k=lambda name:f+bounds[name]+1
  qs=native(['metadata',d/'S0'])['data_moduli'];pub['data_moduli']=qs
- os.link(d/'S0/parameters.seal',d/'parameters.seal');pub2=copy.deepcopy(pub);pub2.update(shape=[n,c],column_order=[f'class-{i}' for i in range(c)])
+ os.link(d/'S0/parameters.seal',d/'parameters.seal');pub2=copy.deepcopy(pub);pub2.update(shape=[n,c],column_order=model['class_order'])
  for role in (0,1):
   own=d/f'S{role}';a=own/'he-layer0';a.mkdir(mode=0o700)
   for name in ['parameters.seal','eval.pk','eval.gk','peer.sk','rows','he.json']:(own/name).rename(a/name)
@@ -24,7 +24,7 @@ def run(pub_report,route,activation,fault=None,*,bundle_factory=None,output_dire
   b=own/'he-layer1';b.mkdir(mode=0o700);(b/'rows').mkdir(mode=0o700)
   for name in ['parameters.seal','eval.pk','eval.gk','peer.sk']+[f'rows/{i}.ct' for i in range(n)]:os.link(a/name,b/name)
   doc['public']=pub2;private_write(b/'he.json',doc)
- plan=[dict(type='matmul',dims=[n,ff,h],fraction=f,model=model,model_layer=0,bounds=[k('feature'),k('weight')],trace_raw=True)]
+ plan=[dict(type='matmul',input_feature_order=model['feature_order'],dims=[n,ff,h],fraction=f,model=model,model_layer=0,bounds=[k('feature'),k('weight')],trace_raw=True)]
  def aggregate(public,width,slot,activation,offset):
   common=dict(count=n*width,fraction=f,k=pub_report.get('activation_bits',C['mpc']['activation_range_bits']),activation=activation,use_previous=True,previous_slice=[offset,n*width])
   return dict(common,model=model,model_layer=0 if slot=='he-layer0' else 1,type='he_aggregate',conversion='private_decryption',he=public,he_slot=slot,input_bound=k('state')) if route=='he' else dict(common,type='shared_aggregate',dims=[n,n,width],bounds=[k('propagation'),k('state')],trace_raw=True)
@@ -42,7 +42,13 @@ def run(pub_report,route,activation,fault=None,*,bundle_factory=None,output_dire
   if route=='shared':
    for index in (1,3):jobs[role][index]['p']=old['p']
   private_write(d/f'S{role}/input.json',dict(version=VERSION,session=sid,role=role,bits=32,operations=jobs[role]))
- if fault=='checkpoint':
+ if fault=='feature_order':
+  for role in (0,1):
+   path=d/f'S{role}/input.json';doc=json.loads(path.read_text());doc['operations'][0]['input_feature_order']=list(reversed(doc['operations'][0]['input_feature_order']));path.write_text(json.dumps(doc))
+ elif fault=='column_order':
+  for role in (0,1):
+   path=d/f'S{role}/input.json';doc=json.loads(path.read_text());doc['operations'][3]['he']['column_order']=list(reversed(doc['operations'][3]['he']['column_order']));path.write_text(json.dumps(doc))
+ elif fault=='checkpoint':
   path=d/f'S0/model-{model["model_id"]}.json';doc=json.loads(path.read_text());doc['binding']['model_id']=secrets.token_hex(16);path.write_text(json.dumps(doc))
  elif fault in ('scale','parameter'):
   path=d/'S0/he-layer0/he.json';doc=json.loads(path.read_text());key='input_scale' if fault=='scale' else 'parameters_id';doc['public'][key]=doc['public'][key]*2 if fault=='scale' else secrets.token_hex(32);path.write_text(json.dumps(doc))

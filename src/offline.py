@@ -1,6 +1,7 @@
 """Trusted offline dealer: accepts only public dimensions and random session ID."""
 import argparse
 import json
+import resource
 import secrets
 import time
 from pathlib import Path
@@ -9,7 +10,7 @@ from .mpc import VERSION, private_write, costs, require, fss_widths
 def generate(directory,session,bits,plan,limits=None):
     require(2<=bits<=32,'DEALER_BITS')
     for op in plan:
-        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus','model_layer','trace_raw','input_bound','loss_mode','range_strategy']),'DEALER_NONPUBLIC_FIELDS')
+        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus','model_layer','trace_raw','input_bound','loss_mode','range_strategy','input_feature_order']),'DEALER_NONPUBLIC_FIELDS')
     counts=costs(plan,bits)
     if limits: counts.update(limits)
     mod=1<<bits; batch=secrets.token_hex(16)
@@ -50,7 +51,7 @@ def generate(directory,session,bits,plan,limits=None):
                 views[0][kind].append([rb,ra]); views[1][kind].append([r^rb,(r-ra)%mod])
     for role in range(2):
         private_write(Path(directory)/('S'+str(role))/'preprocessing.json',dict(version=VERSION,session=session,batch=batch,role=role,bits=bits,materials=views[role]))
-    return {'session':session,'batch':batch,'bits':bits,'generated':counts,'online_inputs_accessed':False,'fss_keygen_seconds':fss_seconds}
+    return {'session':session,'batch':batch,'bits':bits,'generated':counts,'online_inputs_accessed':False,'fss_keygen_seconds':fss_seconds,'peak_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'children_highwater_rss_kib':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss}
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('directory');p.add_argument('plan');args=p.parse_args()

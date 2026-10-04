@@ -101,7 +101,7 @@
       "feature": 1,
       "weight": 2,
       "propagation": 1,
-      "state": 3,
+      "state": 4,
       "error": -1,
       "backprop_state": 0,
       "gradient": 7,
@@ -126,6 +126,9 @@
     "split_salt": "privacy-gnn-cora-split-v1:",
     "initialization_seed": 20261004,
     "maximum_reference_iterations": 160,
-    "secure_iteration_budget": 96
+    "secure_iteration_budget": 96,
+    "full_reference_train_nodes": 256,
+    "full_reference_validation_nodes": 512,
+    "maximum_full_reference_iterations": 1000
   }
 }

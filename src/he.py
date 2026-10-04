@@ -28,10 +28,14 @@ def aggregate(engine,own,op,x):
     started=time.perf_counter();own=Path(own);manifest=json.loads((own/'he.json').read_text());public=op['he'];n,c=public['shape'];degree=public['degree']
     if 'model' in op:
         model=op['model'];layer=op['model_layer'];features,hidden,classes=model['dimensions']
-        require(layer in (0,1) and model['node_order']==public['node_order'] and model['fraction_bits']==op['fraction'] and c==(hidden if layer==0 else classes),'HE_MODEL_BINDING')
+        require(layer in (0,1) and model['node_order']==public['node_order'] and model['fraction_bits']==op['fraction'] and c==(hidden if layer==0 else classes) and public['column_order']==([f'hidden-{j}' for j in range(hidden)] if layer==0 else model['class_order']),'HE_MODEL_BINDING')
     require(engine.bits==32 and len(x)==n*c and op['count']==n*c,'HE_INPUT_SHAPE')
     require(manifest['public']==public and manifest['role']==engine.role,'HE_INTERFACE_BINDING')
     require(len(public['node_order'])==n and len(set(public['node_order']))==n and len(public['column_order'])==c and len(set(public['column_order']))==c,'HE_ORDER_BINDING')
+    if 'input_bound' in op:
+        # Valid normalized nonnegative P has coefficients in [0,input_scale].
+        # This input-preparation contract is not a proof about encrypted P.
+        require(1<=op['input_bound']<=engine.bits and n*public['input_scale']*(1<<(op['input_bound']-1))<1<<(engine.bits-1),'HE_PUBLIC_DOT_BOUND_UNSAFE')
     require(public['ring_bits']==engine.bits and public['input_scale']==1<<op['fraction'] and public['output_scale']==1<<(2*op['fraction']),'HE_SCALE_BINDING')
     require(not (own/'self.sk').exists(),'HE_FORBIDDEN_SAME_KEY_SECRET')
     # Local bundle integrity. Secret-key checksum stays private, never in messages/logs.

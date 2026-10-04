@@ -62,6 +62,7 @@ def main():
                 from .operators import inference_scores
                 from .model import load
                 require(op['dims'][0]==len(op['model']['node_order']) and op['dims'][1:]==op['model']['dimensions'] and op['fraction']==op['model']['fraction_bits'],'INFERENCE_MODEL_BINDING')
+                require(op.get('input_feature_order')==op['model']['feature_order'],'MODEL_INPUT_FEATURE_ORDER')
                 weights=load(role,own/('model-'+op['model']['model_id']+'.json'),op['model'])
                 trace=inference_scores(engine,x,op['p'],weights,op['dims'],op['fraction']);out=[v for row in trace.values() for v in row]
             elif kind=='train_step':
@@ -122,6 +123,7 @@ def main():
                     from .model import load
                     model=op['model'];layer=op['model_layer'];ff,hh,cc=model['dimensions']
                     require(layer in (0,1) and op['dims']==[len(model['node_order']),ff if layer==0 else hh,hh if layer==0 else cc] and op['fraction']==model['fraction_bits'],'INFERENCE_MODEL_BINDING')
+                    if layer==0:require(op.get('input_feature_order')==model['feature_order'],'MODEL_INPUT_FEATURE_ORDER')
                     weights=load(role,own/('model-'+model['model_id']+'.json'),model)
                     y=weights[:ff*hh] if layer==0 else weights[ff*hh:]
                 if kind=='shared_aggregate':

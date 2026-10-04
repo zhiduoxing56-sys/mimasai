@@ -13,3 +13,5 @@ results/reproducibility/clean-replay.json 记录实际提交、目录、会话�
 本轮完整链复跑更新：a39df6238ed9890a0edc1ba9aa384803bb03abc0，178.959秒，包含真实训练检查点接入保护HE及秘密概率，详见trained-he-acceptance.md。早期缺少结果目录的失败未删除账本；修复后新检出复跑通过。
 
 真实数据入口 `sh scripts/run_real_data.sh` 默认按公共配置运行96轮共享训练。`python3 scripts/replay_clean.py --real-data --secure-steps 16` 在全新detached检出恢复44个锁定构建档案和锁定的公开Cora档案，然后复跑160轮浮点/定点参考、16轮真实共享训练、持续发布、布尔/FSS、MPC/HE逐位对照和故障检查。16轮是结构最小复跑预算，不能称为96轮效果实验的完整重复；默认完整入口可复现96轮。没有拷贝任何历史份额、密钥、掩码、银行或消费账本，新检出账本永久保留。原Cora无明确再分发许可，档案只本地用于已授权验证，不打进交付审阅包。源版本、实际会话、轮数与成本记录在 results/reproducibility/real-data-clean-replay.json。
+
+统一入口现在还运行完整2708节点/1000轮浮点参考及定点失败诊断；完整图定点阻塞不阻断16节点真实共享闭环。新干净检出同时执行该独立参考，分别报告效果与安全计算覆盖范围。

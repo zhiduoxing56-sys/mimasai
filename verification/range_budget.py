@@ -8,7 +8,7 @@ from verification.stage2 import session,launch,verify,ROOT
 def main():
  cc=config();cc['fraction_bits']=12;fx=Fixed(cc);n=16
  # Old 16 * 8192 * 32768 >= 2^31, actual sparse row has L1=4096.
- a=[[4096 if i==j else 0 for j in range(n)] for i in range(2)];b=[[(-1 if j%2 else 1)*(20000+j)] for j in range(n)];expected=fx.mul(a,[[v%fx.mod for v in row] for row in b],'budget dot');op=dict(type='bounded_matmul',count=2,dims=[2,n,1],fraction=12,bounds=[14,16],range_strategy='row_l1',x=[v for row in a for v in row],y=[v%fx.mod for row in b for v in row],expected=[v for row in expected for v in row]);positive,completed=verify(32,[op],'row_l1_accept_dimension_reject')
+ a=[[4096 if i==j else 0 for j in range(n)] for i in range(2)];b=[[(-1 if j%2 else 1)*(20000+j)] for j in range(n)];expected=fx.mul(a,[[v%fx.mod for v in row] for row in b],'budget dot');op=dict(type='bounded_matmul',count=2,dims=[2,n,1],fraction=12,bounds=[14,16],range_strategy='row_l1',x=[v for row in a for v in row],y=[v%fx.mod for row in b for v in row],expected=[v for row in expected for v in row]);extended=dict(op,bounds=[14,17],y=[35000+j for j in range(n)],expected=[35000,35001]);positive,completed=verify(32,[op,extended],'row_l1_accept_dimension_reject')
  d,s,bits=completed;_,restart=launch(d,s,bits);assert all(m['error']=='BATCH_ALREADY_RESERVED' for m in restart)
  # Individual operands fit their declared intervals; row absolute sum exceeds
  # conservative cap even though a cancelling column might happen to be safe.

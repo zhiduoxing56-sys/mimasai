@@ -32,7 +32,10 @@ def run(args):
   if previous:
    for role in (0,1):
     job=d/f'S{role}/input.json';body=json.loads(job.read_text());body['operations'][0]['y']=previous[role][-paramcount:];job.write_text(json.dumps(body)+'\n')
-  started=time.perf_counter();attempt,metrics=launch(d,s,32,timeout=300);assert all(m['success'] for m in metrics),metrics
+  started=time.perf_counter();attempt,metrics=launch(d,s,32,timeout=300);
+  if not all(m['success'] for m in metrics):
+   result.update(status='SHARED_TRAINING_STOPPED',secure_training=secure,secure_steps=len(secure),checkpoint=old_result['checkpoint'] if not secure else dict(directory=secure[-1]['directory'],attempt=secure[-1]['attempt'],parameter_count=paramcount,iteration=len(secure)),training_failure=dict(iteration=it+1,directory=str(d),session=s,attempt=attempt,dealer=dealer,servers=[{k:v for k,v in m.items() if k!='message_trace'} for m in metrics]))
+   out.write_text(json.dumps(result,indent=2)+'\n');raise RuntimeError('Training failed: '+','.join(str(m['error']) for m in metrics))
   assert all(m['preprocessing']['consumed']==dealer['generated'] for m in metrics)
   previous=[json.loads((d/f'S{role}/output-{attempt}.json').read_text())['shares'][0] for role in (0,1)];actual=[(a+b)%(1<<32) for a,b in zip(*previous)];expected=[v for trace in refs[it].values() for v in trace];assert actual==expected,(it,'shared trace mismatch')
   entry=dict(iteration=it,directory=str(d),session=s,attempt=attempt,seconds=time.perf_counter()-started,loss=refs[it]['loss'][0]/fx.scale,dealer=dealer,servers=[{k:v for k,v in m.items() if k!='message_trace'} for m in metrics],wire_bytes=sum(m['communication']['bytes_sent'] for m in metrics),rounds=metrics[0]['communication']['exchange_rounds']);secure.append(entry);result.update(status='SHARED_TRAINING_PASS',secure_training=secure,checkpoint=dict(directory=str(d),attempt=attempt,parameter_count=paramcount,iteration=it+1),secure_steps=it+1);out.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(dict(iteration=it+1,loss=entry['loss'],seconds=entry['seconds'],bytes=entry['wire_bytes'],rounds=entry['rounds'])),flush=True)
