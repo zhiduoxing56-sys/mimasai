@@ -124,7 +124,8 @@ def main():
                     require(layer in (0,1) and op['dims']==[len(model['node_order']),ff if layer==0 else hh,hh if layer==0 else cc] and op['fraction']==model['fraction_bits'],'INFERENCE_MODEL_BINDING')
                     weights=load(role,own/('model-'+model['model_id']+'.json'),model)
                     y=weights[:ff*hh] if layer==0 else weights[ff*hh:]
-                if kind=='shared_aggregate':x,y=op['p'],x
+                if kind=='shared_aggregate':
+                    x,y=op['p'],x;require(all(type(v)==int and 0<=v<engine.mod for v in x),'PROPAGATION_RESIDUE')
                 if 'bounds' in op:
                     r,k,c=op['dims'];kx,ky=op['bounds'];require(k*(1<<(kx-1))*(1<<(ky-1))<1<<(engine.bits-1),'PUBLIC_DOT_BOUND_UNSAFE')
                     engine.check_range(x,kx);engine.check_range(y,ky)

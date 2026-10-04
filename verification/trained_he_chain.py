@@ -26,7 +26,7 @@ def run(pub_report,route,activation,fault=None):
  plan=[dict(type='matmul',dims=[n,ff,h],fraction=f,model=model,model_layer=0,bounds=[k('feature'),k('weight')],trace_raw=True)]
  def aggregate(public,width,slot,activation,offset):
   common=dict(count=n*width,fraction=f,k=C['mpc']['activation_range_bits'],activation=activation,use_previous=True,previous_slice=[offset,n*width])
-  return dict(common,type='he_aggregate',conversion='private_decryption',he=public,he_slot=slot,input_bound=k('state')) if route=='he' else dict(common,type='shared_aggregate',dims=[n,n,width],bounds=[k('propagation'),k('state')],trace_raw=True)
+  return dict(common,model=model,model_layer=0 if slot=='he-layer0' else 1,type='he_aggregate',conversion='private_decryption',he=public,he_slot=slot,input_bound=k('state')) if route=='he' else dict(common,type='shared_aggregate',dims=[n,n,width],bounds=[k('propagation'),k('state')],trace_raw=True)
  plan+=[aggregate(pub,h,'he-layer0',activation,n*h),dict(type='matmul',dims=[n,h,c],fraction=f,model=model,model_layer=1,bounds=[k('state'),k('weight')],trace_raw=True,use_previous=True,previous_slice=[2*n*h,n*h]),aggregate(pub2,c,'he-layer1','none',n*c),dict(type='precision_up',count=n*c,source_fraction=f,fraction=pf,use_previous=True,previous_slice=[n*c,n*c]),dict(type='probability',count=n*c,dims=[n,c],fraction=pf,use_previous=True)]
  private_write(d/'public-plan.json',dict(session=sid,bits=32,plan=plan));start=time.perf_counter();dealer=subprocess.run([sys.executable,'-m','src.offline',str(d),str(d/'public-plan.json')],cwd=ROOT,capture_output=True,text=True,check=True);offline=json.loads(dealer.stdout);offline_seconds=time.perf_counter()-start
  jobs=[copy.deepcopy(plan) for _ in (0,1)]

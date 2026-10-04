@@ -26,6 +26,9 @@ def native(args):
 def aggregate(engine,own,op,x):
     """Returns raw S² shares. Truncation happens after both contributions combine."""
     started=time.perf_counter();own=Path(own);manifest=json.loads((own/'he.json').read_text());public=op['he'];n,c=public['shape'];degree=public['degree']
+    if 'model' in op:
+        model=op['model'];layer=op['model_layer'];features,hidden,classes=model['dimensions']
+        require(layer in (0,1) and model['node_order']==public['node_order'] and model['fraction_bits']==op['fraction'] and c==(hidden if layer==0 else classes),'HE_MODEL_BINDING')
     require(engine.bits==32 and len(x)==n*c and op['count']==n*c,'HE_INPUT_SHAPE')
     require(manifest['public']==public and manifest['role']==engine.role,'HE_INTERFACE_BINDING')
     require(len(public['node_order'])==n and len(set(public['node_order']))==n and len(public['column_order'])==c and len(set(public['column_order']))==c,'HE_ORDER_BINDING')
