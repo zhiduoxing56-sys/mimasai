@@ -166,7 +166,7 @@ def negative_log(e,q,fraction):
     return loss
 
 def cross_entropy(e,prob,labels,n,classes,fraction,mask,loss_mode="quarter_taylor"):
-    s=1<<fraction;count=sum(mask);require(count>0,'TRAIN_EMPTY_MASK')
+    s=1<<fraction;require(len(mask)==n and all(type(v)==bool for v in mask),'TRAIN_MASK');count=sum(mask);require(count>0,'TRAIN_EMPTY_MASK')
     require(len(prob)==len(labels)==n*classes and classes*s<1<<(e.bits-1),'LOSS_SHAPE')
     # Prove [0,S] probabilities and well-formed secret one-hot label words.
     valid=compare_boolean(e,prob+public(e,s,len(prob)),public(e,0,len(prob))+prob)

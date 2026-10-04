@@ -33,3 +33,5 @@
 新增布局审阅：src/model.py 的 additive-model-v2绑定 feature_order/class_order；mpc_worker 首层核对公开特征顺序，he.aggregate 核对输出列。旧v1历史文件不会作为新模型加载。src/sparse_reference.py及cora_full_reference.py只有拥有者/验证端入口，worker不会导入；full_domain_audit.py的定位数据只在ignored验证结果。HE_PUBLIC_DOT_BOUND_UNSAFE是合法归一化P输入假设下的公开整数预算，并非加密P范围证明。
 
 无人值守轮：src/application.py提供拥有者/可信离线/本机调度命令；src/runtime.py抽取原有launch，不新增通信协议。src/query.py验证本机授权策略及最终选择，mpc_worker的delivery只落盘最后一项，src/receiver.py只允许读取目标份额交付目录。verification/application.py负责完整模型/相位/状态恢复对照，与接收者隔离。src/operators.py:average_signed为任意正样本数精确向下平均，train_step后向输入改用在线验证的backprop_state界；verification/average.py覆盖MIN、小环穷举和三样本真实训练。所有原材料、历史账本及已有角色私有文件保持原位，不纳入审阅包。
+
+协调器视图修复：初版src.application曾在循环中解析两方检查点/目标结果，虽未调用恢复，其完整视图仍不符合最小角色原则。现在src/role_io.py在分别受审计的独立角色进程里准备发布输入和查询输入、导出自身最终目标份额；协调器仅收取公共状态，不解析这些秘密文件。模型资产同角色硬链接无需读参数。旧临时5轮实验保留为正确性诊断，新版本再用新材料验收。物理UID权限仍非隔离证明。

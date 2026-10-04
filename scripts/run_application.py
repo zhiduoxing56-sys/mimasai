@@ -24,6 +24,7 @@ def main():
         cmd=[sys.executable,'verification/application.py','--experiment',eid,'--diagnostic']
         if a.faults:cmd+=['--faults']
         out=ROOT/'results/application'/eid
+        with (out/'role-views.log').open('w') as log:subprocess.run([sys.executable,'verification/role_views.py','--experiment',eid],cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
         with (out/'validation.log').open('w') as log:subprocess.run(cmd,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT,check=True)
     report=dict(status='PASS_REAL_TRAIN_PUBLISH_TARGET_QUERIES',experiment_id=eid,requests=requests,wall_seconds=time.perf_counter()-started,independent_verifier_run=a.validate)
     (ROOT/'results/application'/eid/'pipeline.json').write_text(json.dumps(report,indent=2)+'\n');print(json.dumps(report),flush=True)

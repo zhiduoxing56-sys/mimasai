@@ -2,7 +2,7 @@
 Owner preparation uses public Cora. Servers never import this module. The
 independent receiver accepts only exported target shares, not this workspace.
 """
-import argparse,copy,json,os,secrets,shutil,struct,subprocess,sys,time
+import argparse,copy,json,os,secrets,struct,subprocess,sys,time
 from pathlib import Path
 from .mpc import ROOT,VERSION,private_write,settings,require
 from .reference import Fixed
@@ -60,13 +60,11 @@ def command(args):
         for role in (0,1):(d/f'S{role}').mkdir(parents=True,mode=0o700)
         plan=[dict(type='publish',count=count,source_fraction=ft,model=m12),dict(type='publish',count=count,source_fraction=ft,model=m7,use_previous=True)]
         offline=dealer(d,sid,plan)
-        for role in (0,1):
-            # Each role's original checkpoint tail transfers to its own role.
-            own=read(source/f'S{role}/output-{checkpoint["attempt"]}.json')['shares'][0][-count:];jobs=copy.deepcopy(plan);jobs[0]['x']=own;jobs[1]['x']=[];write(d/f'S{role}/input.json',dict(version=VERSION,session=sid,role=role,bits=c['ring_bits'],operations=jobs))
+        for role in (0,1):role_io('publication_input',role,source,d,checkpoint['attempt'])
         started=time.perf_counter();attempt,metrics=launch(d,sid,c['ring_bits'],timeout=240);require(all(m['success'] for m in metrics),'PUBLICATION_FAILED')
         report['publication']=dict(directory=str(d),session=sid,attempt=attempt,models=[m12,m7],source_training_iteration=checkpoint['iteration'],source_training_session=source.name,offline=offline,online=statistics(metrics,time.perf_counter()-started));save(args.experiment,report)
         for role in (0,1):
-            shutil.copyfile(d/f'S{role}/model-{m7["model_id"]}.json',root/f'S{role}/model-{m7["model_id"]}.json');os.chmod(root/f'S{role}/model-{m7["model_id"]}.json',0o600)
+            os.link(d/f'S{role}/model-{m7["model_id"]}.json',root/f'S{role}/model-{m7["model_id"]}.json')
             write(root/f'S{role}/query-policy.json',dict(model=m7,allowed_targets=report['allowed_targets'],receiver_id=report['receiver_id']))
         return dict(command='publish',model_id=m7['model_id'],source_iteration=checkpoint['iteration'])
     if args.command=='provision':
@@ -98,19 +96,18 @@ def command(args):
         require(not request.get('offline_started') and 'offline' not in request and not any((d/f'S{r}/preprocessing.json').exists() for r in (0,1)),'REQUEST_MATERIAL_EXISTS');request['offline_started']=True;write(out/f'request-{sid}.json',request);request['offline']=dealer(d,sid,request['plan']);write(out/f'request-{sid}.json',request);return dict(command='offline',request=sid,generated=request['offline']['generated'])
     if args.command=='execute':
         require('offline' in request and not request.get('execution_started') and 'attempt' not in request,'REQUEST_EXECUTION_STATE');request['execution_started']=True;write(out/f'request-{sid}.json',request)
-        for role in (0,1):
-            jobs=copy.deepcopy(request['plan']);source=read(root/f'S{role}/input-shares.json')
-            for op in jobs:op['x']=[]
-            jobs[0]['x']=source['x']
-            if request['route']=='shared':
-                for i in (1,3):jobs[i]['p']=source['p']
-            write(d/f'S{role}/input.json',dict(version=VERSION,session=sid,role=role,bits=c['ring_bits'],operations=jobs,delivery=request['delivery']))
+        write(d/'job-template.json',dict(session=sid,bits=c['ring_bits'],operations=request['plan'],delivery=request['delivery'],route=request['route']))
+        for role in (0,1):role_io('query_input',role,root,d)
         started=time.perf_counter();attempt,metrics=launch(d,sid,c['ring_bits'],timeout=300);request['attempt']=attempt;request['online']=statistics(metrics,time.perf_counter()-started);request['success']=all(m['success'] for m in metrics);write(out/f'request-{sid}.json',request);require(request['success'],'REQUEST_FAILED')
         received=out/'receiver'/sid;received.mkdir(parents=True,mode=0o700)
-        for role in (0,1):
-            result=read(d/f'S{role}/output-{attempt}.json');require(len(result['shares'])==1 and len(result['shares'][0])==len(request['delivery']['targets'])*model_classes(request),'QUERY_FINAL_ONLY');write(received/f'S{role}.json',dict(version='authorized-probability-shares-v1',role=role,request_id=sid,receiver_id=report['receiver_id'],model_id=request['delivery']['model']['model_id'],targets=request['delivery']['targets'],classes=request['delivery']['model']['class_order'],fraction=c['probability_fraction_bits'],ring_bits=c['ring_bits'],shares=result['shares'][0]))
+        for role in (0,1):role_io('export',role,d,received,attempt)
         return dict(command='execute',request=sid,status='TARGET_SHARES_DELIVERED',receiver_directory=str(received),online=request['online'])
     raise ValueError('unknown application command')
+
+def role_io(operation,role,source,destination,attempt=None):
+    cmd=[sys.executable,'-m','src.role_io',operation,str(role),str(source),str(destination)]
+    if attempt:cmd+=['--attempt',attempt]
+    subprocess.run(cmd,cwd=ROOT,capture_output=True,text=True,check=True)
 
 def model_classes(request):return request['delivery']['model']['dimensions'][2]
 def statistics(metrics,wall):
