@@ -67,7 +67,7 @@ def main():
     accuracy=lambda ids:sum(max(range(len(prob[i])),key=lambda j:prob[i][j])==data['labels'][i] for i in ids)/len(ids)
     majority=Counter(data['labels'][i] for i in data['splits']['train']).most_common(1)[0][0]
     from src.metrics import evaluate
-    from src.mpc import private_write
+    from src.application import write as private_write
     full_metrics=evaluate(data,[[v/(1<<config()['probability_fraction_bits']) for v in row] for row in prob]);private_write(paths(a.experiment)[0]/'V/evaluation.json',full_metrics)
     aggregate_metrics={name:{k:v for k,v in metric.items() if k!='nodes'} for name,metric in full_metrics.items()}
     effect=dict(published_model_metrics=aggregate_metrics,published_model_accuracy={name:accuracy(ids) for name,ids in data['splits'].items()},majority_test_accuracy=sum(data['labels'][i]==majority for i in data['splits']['test'])/len(data['splits']['test']),class_distribution={name:dict(Counter(data['labels'][i] for i in ids)) for name,ids in data['splits'].items()},checkpoint_curves=[training['curves'][i] for i in sorted({0,min(15,len(steps)-1),min(31,len(steps)-1),min(63,len(steps)-1),len(steps)-1})],reference_test_iteration=training['test_assessed_at_iteration'],reference_float_test_accuracy=training['float_test_accuracy'],reference_fixed_test_accuracy=training['fixed_test_accuracy'],note='Public Cora induced graph, seven canonical classes; test used for final reporting, not hyperparameter selection; checkpoints use training/validation only; approximate standard p-y gradient')

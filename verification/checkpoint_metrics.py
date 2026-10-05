@@ -14,7 +14,7 @@ def main():
         else:
             step=r['secure_training'][iteration-1];path=Path(step['directory']);count=f*h+h*k;shares=[json.loads((path/f'S{role}/output-{step["attempt"]}.json').read_text())['shares'][0][-count:] for role in (0,1)];values=[(a+b)%(1<<32) for a,b in zip(*shares)]
         weights=[ [values[i*h:(i+1)*h] for i in range(f)], [values[f*h+i*k:f*h+(i+1)*k] for i in range(h)]];tr=fx.forward(fx.encode(d['propagation']),fx.encode(d['features']),weights,'transform_then_aggregate');prob,_=probability_reference([[fx.signed(v)*(1<<(pf-(fx.scale.bit_length()-1))) for v in row] for row in tr['logits']],pf);metrics=evaluate(d,[[v/(1<<pf) for v in row] for row in prob]);records.append(dict(iteration=iteration,metrics=metrics));print(iteration,{name:(v['accuracy'],v['macro_f1'],v['prediction_counts']) for name,v in metrics.items()})
-    out=ROOT/'results/representative';out.mkdir(exist_ok=True);from src.mpc import private_write
+    out=ROOT/'results/representative';out.mkdir(exist_ok=True);from src.application import write as private_write
     private=ROOT/'build/representative/V';private.mkdir(parents=True,exist_ok=True,mode=0o700);private_write(private/Path(args.output).name,dict(scope='Authorized independent evaluation only; no online input or recipient changes',records=records))
     aggregate=[dict(iteration=q['iteration'],metrics={name:{k:v for k,v in m.items() if k!='nodes'} for name,m in q['metrics'].items()}) for q in records];private_write(Path(args.output),dict(scope='Authorized aggregate evaluation; per-node predictions restricted to build/representative/V',records=aggregate))
 if __name__=='__main__':main()
