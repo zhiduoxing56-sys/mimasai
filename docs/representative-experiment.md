@@ -4,7 +4,7 @@
 
 ## 旧检查点与抽样规则
 
-独立验证端verification/checkpoint_metrics.py读取授权检查点，两方恢复仅作实验评价，不写入服务器或查询者输入。results/representative/old-checkpoints.json保存初始化、1/16/32/64/96更新后逐节点预测、混淆矩阵、各类precision/recall/F1、七类宏平均和两个多数类口径。可部署多数类取训练集最多类（并列最小编号）；各划分自己的多数类只是事后描述。缺席类明确支持数0、召回/F1计0，不把它们从七类宏指标中删掉。旧16轮开始全节点预测Genetic_Algorithms，最终测试87.5%等于多数基线、宏F1=0.133333。
+独立验证端verification/checkpoint_metrics.py读取授权检查点，两方恢复仅作实验评价，不写入服务器或查询者输入。独立验证端build/representative/V/old-checkpoints.json保存初始化、1/16/32/64/96更新后逐节点预测；普通results/representative/old-checkpoints.json保存聚合混淆矩阵、各类precision/recall/F1、七类宏平均和两个多数类口径。可部署多数类取训练集最多类（并列最小编号）；各划分自己的多数类只是事后描述。缺席类明确支持数0、召回/F1计0，不把它们从七类宏指标中删掉。旧16轮开始全节点预测Genetic_Algorithms，最终测试87.5%等于多数基线、宏F1=0.133333。
 
 新规则先定义，再运行效果；种子20261005/6/7，不按测试准确率挑图。
 
@@ -47,7 +47,7 @@ python3 verification/training_precision_faults.py
 sh scripts/run_application.sh --nodes 64 --sampling stratified_frontier --seed 20261005 --steps 160 --validate --faults
 ```
 
-后三个原语/链路使用全新密码随机材料；不要把历史私有目录复制到新检出。评价脚本的输出为独立验证端授权实验数据，查询接收端仍只有公开授权目标最终概率。当前真实160轮尚运行，后续完整成本、发布/两路径/两请求和干净检出结果以最终验收报告为准；不能由本设计说明推定通过。
+后三个原语/链路使用全新密码随机材料；不要把历史私有目录复制到新检出。评价脚本的输出为独立验证端授权实验数据，查询接收端仍只有公开授权目标最终概率。真实160轮已完成；最终发布、四路径逐位对照、独立请求、故障及成本见representative-acceptance.md与representative-results.json，参考320轮不能替代实际160轮。
 
 安全条件沿用半诚实S0/S1、可信不串谋离线方、本机角色权限、完整材料预留；公开批次范围/域成功标志及停止状态泄漏。private_decryption安全分析保持不变，原legacy_ciphertext无自动回退且安全阻塞。没有私人归一化、主动安全、跨机认证、隐藏目标或新增FSS安全证明。
 

@@ -1,11 +1,11 @@
-本轮多类代表性实验与训练概率f14的精确转换见[实验说明](docs/representative-experiment.md)；旧64节点96轮回归保留，新实际预算160轮。正式入口支持 `--sampling stratified_frontier --seed 20261005`，不外推到完整Cora。
+本轮真实64节点160轮共享训练与多类指标见[验收报告](docs/representative-acceptance.md)，抽样与训练概率f14见[实验说明](docs/representative-experiment.md)；旧64节点96轮回归保留。正式入口支持 `--sampling stratified_frontier --seed 20261005`，不外推到完整Cora。
 
 # 图隐私计算工程
 
 真实Cora数据入口现支持16、32和64节点诱导图，使用自有两层GCN、两进程共享训练、持续共享发布、受保护同态推理及秘密近似概率。完整运行：
 
 ```sh
-sh scripts/run_application.sh --nodes 64 --steps 96 --validate --faults
+sh scripts/run_application.sh --nodes 64 --sampling stratified_frontier --seed 20261005 --steps 160 --validate --faults
 ```
 
 操作与权限见[应用运行说明](docs/application.md)，数据语义及许可缺口见[数据说明](docs/real-data.md)。仅向公开授权目标交付最终概率份额，由独立接收端恢复；本机半诚实与可信非串谋离线假设，不是主动安全或跨机认证部署。原低交互密文转换仍安全阻塞。实际验收证据见[本轮报告](docs/unattended-acceptance.md)。
@@ -45,6 +45,6 @@ sh scripts/run_application.sh --nodes 64 --steps 96 --validate --faults
 最新验收：[持续推进报告](docs/continuation-acceptance.md)，协议与范围：[实现说明](docs/continuation.md)。运行 `sh scripts/run_continuation.sh`，沿用阶段零依赖及阶段一/三夹具。当前受限全MPC闭环已运行；真实HE算术通过但转换密文视图安全阻塞，不称完整比赛系统完成。私有材料在build，耐久消费账本在state，二者不得提交或回滚。
 
 
-本轮更新（2026-10-04）：完整源码基线与新私有 BFV 解密转换见 [验收报告](docs/security-round-acceptance.md)。旧发送求值密文路径仍是明确安全阻塞；新增路径保持模型数值规则并增加交互，半诚实、可信非串谋离线方假设不变。训练目标概率≥1/4限制未取消。
+本轮更新（2026-10-04）：完整源码基线与新私有 BFV 解密转换见 [验收报告](docs/security-round-acceptance.md)。旧发送求值密文路径仍是明确安全阻塞；新增路径保持模型数值规则并增加交互，半诚实、可信非串谋离线方假设不变。当时训练目标概率≥1/4限制未取消；此后范围归约秘密对数及本轮训练f14路径已接入，当前条件和限制以代表性验收报告为准。
 
 真实 Cora 实验入口：`sh scripts/run_real_data.sh`（默认96轮共享训练；下载原始锁定数据，重新生成所有私有材料）。任务、数据许可缺口、诱导子图语义及范围保障见 [真实数据说明](docs/real-data.md)。
