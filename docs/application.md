@@ -76,3 +76,5 @@ python3 -m src.receiver <receiver_directory>
 旧范围政策的模型文件保留，但配置绑定拒绝在新政策下直接加载。原训练参数份额可继续更新并用新材料重新发布，不恢复参数、不添加兼容格式。公开数值配置也纳入握手，不只比较消息计划。默认授权目标为固定测试划分的第一个公开编号，选择不读取标签；手动prepare --target 35仍可指定。
 
 验收完成后可运行 `python3 scripts/summarize_application.py <实验ID>`，生成summary.json，展示同模型查询、分阶段字节/轮数/时间、材料与累计RSS；只读公开验收文件，不读私有材料。高精度概率序列化为字符串，独立指标必须按Decimal数值比较；旧派生分类指标的修正证据单独保留，不能把它当新一次协议执行。
+
+代表性实验使用 `sh scripts/run_application.sh --nodes 64 --sampling stratified_frontier --seed 20261005 --steps 160 --validate --faults`。prepare接受sampling/seed并将相同规则传至训练，禁止另一个图混入检查点。公开标签分层28/14/22、H6和训练概率f14见representative-experiment.md；旧fixed_bfs作为协议回归保留。adopt检查真实共享检查点的节点、维度、原包哈希、词列、类别和预处理记录，正式模型仍只由角色进程读自己的参数份额。`verification/checkpoint_metrics.py --report REPORT --output OUTPUT`只在独立验证权限下使用，完整节点评价不能交给查询者。

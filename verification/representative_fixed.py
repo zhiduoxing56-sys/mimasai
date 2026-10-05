@@ -42,6 +42,7 @@ def main():
     metrics=evaluate(d,[[v/(1<<c['training_reference']['probability_fraction_bits']) for v in row] for row in tr['probabilities']]);curves.append(dict(iteration=it,loss=tr['loss']/fx.scale,metrics=metrics,minimum_probability_units=min(v for row in tr['probabilities'] for v in row),maximum_raw_partial=max(a['max_abs_partial_sum'] for a in audit),violations=violations));checkpoint[str(it)]=w
    if seed==c['data_experiment']['representative']['seeds'][0]:refs.append(tr)
    audits.extend(dict(iteration=it,**a) for a in audit);w=neww
+  if seed==c['data_experiment']['representative']['seeds'][0]:(PRIVATE/'primary-fixed-traces.json').write_text(json.dumps(refs))
   name=f'fixed-seed{seed}';(PRIVATE/(name+'.json')).write_text(json.dumps(checkpoint));results.append(dict(seed=seed,curves=curves,first_protocol_guard_violation=first_violation,range_audits=audits));print(json.dumps(dict(seed=seed,first_protocol_guard_violation=first_violation,final={k:(v['accuracy'],v['macro_f1']) for k,v in curves[-1]['metrics'].items()})),flush=True)
- (PRIVATE/'primary-fixed-traces.json').write_text(json.dumps(refs));report=dict(status='FROZEN_FIXED_REFERENCE_PASS',frozen=frozen,training_fraction=12,probability_fraction=14,results=results,dense_sparse_two_step_bitwise=True,seconds=time.perf_counter()-started);(OUT/'fixed.json').write_text(json.dumps(report,indent=2)+'\n')
+ report=dict(status='FROZEN_FIXED_REFERENCE_PASS',frozen=frozen,training_fraction=12,probability_fraction=14,results=results,dense_sparse_two_step_bitwise=True,seconds=time.perf_counter()-started);(OUT/'fixed.json').write_text(json.dumps(report,indent=2)+'\n')
 if __name__=='__main__':main()
