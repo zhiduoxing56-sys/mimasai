@@ -1,0 +1,65 @@
+{
+  "base_commit": "ebfc489c6563e60e2b75933aafb70ccc3c251007",
+  "evidence_kind": "SOURCE_INSPECTION_AND_INDEPENDENT_SHORT_TESTS",
+  "numeric_mpc_body_unchanged": true,
+  "numeric_files_unchanged": [
+    "src/he.py",
+    "src/he_bridge.cpp",
+    "src/mpc_worker.py",
+    "src/offline.py",
+    "src/fss.py",
+    "config/phase0.json"
+  ],
+  "short_tests": {
+    "status": "PASS_CHANGED_SURFACES",
+    "tests": 6,
+    "failures": 0,
+    "errors": 0,
+    "scope": "Independent short HTTP and metadata/lifecycle tests with synthetic fixtures; not real UID or cryptographic backend acceptance",
+    "long_training": false
+  },
+  "roles_observed": {
+    "s0": {
+      "status": "NOT_CREATED"
+    },
+    "s1": {
+      "status": "NOT_CREATED"
+    },
+    "dealer": {
+      "status": "NOT_CREATED"
+    },
+    "receiver": {
+      "status": "NOT_CREATED"
+    },
+    "coordinator": {
+      "status": "NOT_CREATED"
+    },
+    "page": {
+      "status": "NOT_CREATED"
+    }
+  },
+  "real_uid_permissions": "PENDING_ADMIN_DEPLOYMENT",
+  "real_page_query": "NOT_EXECUTED",
+  "new_cryptographic_materials": 0,
+  "training_rounds_executed": 0,
+  "historical_files_deleted": 0,
+  "space_observation": {
+    "internal_available_bytes": 819765411840,
+    "host_available_bytes": 32449236992,
+    "host_status": "READABLE",
+    "host_mount": "/mnt/e",
+    "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+    "vhd_logical_bytes": 216304451584
+  },
+  "cleanup_this_turn": {
+    "performed": false,
+    "deleted_file_allocated_bytes": 0,
+    "interpretation": "No cleanup performed this turn; no recovered-capacity claim."
+  },
+  "screenshot": {
+    "path": "results/local-page/disconnected.png",
+    "sha256": "b5a7c6244e69a740b9fe9842461ecfe677aa28f7509a2fb259cabbec44695433",
+    "kind": "REAL_BROWSER_STATIC_DISCONNECTED_UI",
+    "real_query": false
+  }
+}

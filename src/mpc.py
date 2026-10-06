@@ -13,7 +13,9 @@ import time
 from pathlib import Path
 
 VERSION = 'privacy-gnn-mpc-v1'
-ROOT = Path(__file__).resolve().parents[1]
+# Deployment launcher fixes this directory after dropping to the role's real
+# UID. The environment selects a layout; Unix ownership provides isolation.
+ROOT = Path(os.environ.get('PGNN_ROOT',Path(__file__).resolve().parents[1])).resolve()
 
 class ProtocolError(Exception):
     def __init__(self,code):

@@ -1,0 +1,30 @@
+{
+  "experiment_id": "a49152b33097752eaf81a7cba6d910a3",
+  "model_id": "829a29a6913d505e7167f418a94674ee",
+  "source_training_session": "f55c17ef75282b7a18a389845abc3136",
+  "source_iteration": 160,
+  "nodes": 64,
+  "dimensions": [
+    64,
+    551,
+    6,
+    7
+  ],
+  "sampling": "stratified_frontier",
+  "sampling_seed": 20261005,
+  "allowed_targets": [
+    "936"
+  ],
+  "receiver_id": "local-authorized-recipient",
+  "classes": [
+    "Case_Based",
+    "Genetic_Algorithms",
+    "Neural_Networks",
+    "Probabilistic_Methods",
+    "Reinforcement_Learning",
+    "Rule_Learning",
+    "Theory"
+  ],
+  "scope": "固定64节点诱导图；已有160轮发布模型；两方半诚实及可信离线方",
+  "protocol": "真实 SEAL / 私有解密转换 / FSS / 最终概率份额"
+}

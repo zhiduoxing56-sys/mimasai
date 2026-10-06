@@ -7,6 +7,9 @@ from .mpc import ROOT, ProtocolError, require
 
 TERMINAL = {'completed', 'aborted', 'cleaned'}
 
+def storage_directory():
+    return Path(os.environ.get('PGNN_GATE_DIR',ROOT/'state/storage'))
+
 def policy():
     return json.loads((ROOT/'config/storage.json').read_text())
 
@@ -49,16 +52,16 @@ def estimate(plan, counts):
                 method='Conservative public-count bound, paired JSON + native workspace/ciphertext traces + 64MiB, factor 2')
 
 def db():
-    directory = ROOT/'state/storage'; directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    directory = storage_directory(); directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     conn = sqlite3.connect(directory/'sessions.sqlite', timeout=30)
-    os.chmod(directory/'sessions.sqlite', 0o600)
+    os.chmod(directory/'sessions.sqlite', 0o640 if os.environ.get('PGNN_GATE_DIR') else 0o600)
     conn.execute('PRAGMA synchronous=FULL')
     conn.execute('CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, directory TEXT UNIQUE, batch TEXT UNIQUE, state TEXT, budget INTEGER, detail TEXT)')
     conn.execute('CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, sid TEXT, body TEXT)')
     return conn
 
 def record(sid):
-    path=ROOT/'state/storage/sessions.sqlite'
+    path=storage_directory()/'sessions.sqlite'
     if not path.exists():return None
     with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
         row = conn.execute('SELECT directory,batch,state,budget,detail FROM sessions WHERE sid=?', (sid,)).fetchone()
@@ -71,7 +74,7 @@ def event(sid,stage,**fields):
     return body
 
 def history(sid):
-    path=ROOT/'state/storage/sessions.sqlite'
+    path=storage_directory()/'sessions.sqlite'
     if not path.exists():return []
     with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
         if not conn.execute("SELECT 1 FROM sqlite_master WHERE name='events'").fetchone():return []
@@ -123,7 +126,7 @@ def workflow_lease(sid):
     owned=getattr(_workflows,'owned',set())
     if sid in owned:
         yield;return
-    directory=ROOT/'state/storage';directory.mkdir(parents=True,exist_ok=True,mode=0o700)
+    directory=storage_directory();directory.mkdir(parents=True,exist_ok=True,mode=0o700)
     with (directory/(sid+'.workflow.lock')).open('a') as file:
         try:fcntl.flock(file,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:raise ProtocolError('SESSION_ACTIVE') from None
@@ -135,7 +138,7 @@ def workflow_lease(sid):
 def lease(sid, suffix='.lock'):
     require(len(sid)==32 and all(c in '0123456789abcdef' for c in sid), 'STORAGE_SESSION_ID')
     require(suffix in ('.lock','.workflow.lock'),'STORAGE_LOCK_TYPE')
-    directory = ROOT/'state/storage'; directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+    directory = storage_directory(); directory.mkdir(parents=True, exist_ok=True, mode=0o700)
     with (directory/(sid+suffix)).open('a') as file:
         try: fcntl.flock(file, fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError: raise ProtocolError('SESSION_ACTIVE') from None
@@ -143,7 +146,7 @@ def lease(sid, suffix='.lock'):
 
 def check(directory, budget=0, exclude=None, probe=None, cfg=None):
     cfg = cfg or policy(); status = (probe or snapshot)(directory, cfg)
-    path=ROOT/'state/storage/sessions.sqlite';reservations=0
+    path=storage_directory()/'sessions.sqlite';reservations=0
     if path.exists():
         with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
             reservations = conn.execute("SELECT COALESCE(SUM(budget),0) FROM sessions WHERE state IN ('generating','ready','preparing','running','stopping') AND sid != ?", (exclude or '',)).fetchone()[0]
@@ -181,7 +184,7 @@ class Guard:
 
 def reject_burned(batch):
     # Role readers never create/chmod/write the coordinator database.
-    path=ROOT/'state/storage/sessions.sqlite'
+    path=storage_directory()/'sessions.sqlite'
     if not path.exists():return
     with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
         row=conn.execute('SELECT state FROM sessions WHERE batch=?', (batch,)).fetchone()
