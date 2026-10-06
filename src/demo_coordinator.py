@@ -120,15 +120,20 @@ class Handler(socketserver.BaseRequestHandler):
             try:send(self.request,dict(ok=False,error=code))
             except OSError:pass
 class Server(socketserver.ThreadingUnixStreamServer):daemon_threads=False
-def main():
+def recover_pending():
     global STOPPED
-    require(os.geteuid()==identity('coordinator').pw_uid,'COORDINATOR_UID')
     with contextlib.closing(db()) as conn:
         old=conn.execute('SELECT token,client,document FROM queries').fetchall()
     for token,client,raw in old:
         doc=json.loads(raw)
-        if not doc['terminal']:
+        if not doc['terminal'] or doc['phase']=='stopping':
+            entry=record(doc['request_id'])
+            if entry and entry['state'] in ('generating','ready','preparing','running','stopping'):
+                transition(doc['request_id'],{entry['state']},'stopping','RESTART_REQUIRES_STOP_CONFIRMATION')
+                event(doc['request_id'],'termination_pending',proof=dict(stopped=False),reason='RESTART_REQUIRES_STOP_CONFIRMATION')
             doc.update(phase='stopping',terminal=True,delivery_state='incomplete',result=None,error='RESTART_REQUIRES_STOP_CONFIRMATION');save(token,client,doc);STOPPED=True
+def main():
+    require(os.geteuid()==identity('coordinator').pw_uid,'COORDINATOR_UID');recover_pending()
     if PUBLIC_API.exists():PUBLIC_API.unlink()
     with Server(str(PUBLIC_API),Handler) as server:
         os.chmod(PUBLIC_API,0o660);os.chown(PUBLIC_API,-1,grp.getgrnam('pgnn-page-api').gr_gid);server.serve_forever()

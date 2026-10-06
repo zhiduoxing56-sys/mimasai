@@ -78,6 +78,17 @@ class Checks(unittest.TestCase):
    row=dict(before=before,after={'path':str(target)},content_preserved=False,phase='planned');history['state_files'].append(row);installer.atomic(admin/'migration.json',history);source.rename(target)
    installer.migrate(source,target,'s0',history['state_files'])
    self.assertTrue(source.is_symlink());self.assertEqual(target.stat().st_ino,inode);self.assertEqual(target.read_bytes(),b'synthetic durable state');self.assertTrue(row['content_preserved'])
+ def test_restart_keeps_unconfirmed_stop_and_burns_running_gate(self):
+  (self.path/'state').mkdir();gate=self.path/'gate';gate.mkdir();sid='f'*32;token='b'*32;client='a'*48
+  document=dict(request_id=sid,phase='stopping',terminal=True,delivery_state='incomplete',result=None,cost=None,error='STOP_UNCONFIRMED')
+  prior=demo_coordinator.STOPPED
+  with patch.dict(os.environ,PGNN_GATE_DIR=str(gate)),patch.object(demo_coordinator,'root',return_value=self.path):
+   with contextlib.closing(storage.db()) as db,db:db.execute('INSERT INTO sessions VALUES (?,?,?,?,?,?)',(sid,str(self.path),'d'*32,'running',0,''))
+   with contextlib.closing(demo_coordinator.db()) as db,db:db.execute('INSERT INTO queries VALUES (?,?,?,?)',(token,client,sid,json.dumps(document)))
+   try:
+    demo_coordinator.STOPPED=False;demo_coordinator.recover_pending();self.assertTrue(demo_coordinator.STOPPED);self.assertEqual(storage.record(sid)['state'],'stopping');self.assertFalse(storage.stopped(sid))
+    with self.assertRaisesRegex(ProtocolError,'SESSION_MATERIAL_PERMANENTLY_UNAVAILABLE'):storage.reject_burned('d'*32)
+   finally:demo_coordinator.STOPPED=prior
 
 if __name__=='__main__':
  suite=unittest.defaultTestLoader.loadTestsFromTestCase(Checks);result=unittest.TextTestRunner(verbosity=2).run(suite)

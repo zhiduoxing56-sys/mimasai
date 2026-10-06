@@ -12,7 +12,7 @@
   ],
   "short_tests": {
     "status": "PASS_CHANGED_SURFACES",
-    "tests": 6,
+    "tests": 7,
     "failures": 0,
     "errors": 0,
     "scope": "Independent short HTTP and metadata/lifecycle tests with synthetic fixtures; not real UID or cryptographic backend acceptance",
