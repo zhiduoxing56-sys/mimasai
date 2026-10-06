@@ -1,0 +1,153 @@
+{
+  "observed_utc": "2026-10-06T13:12:10.201358+00:00",
+  "status": "INSTALLATION_FAILED_BEFORE_MIGRATION",
+  "cause": "Wrong /usr/sbin/gpasswd; actual administrator-owned executable is /usr/bin/gpasswd",
+  "failure_phase": "groups",
+  "six_accounts_created": {
+    "s0": {
+      "uid": 999,
+      "gid": 989,
+      "shell": "/usr/sbin/nologin"
+    },
+    "s1": {
+      "uid": 997,
+      "gid": 988,
+      "shell": "/usr/sbin/nologin"
+    },
+    "dealer": {
+      "uid": 995,
+      "gid": 987,
+      "shell": "/usr/sbin/nologin"
+    },
+    "receiver": {
+      "uid": 994,
+      "gid": 986,
+      "shell": "/usr/sbin/nologin"
+    },
+    "coordinator": {
+      "uid": 993,
+      "gid": 985,
+      "shell": "/usr/sbin/nologin"
+    },
+    "page": {
+      "uid": 992,
+      "gid": 984,
+      "shell": "/usr/sbin/nologin"
+    }
+  },
+  "gate_members": [],
+  "deployment_directories_exist": {
+    "/var/lib/privacy-gnn": false,
+    "/opt/privacy-gnn": false,
+    "/run/privacy-gnn": false
+  },
+  "durable_assets_observed": [
+    {
+      "path": "state/mpc/S0-ledger.sqlite",
+      "regular": true,
+      "symlink": false,
+      "uid": 1000,
+      "device": 2096,
+      "inode": 66226,
+      "bytes": 3522957312,
+      "mtime_ns": 1791255489338440598
+    },
+    {
+      "path": "state/mpc/S1-ledger.sqlite",
+      "regular": true,
+      "symlink": false,
+      "uid": 1000,
+      "device": 2096,
+      "inode": 66224,
+      "bytes": 3527008256,
+      "mtime_ns": 1791255489367062075
+    },
+    {
+      "path": "state/storage/sessions.sqlite",
+      "regular": true,
+      "symlink": false,
+      "uid": 1000,
+      "device": 2096,
+      "inode": 378274,
+      "bytes": 3870720,
+      "mtime_ns": 1791255489436571376
+    },
+    {
+      "path": "build/application/a49152b33097752eaf81a7cba6d910a3/S0/model-829a29a6913d505e7167f418a94674ee.json",
+      "regular": true,
+      "symlink": false,
+      "uid": 1000,
+      "device": 2096,
+      "inode": 354164,
+      "bytes": 43612,
+      "mtime_ns": 1791184984208437976,
+      "sha256": "7d0bfb9df2677ef8f4355bca5eae2d6d77c3dbbad13ff634c3c0ab71ca778c4a"
+    },
+    {
+      "path": "build/application/a49152b33097752eaf81a7cba6d910a3/S1/model-829a29a6913d505e7167f418a94674ee.json",
+      "regular": true,
+      "symlink": false,
+      "uid": 1000,
+      "device": 2096,
+      "inode": 354163,
+      "bytes": 43646,
+      "mtime_ns": 1791184984208437976,
+      "sha256": "bcb253be52468bfff534c5658f317c2ed77e120b8da62894967a8389ea999276"
+    },
+    {
+      "path": "build/stage2/f55c17ef75282b7a18a389845abc3136/S0/output-c727d4cf62563d2e.json",
+      "regular": true,
+      "symlink": false,
+      "uid": 1000,
+      "device": 2096,
+      "inode": 354138,
+      "bytes": 103618,
+      "mtime_ns": 1791184924557113452,
+      "sha256": "d40f4963fe10dfed481787dcf9d3788b6d23af2f1f172a247fe3d7d8a351b01e"
+    },
+    {
+      "path": "build/stage2/f55c17ef75282b7a18a389845abc3136/S1/output-c727d4cf62563d2e.json",
+      "regular": true,
+      "symlink": false,
+      "uid": 1000,
+      "device": 2096,
+      "inode": 354139,
+      "bytes": 103642,
+      "mtime_ns": 1791184924561093422,
+      "sha256": "eaaf68c1933e3de6bfa52e7f73414353649c325dd3deeae5fa711a9d15c97dfb"
+    }
+  ],
+  "observations_limits": "Database metadata observed; no prior complete ledger hash comparison claimed. Model/checkpoint hashes record current retained assets, without reconstruction.",
+  "short_tests": {
+    "status": "PASS_INSTALLER_DEPENDENCY_RECOVERY",
+    "tests": 6,
+    "errors": 0,
+    "failures": 0,
+    "actual_helpers": {
+      "git": "/usr/bin/git",
+      "systemctl": "/usr/bin/systemctl",
+      "useradd": "/usr/sbin/useradd",
+      "groupadd": "/usr/sbin/groupadd",
+      "gpasswd": "/usr/bin/gpasswd",
+      "nologin": "/usr/sbin/nologin"
+    },
+    "scope": "Real read-only helper discovery and gpasswd --help; synthetic missing dependency/partial state; real existing account reuse with mutation calls mocked",
+    "administrator_writes": false,
+    "training": false
+  },
+  "existing_migration_recovery_test": "PASS synthetic same-inode fixture",
+  "space_observation": {
+    "internal_available_bytes": 819722784768,
+    "host_available_bytes": 32449236992,
+    "host_status": "READABLE",
+    "host_mount": "/mnt/e",
+    "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+    "vhd_logical_bytes": 216304451584
+  },
+  "real_uid_permission_matrix": "PENDING_DEPLOYMENT",
+  "real_page_query": "NOT_RUN",
+  "new_materials": 0,
+  "new_training_rounds": 0,
+  "historical_cleanup": false,
+  "sudo_noninteractive": "PASSWORD_REQUIRED; no credential read or saved"
+}

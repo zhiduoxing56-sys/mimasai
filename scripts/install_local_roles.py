@@ -11,6 +11,28 @@ sys.path.insert(0,str(PROJECT))
 from src.public_projection import model,planning_report
 from src.storage import snapshot
 
+TOOL_NAMES=('git','systemctl','useradd','groupadd','gpasswd','nologin')
+TOOL_DIRS=(Path('/usr/sbin'),Path('/usr/bin'),Path('/sbin'),Path('/bin'))
+PHASE='startup'
+
+def stage(name):
+    global PHASE
+    PHASE=name
+
+def system_tool(name):
+    require(name in TOOL_NAMES,'Unknown administrator helper: '+name)
+    for directory in TOOL_DIRS:
+        candidate=directory/name
+        if not candidate.exists():continue
+        path=candidate.resolve(strict=True);st=path.stat()
+        require(stat.S_ISREG(st.st_mode) and st.st_uid==0 and st.st_mode&0o022==0 and os.access(path,os.X_OK),'Unsafe/nonexecutable administrator helper: '+str(path))
+        for parent in path.parents:
+            info=parent.stat();require(info.st_uid==0 and info.st_mode&0o022==0,'Untrusted administrator helper directory: '+str(parent))
+        return str(path)
+    raise RuntimeError('ADMIN_HELPER_MISSING: '+name+'; checked only trusted system directories')
+
+def check_system_tools():return {name:system_tool(name) for name in TOOL_NAMES}
+
 def require(ok,message):
     if not ok:raise RuntimeError(message)
 def sha(path):
@@ -18,7 +40,9 @@ def sha(path):
     with path.open('rb') as stream:
         for data in iter(lambda:stream.read(1024*1024),b''):digest.update(data)
     return digest.hexdigest()
-def run(args):return subprocess.run(args,check=True,text=True,capture_output=True).stdout
+def run(args):
+    args=[system_tool(Path(args[0]).name),*args[1:]]
+    return subprocess.run(args,check=True,text=True,capture_output=True).stdout
 def git(*args):return run(['git','-c','safe.directory='+str(PROJECT),'-C',str(PROJECT),*args])
 def actor_root(role):return BASE/'actors'/role
 def secure_dir(path,uid=0,gid=0,mode=0o700):
@@ -70,7 +94,9 @@ def open_handles(paths):
         except FileNotFoundError:pass
     require(not found,'State files are still open by processes: '+json.dumps(found))
 def preflight():
+    stage('preflight')
     require(os.geteuid()==0,'Run this installer in your local terminal with sudo.')
+    helpers=check_system_tools() # Before account/group creation or any migration.
     require(not git('status','--porcelain').strip(),'Commit/review the complete deployment code before installing.')
     manifest=json.loads((PROJECT/f'results/application/{EID}/manifest.json').read_text());public=model(manifest)
     require(public['model_id']=='829a29a6913d505e7167f418a94674ee','Unexpected published model')
@@ -94,12 +120,12 @@ def preflight():
         try:
             account=pwd.getpwnam('pgnn-'+role);require(account.pw_uid not in (0,PROJECT.stat().st_uid) and account.pw_shell=='/usr/sbin/nologin','Unsafe existing account: '+role)
         except KeyError:pass
-    print(json.dumps(dict(preflight='PASS',model_id=public['model_id'],source_iteration=160,nodes=64,host_probe=space['host_status'],state_files_open=False),indent=2))
+    print(json.dumps(dict(preflight='PASS',model_id=public['model_id'],source_iteration=160,nodes=64,host_probe=space['host_status'],state_files_open=False,administrator_helpers=helpers),indent=2))
     return manifest,public,files
 def account(role):
     try:return pwd.getpwnam('pgnn-'+role)
     except KeyError:
-        run(['/usr/sbin/useradd','--system','--user-group','--no-create-home','--shell','/usr/sbin/nologin','pgnn-'+role]);return pwd.getpwnam('pgnn-'+role)
+        run(['useradd','--system','--user-group','--no-create-home','--shell','/usr/sbin/nologin','pgnn-'+role]);return pwd.getpwnam('pgnn-'+role)
 def symlink(target,path):
     if path.is_symlink():require(path.resolve()==target.resolve(),'Unexpected existing link: '+str(path));return
     require(not path.exists(),'Unexpected existing deployment path: '+str(path));path.symlink_to(target,target_is_directory=target.is_dir())
@@ -129,17 +155,23 @@ def migrate(source,target,role,records):
     existing.update(after=after,phase='complete',content_preserved=True)
     history=BASE/'admin/migration.json';doc=json.loads(history.read_text());doc['state_files']=records;atomic(history,doc)
 def install(manifest,public,files):
+    check_system_tools()
+    stage('stop_existing_services')
     for unit in ('pgnn-page','pgnn-coordinator','pgnn-role-broker'):
-        subprocess.run(['systemctl','stop',unit],capture_output=True)
+        subprocess.run([system_tool('systemctl'),'stop',unit],capture_output=True)
     open_handles(state_paths())
+    stage('accounts')
     identities={role:account(role) for role in ROLES};require(len({p.pw_uid for p in identities.values()})==6,'Role UIDs must be distinct')
+    stage('groups')
     for name,members in [('pgnn-gate','pgnn-s0,pgnn-s1,pgnn-dealer,pgnn-coordinator'),('pgnn-page-api','pgnn-coordinator,pgnn-page')]:
         try:grp.getgrnam(name)
-        except KeyError:run(['/usr/sbin/groupadd','--system',name])
-        run(['/usr/sbin/gpasswd','-M',members,name])
+        except KeyError:run(['groupadd','--system',name])
+        run(['gpasswd','-M',members,name])
+    stage('deployment_layout')
     secure_dir(BASE,mode=0o711);secure_dir(BASE/'actors',mode=0o711);secure_dir(BASE/'admin');secure_dir(OPT,mode=0o755)
     history=BASE/'admin/migration.json';migration=json.loads(history.read_text()) if history.exists() else dict(state_files=[],assets=[],hardlink_audit=dict(cross_secret_role_aliases=0,existing_aliases_preserved=True),passwords_saved=False)
     atomic(history,migration)
+    stage('readonly_release')
     revision=git('rev-parse','HEAD').strip();release=OPT/'releases'/revision
     if not release.exists():
         secure_dir(release,mode=0o755)
@@ -179,6 +211,7 @@ def install(manifest,public,files):
         symlink(CODE/'config',own/'config');symlink(OPT/'native/deps',own/'deps');symlink(OPT/'native/build/he_bridge',own/'build/he_bridge')
         atomic(own/'permission-public-plan.json',dict(public=True,nodes=64));os.chmod(own/'permission-public-plan.json',0o444)
     symlink(CODE/'config',BASE/'admin/config');symlink(OPT/'native/deps',BASE/'admin/deps')
+    stage('persistent_state_migration')
     secure_dir(BASE/'gate',identities['coordinator'].pw_uid,grp.getgrnam('pgnn-gate').gr_gid,0o2750)
     migrate(PROJECT/'state/storage/sessions.sqlite',BASE/'gate/sessions.sqlite','coordinator',migration['state_files']);atomic(history,migration)
     for path in (PROJECT/'state/storage').iterdir():
@@ -205,6 +238,7 @@ def install(manifest,public,files):
         messages=actor_root(role)/'build/permission-messages'
         if not messages.exists():messages.write_text('Permission fixture only; no protocol messages.\n');os.chown(messages,p.pw_uid,p.pw_gid);os.chmod(messages,0o600)
         migration['assets'].append(dict(role=role,files=len(files[role]),content_unchanged=True,reconstructed=False));atomic(history,migration)
+    stage('receiver_permissions')
     receiver=identities['receiver'];secure_dir(actor_root('receiver')/'results/application'/EID/'receiver',receiver.pw_uid,receiver.pw_gid)
     for name,current in [('permission-current',True),('permission-other',False)]:
         directory=actor_root('receiver')/name;secure_dir(directory,receiver.pw_uid if current else 0,receiver.pw_gid if current else 0)
@@ -215,6 +249,7 @@ def install(manifest,public,files):
     os.chmod(PROJECT,0o700) # All original verification/private aliases remain outside role access.
     migration.update(commit=revision,timestamp_utc=datetime.datetime.now(datetime.timezone.utc).isoformat(),identities={r:dict(uid=p.pw_uid,gid=p.pw_gid) for r,p in identities.items()},source_iteration=160,model_id=public['model_id'],original_project_mode='0700')
     atomic(history,migration)
+    stage('systemd_services')
     tmpfiles=Path('/etc/tmpfiles.d/privacy-gnn.conf')
     tmpfiles.write_text('d /run/privacy-gnn 0755 root root -\nd /run/privacy-gnn/public 0750 pgnn-coordinator pgnn-page-api -\n');os.chmod(tmpfiles,0o644)
     common='\n[Service]\nType=simple\nUMask=0077\nNoNewPrivileges=yes\nProtectSystem=strict\nProtectHome=read-only\nKillMode=control-group\nTimeoutStopSec=15\nRestart=on-failure\nEnvironment=PYTHONPATH=/opt/privacy-gnn/code PYTHONDONTWRITEBYTECODE=1 PGNN_GATE_DIR=/var/lib/privacy-gnn/gate WSL_DISTRO_NAME=GNN-Project\n'
@@ -228,7 +263,12 @@ def install(manifest,public,files):
     run(['systemctl','daemon-reload']);run(['systemctl','enable','--now','pgnn-role-broker','pgnn-coordinator','pgnn-page'])
     print('Installed. Permissions NOT yet accepted; page stays disconnected. Access link is in results/page/access-link.json (operator-only, not a password).')
 def verify():
-    records=json.loads((BASE/'admin/migration.json').read_text());require(len({identity['uid'] for identity in records['identities'].values()})==6,'UID separation failed')
+    stage('verify')
+    history=BASE/'admin/migration.json'
+    require(history.is_file(),'INSTALLATION_NOT_COMPLETE: no migration record; installation has not reached asset migration. Resume --install; preserve existing accounts and state.')
+    records=json.loads(history.read_text())
+    require('identities' in records,'INSTALLATION_NOT_COMPLETE: migration record exists but installation is unfinished. Resume --install; do not delete retained state.')
+    require(len({identity['uid'] for identity in records['identities'].values()})==6,'UID separation failed')
     for row in records['state_files']:
         require(row['content_preserved'] and row['before']['sha256']==row['after']['sha256'],'State migration proof failed');require(Path(row['after']['path']).stat().st_ino==row['after']['inode'],'Persistent inode changed')
     for unit in ('pgnn-role-broker','pgnn-coordinator','pgnn-page'):require(run(['systemctl','is-active',unit]).strip()=='active','Service is not active: '+unit)
@@ -248,4 +288,9 @@ def main():
     else:
         manifest,public,files=preflight()
         if a.install:install(manifest,public,files)
-if __name__=='__main__':main()
+if __name__=='__main__':
+    try:main()
+    except (RuntimeError,OSError,subprocess.CalledProcessError,KeyboardInterrupt) as error:
+        reason=str(error) if not isinstance(error,KeyboardInterrupt) else 'INTERRUPTED: preserve accounts and migration records; do not retry protocol materials'
+        print(json.dumps(dict(status='INSTALLATION_FAILED',stage=PHASE,reason=reason),ensure_ascii=False,indent=2),file=sys.stderr)
+        sys.exit(1)
