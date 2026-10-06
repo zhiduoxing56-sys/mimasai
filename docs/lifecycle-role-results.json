@@ -1,0 +1,752 @@
+{
+  "baseline": "c9840ed3cd373031d9f8e4dce55a87247e57cc02",
+  "timestamp_utc": "2026-10-06T02:59:13.850294+00:00",
+  "scope": "Changed process groups/application lifecycle/retention only. No long training, no real page query, no original primitive rerun.",
+  "independent_runs": {
+    "process_checks": {
+      "status": "PASS_CHANGED_PROCESS_GROUPS",
+      "closed_pipes_and_parent_exit_observed": true,
+      "resistant_grandchild_force_killed": true,
+      "grace_seconds": 0.2,
+      "elapsed_seconds": 0.229626633998123,
+      "proof": {
+        "stopped": true,
+        "groups": [
+          3
+        ],
+        "criterion": "no non-zombie process-group members in /proc"
+      },
+      "interrupted_helper_group_stopped": true,
+      "inspection_failure_still_sends_kill_and_rejects_completion": true,
+      "training_executed": false
+    },
+    "storage_checks": {
+      "cleanup_observation": {
+        "session": "16ad3a75554d81ffc3dc47f9062a6e98",
+        "state": "cleaned",
+        "removed_files": 3,
+        "deleted_file_allocated_bytes": 12288,
+        "unlinked_last_link_allocated_bytes": 12288,
+        "reclaimable_upper_bytes": 12288,
+        "space_before": {
+          "internal_available_bytes": 819896492032,
+          "host_available_bytes": 32449286144,
+          "host_status": "READABLE",
+          "host_mount": "/mnt/e",
+          "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+          "vhd_logical_bytes": 216304451584
+        },
+        "space_after": {
+          "internal_available_bytes": 819896504320,
+          "host_available_bytes": 32449286144,
+          "host_status": "READABLE",
+          "host_mount": "/mnt/e",
+          "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+          "vhd_logical_bytes": 216304451584
+        },
+        "observed_internal_available_delta": 12288,
+        "observed_host_available_delta": 0,
+        "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+      },
+      "status": "PASS_CHANGED_STORAGE_LIFECYCLE",
+      "checks": [
+        "INTERNAL_SPACE_LOW",
+        "HOST_SPACE_LOW",
+        "HOST_SPACE_UNKNOWN",
+        "HOST_SPACE_LOW",
+        "SESSION_NOT_TERMINAL",
+        "SESSION_ACTIVE",
+        "INTERNAL_SPACE_LOW",
+        "SESSION_MATERIAL_PERMANENTLY_UNAVAILABLE",
+        "SESSION_STATE_REJECTED",
+        "INHERITABLE_SECRET_FD_CLOSED_IN_WORKERS",
+        "SESSION_NOT_TERMINAL",
+        "DELIVERY_PENDING_CLEANUP_REJECTED",
+        "SESSION_ACTIVE",
+        "ONE_SIDED_SPACE_STOP_AND_LEASE",
+        "CLEAN_PREVIEW_CHANGED",
+        "SESSION_UNKNOWN"
+      ],
+      "checkpoint_preserved": true,
+      "grandchildren_stopped": true,
+      "restored_copy_rejected": true,
+      "ledger_reset": false
+    },
+    "application_checks": {
+      "status": "PASS_CHANGED_APPLICATION_LIFECYCLE",
+      "evidence_kind": "Independent short synthetic fault runs; no classifier/protocol accuracy claim",
+      "cases": [
+        {
+          "case": "capacity_admission",
+          "session": "f39d2ee4ef2867e9813600807f4eeeac",
+          "state": "cleaned",
+          "failure_stages": [
+            "input_capacity_admission"
+          ],
+          "partial_export_files": 0,
+          "rerun_rejected": true,
+          "cleanup_observation": {
+            "session": "f39d2ee4ef2867e9813600807f4eeeac",
+            "state": "cleaned",
+            "removed_files": 2,
+            "deleted_file_allocated_bytes": 8192,
+            "unlinked_last_link_allocated_bytes": 8192,
+            "reclaimable_upper_bytes": 8192,
+            "space_before": {
+              "internal_available_bytes": 819893444608,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "space_after": {
+              "internal_available_bytes": 819893452800,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "observed_internal_available_delta": 8192,
+            "observed_host_available_delta": 0,
+            "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+          }
+        },
+        {
+          "case": "input_preparation",
+          "session": "6bd31c627bb1543dc0fe4b566311d5f4",
+          "state": "cleaned",
+          "failure_stages": [
+            "input_preparation"
+          ],
+          "partial_export_files": 0,
+          "rerun_rejected": true,
+          "cleanup_observation": {
+            "session": "6bd31c627bb1543dc0fe4b566311d5f4",
+            "state": "cleaned",
+            "removed_files": 2,
+            "deleted_file_allocated_bytes": 8192,
+            "unlinked_last_link_allocated_bytes": 8192,
+            "reclaimable_upper_bytes": 8192,
+            "space_before": {
+              "internal_available_bytes": 819893395456,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "space_after": {
+              "internal_available_bytes": 819893403648,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "observed_internal_available_delta": 8192,
+            "observed_host_available_delta": 0,
+            "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+          }
+        },
+        {
+          "case": "export_S0",
+          "session": "2bb317302a9168a3f63ae05bba6008d8",
+          "state": "cleaned",
+          "failure_stages": [
+            "export_S0"
+          ],
+          "partial_export_files": 1,
+          "rerun_rejected": true,
+          "cleanup_observation": {
+            "session": "2bb317302a9168a3f63ae05bba6008d8",
+            "state": "cleaned",
+            "removed_files": 4,
+            "deleted_file_allocated_bytes": 16384,
+            "unlinked_last_link_allocated_bytes": 16384,
+            "reclaimable_upper_bytes": 16384,
+            "space_before": {
+              "internal_available_bytes": 819893293056,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "space_after": {
+              "internal_available_bytes": 819893309440,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "observed_internal_available_delta": 16384,
+            "observed_host_available_delta": 0,
+            "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+          }
+        },
+        {
+          "case": "export_S1",
+          "session": "13ef35e049c74d242b90004d22d89d0e",
+          "state": "cleaned",
+          "failure_stages": [
+            "export_S1"
+          ],
+          "partial_export_files": 1,
+          "rerun_rejected": true,
+          "cleanup_observation": {
+            "session": "13ef35e049c74d242b90004d22d89d0e",
+            "state": "cleaned",
+            "removed_files": 4,
+            "deleted_file_allocated_bytes": 16384,
+            "unlinked_last_link_allocated_bytes": 16384,
+            "reclaimable_upper_bytes": 16384,
+            "space_before": {
+              "internal_available_bytes": 819893170176,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "space_after": {
+              "internal_available_bytes": 819893186560,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "observed_internal_available_delta": 16384,
+            "observed_host_available_delta": 0,
+            "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+          }
+        },
+        {
+          "case": "report_save",
+          "session": "64f9a5f307371daea74e6ccbe7f0b863",
+          "state": "cleaned",
+          "failure_stages": [
+            "backend_report_save",
+            "failure_report_save",
+            "failure_retention"
+          ],
+          "partial_export_files": 0,
+          "rerun_rejected": true,
+          "cleanup_observation": null
+        },
+        {
+          "case": "report_start",
+          "session": "356265e1c3416a943beaba678830f142",
+          "state": "cleaned",
+          "failure_stages": [
+            "execution_report_start",
+            "failure_report_save",
+            "failure_retention"
+          ],
+          "partial_export_files": 0,
+          "rerun_rejected": true,
+          "cleanup_observation": null
+        },
+        {
+          "case": "report_commit",
+          "session": "04b52014bff00a7880f849aaba417f36",
+          "state": "cleaned",
+          "failure_stages": [
+            "report_commit"
+          ],
+          "partial_export_files": 2,
+          "rerun_rejected": true,
+          "cleanup_observation": {
+            "session": "04b52014bff00a7880f849aaba417f36",
+            "state": "cleaned",
+            "removed_files": 4,
+            "deleted_file_allocated_bytes": 16384,
+            "unlinked_last_link_allocated_bytes": 16384,
+            "reclaimable_upper_bytes": 16384,
+            "space_before": {
+              "internal_available_bytes": 819892965376,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "space_after": {
+              "internal_available_bytes": 819892981760,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "observed_internal_available_delta": 16384,
+            "observed_host_available_delta": 0,
+            "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+          }
+        },
+        {
+          "case": "interrupt",
+          "session": "f02b1209febeebf9c75eb1a9ca6d5cbc",
+          "state": "cleaned",
+          "failure_stages": [
+            "backend"
+          ],
+          "partial_export_files": 0,
+          "rerun_rejected": true,
+          "cleanup_observation": {
+            "session": "f02b1209febeebf9c75eb1a9ca6d5cbc",
+            "state": "cleaned",
+            "removed_files": 4,
+            "deleted_file_allocated_bytes": 16384,
+            "unlinked_last_link_allocated_bytes": 16384,
+            "reclaimable_upper_bytes": 16384,
+            "space_before": {
+              "internal_available_bytes": 819892908032,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "space_after": {
+              "internal_available_bytes": 819892924416,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "observed_internal_available_delta": 16384,
+            "observed_host_available_delta": 0,
+            "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+          }
+        },
+        {
+          "case": "export_interrupt",
+          "session": "bae96546a5893fa3a04ae2c08f9ed32d",
+          "state": "cleaned",
+          "failure_stages": [
+            "export_S1"
+          ],
+          "partial_export_files": 1,
+          "rerun_rejected": true,
+          "cleanup_observation": {
+            "session": "bae96546a5893fa3a04ae2c08f9ed32d",
+            "state": "cleaned",
+            "removed_files": 4,
+            "deleted_file_allocated_bytes": 16384,
+            "unlinked_last_link_allocated_bytes": 16384,
+            "reclaimable_upper_bytes": 16384,
+            "space_before": {
+              "internal_available_bytes": 819892817920,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "space_after": {
+              "internal_available_bytes": 819892834304,
+              "host_available_bytes": 32449286144,
+              "host_status": "READABLE",
+              "host_mount": "/mnt/e",
+              "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+              "vhd_logical_bytes": 216304451584
+            },
+            "observed_internal_available_delta": 16384,
+            "observed_host_available_delta": 0,
+            "interpretation": "Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion."
+          }
+        },
+        {
+          "case": "stop_unconfirmed",
+          "session": "9253f4ceee85962a267530bea6211d98",
+          "state": "stopping",
+          "failure_stages": [
+            "backend"
+          ],
+          "partial_export_files": 0,
+          "rerun_rejected": true,
+          "cleanup_observation": null
+        },
+        {
+          "case": "publication_input",
+          "session": "9b17661af88091b6d107288e5e4d13ea",
+          "state": "cleaned",
+          "failure_stage": "publication_input",
+          "rerun_rejected": true
+        },
+        {
+          "case": "model_install",
+          "session": "839bc9fffb4ed5dfdbef7463391e7d3b",
+          "state": "cleaned",
+          "failure_stage": "model_install_S0",
+          "rerun_rejected": true
+        },
+        {
+          "case": "model_install_S1",
+          "session": "c99384022d259321222eb7457b3c5529",
+          "state": "cleaned",
+          "failure_stage": "model_install_S1",
+          "rerun_rejected": true
+        },
+        {
+          "case": "publication_report",
+          "session": "58f425edf69589acd0039fdda7ca6848",
+          "state": "cleaned",
+          "failure_stage": "report_commit",
+          "rerun_rejected": true
+        },
+        {
+          "case": "publication_report_after_replace",
+          "session": "1fe5444a1b9488c327997746fa519b18",
+          "state": "cleaned",
+          "failure_stage": "report_commit",
+          "rerun_rejected": true
+        },
+        {
+          "case": "offline_report_save",
+          "session": "669cb8e1f04a46a8a6772106aacdd08e",
+          "state": "cleaned",
+          "failure_stage": "offline_report_save",
+          "rerun_rejected": true
+        },
+        {
+          "case": "offline_after_generation",
+          "session": "903dae47c7b987f70e9d8b9840c5043c",
+          "state": "cleaned",
+          "failure_stage": "offline_generation",
+          "rerun_rejected": true
+        },
+        {
+          "case": "notifier_stop_unconfirmed",
+          "session": "0045df4420d5435973c75c12ae7279c8",
+          "state": "stopping",
+          "cleanup_rejected": true,
+          "rerun_rejected": true
+        },
+        {
+          "case": "notifier_receipt_save_failed",
+          "session": "c8eb51dad8324c88c870c33740a22fa0",
+          "state": "stopping",
+          "cleanup_rejected": true,
+          "rerun_rejected": true
+        },
+        {
+          "case": "success_fixture",
+          "session": "3887b057d1d1503b6a5bc63f59eff545",
+          "state": "cleaned",
+          "delivery_lock_verified": true,
+          "repeated_execution_rejected": true
+        },
+        {
+          "case": "real_export_helper_synthetic_final_shares",
+          "session": "fb55aa4cbbc506b7eaa816f1ed5af503",
+          "authorization_binding_rejected": true,
+          "final_only_export_verified": true,
+          "delivery_repair_supported": false
+        }
+      ],
+      "new_batches_distinct": true,
+      "new_actual_arithmetic_materials_distinct": true,
+      "material_pairs_checked": 14,
+      "training_executed": false
+    },
+    "role_preflight": {
+      "timestamp_utc": "2026-10-06T02:58:28.712840+00:00",
+      "status": "BLOCKED_MISSING_OS_IDENTITIES",
+      "current_uid": 1000,
+      "current_euid": 1000,
+      "identities": {
+        "s0": null,
+        "s1": null,
+        "dealer": null,
+        "receiver": null,
+        "coordinator": null,
+        "page": null
+      },
+      "missing": [
+        "s0",
+        "s1",
+        "dealer",
+        "receiver",
+        "coordinator",
+        "page"
+      ],
+      "matrix": [
+        {
+          "role": "s0",
+          "uid": null,
+          "resource": "S1 private material",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "s0",
+          "uid": null,
+          "resource": "S1 consumption ledger",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "s1",
+          "uid": null,
+          "resource": "S0 private material",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "s1",
+          "uid": null,
+          "resource": "S0 consumption ledger",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "dealer",
+          "uid": null,
+          "resource": "S0 input/model/messages",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "dealer",
+          "uid": null,
+          "resource": "S1 input/model/messages",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "dealer",
+          "uid": null,
+          "resource": "receiver request directory",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "dealer",
+          "uid": null,
+          "resource": "public plan",
+          "expected": "ALLOW",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "receiver",
+          "uid": null,
+          "resource": "this request authorized final exports",
+          "expected": "ALLOW",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "receiver",
+          "uid": null,
+          "resource": "another request exports",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "receiver",
+          "uid": null,
+          "resource": "online inputs/models/ledgers",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "coordinator",
+          "uid": null,
+          "resource": "S0/S1 secrets/ledgers",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "coordinator",
+          "uid": null,
+          "resource": "verification directory",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "page",
+          "uid": null,
+          "resource": "S0/S1 secrets/ledgers",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "page",
+          "uid": null,
+          "resource": "verification directory",
+          "expected": "DENY",
+          "actual": "NOT_RUN_AS_ROLE"
+        },
+        {
+          "role": "page",
+          "uid": null,
+          "resource": "filtered public status and authorized result interface",
+          "expected": "ALLOW",
+          "actual": "NOT_RUN_AS_ROLE"
+        }
+      ],
+      "common_uid_negative_control": [
+        {
+          "uid": 1000,
+          "path": "build/application/a49152b33097752eaf81a7cba6d910a3/S0/model-829a29a6913d505e7167f418a94674ee.json",
+          "open_succeeded": true,
+          "error": null,
+          "secret_contents_read": false
+        },
+        {
+          "uid": 1000,
+          "path": "build/application/a49152b33097752eaf81a7cba6d910a3/S1/model-829a29a6913d505e7167f418a94674ee.json",
+          "open_succeeded": true,
+          "error": null,
+          "secret_contents_read": false
+        },
+        {
+          "uid": 1000,
+          "path": "state/mpc/S0-ledger.sqlite",
+          "open_succeeded": true,
+          "error": null,
+          "secret_contents_read": false
+        },
+        {
+          "uid": 1000,
+          "path": "state/mpc/S1-ledger.sqlite",
+          "open_succeeded": true,
+          "error": null,
+          "secret_contents_read": false
+        },
+        {
+          "uid": 1000,
+          "path": "build/application/a49152b33097752eaf81a7cba6d910a3/V/data.json",
+          "open_succeeded": true,
+          "error": null,
+          "secret_contents_read": false
+        }
+      ],
+      "hardlink_metadata": {
+        "scope": [
+          "build/application/a49152b33097752eaf81a7cba6d910a3",
+          "build/stage2/f55c17ef75282b7a18a389845abc3136"
+        ],
+        "hardlinked_inodes": 144,
+        "cross_secret_role_aliases": [],
+        "aliases_outside_scanned_roots": 0,
+        "outside_alias_examples": [],
+        "symlinks": [],
+        "file_ownership": [
+          {
+            "uid": 1000,
+            "mode": "0o600",
+            "files": 19676
+          }
+        ],
+        "full_host_alias_audit": false
+      },
+      "startup_fds": {
+        "source_inspection": "runtime passes only each role socket; all launches close other descriptors and bind stdin to /dev/null",
+        "independent_same_uid_test": "results/lifecycle/storage-checks.json",
+        "actual_role_uid_test": "NOT_RUN"
+      },
+      "existing_model": {
+        "experiment": "a49152b33097752eaf81a7cba6d910a3",
+        "model_id": "829a29a6913d505e7167f418a94674ee",
+        "source_iteration": 160,
+        "publication_committed": false,
+        "model_reconstructed": false,
+        "training_reexecuted": false
+      },
+      "space": {
+        "internal_available_bytes": 819891802112,
+        "host_available_bytes": 32449286144,
+        "host_status": "READABLE",
+        "host_mount": "/mnt/e",
+        "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+        "vhd_logical_bytes": 216304451584
+      },
+      "page": {
+        "status": "NOT_CONNECTED_PERMISSION_GATE_UNMET",
+        "real_page_query": "NOT_RUN"
+      },
+      "boundary": "Local deployment only; administrator retains access. Half-honest online parties and trusted offline generation boundary remain."
+    }
+  },
+  "report_sha256": {
+    "process-checks": "1f761e3bfa02e0496f99386c1a5b4c2d3884cf3321a22dec5c4c189d8df94b49",
+    "storage-checks": "87cba502ba9c2014526fffc4b36b26fa5811131a284f2c941c5f1e2c31698802",
+    "application-checks": "1fcb2aa94a27091fa57a77ab2f22b8c65311bdfaf4e2f66e408669f76b4c777f",
+    "role-preflight": "9784cfdef1a737d40d7296c210cf05e688e2f9a8efdd2ce126d415005f5b7314"
+  },
+  "status_cli_short_run": {
+    "status": {
+      "session": "64f9a5f307371daea74e6ccbe7f0b863",
+      "state": "cleaned",
+      "termination_state": "aborted",
+      "stage": "failure_retention",
+      "stopped": true,
+      "delivery_state": "incomplete",
+      "exported_roles": [],
+      "failure_stage": "backend_report_save",
+      "failure_reason": "IO_ERROR"
+    },
+    "old_cache_is_not_delivery_evidence": true
+  },
+  "privilege_probe_origin": "Captured actual tool results from this session; packaging does not rerun privileged commands.",
+  "privilege_probes": [
+    {
+      "command": "sudo -n /usr/bin/id",
+      "execution": "sandbox_permissions=require_escalated",
+      "exit_code": 1,
+      "stderr": "sudo: a password is required"
+    },
+    {
+      "command": "sudo -n /usr/sbin/useradd --system --user-group --no-create-home --shell /usr/sbin/nologin pgnn-s0",
+      "execution": "sandbox_permissions=require_escalated",
+      "exit_code": 1,
+      "stderr": "sudo: a password is required"
+    }
+  ],
+  "source_inspection": {
+    "role_ledgers_written_by_role_helper": true,
+    "helper_uid_separation": false,
+    "cleanup_os_role_executor_implemented": false,
+    "model_restore_or_training_code_changed": false,
+    "numerical_semantics_or_range_guard_changed": false,
+    "process_group_scope": "Honest same-group descendants, Linux /proc proof; no hostile setsid containment"
+  },
+  "existing_report_results": {
+    "references": [
+      "docs/storage-delivery-results.json",
+      "docs/storage-delivery-acceptance.md",
+      "docs/representative-acceptance.md"
+    ],
+    "reexecuted": false,
+    "description": "Existing 160-step model/classification/numerical/reference and query costs are prior evidence, not current short-run results."
+  },
+  "space_at_package": {
+    "internal_available_bytes": 819891777536,
+    "host_available_bytes": 32449286144,
+    "host_status": "READABLE",
+    "host_mount": "/mnt/e",
+    "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+    "vhd_logical_bytes": 216304451584
+  },
+  "delivery": {
+    "item_1": "COMPLETED_SHORT_TESTS_PASS",
+    "item_2": "BLOCKED_PRIVILEGED_ACCOUNT_CREATION",
+    "item_3": "NOT_STARTED_PERMISSION_GATE_UNMET",
+    "actual_uid_permission_matrix": "NOT_RUN",
+    "real_page_query_evidence": "NOT_RUN",
+    "delivery_repair_supported": false
+  },
+  "historical_acceptance": {
+    "original_storage_report_restored_from_baseline": true,
+    "baseline_docs_sha256": "03905e57f01d561c8afe7118f7985ae98464f6ed491e746b80c002d78d701043",
+    "bulk_cleanup": false,
+    "ledger_reset": false,
+    "vhd_maintenance": false
+  }
+}

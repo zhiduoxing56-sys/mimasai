@@ -33,7 +33,7 @@
 
 ## 状态与清理
 
-新会话状态为 `generating → ready → running → completed/aborted → cleaned`。同一会话只准生成和执行一次。`ready`是尚未执行，不能清理；generating/running、无记录及无法解释的状态均拒绝清理。新会话从材料生成到执行、单方故障辅助执行及清理均持有会话锁。中央库 `state/storage/sessions.sqlite`、会话锁与 `state/mpc/S*-ledger.sqlite`永久保留，不VACUUM、不重置、不删除侧文件。
+2026-10-06修订：新会话状态为 `generating → ready → preparing → running → completed/aborted → cleaned`，停止及通知待确认时为 `stopping`。同一会话只准生成和执行一次。`ready`是尚未执行，不能清理；generating/preparing/running/stopping、无记录及无法解释的状态均拒绝清理。材料锁加准备/交付工作流锁保护完整操作，单方监督持锁至后代及通知停止。completed/aborted也必须有新事件日志中持久停止证明；旧记录不会仅凭状态名称自动补证。中央库 `state/storage/sessions.sqlite`及追加事件表、会话锁与 `state/mpc/S*-ledger.sqlite`永久保留，不VACUUM、不重置、不删除侧文件。
 
 清理预览列出具体相对文件、逻辑大小、分配块、设备／inode／mtime／链接数，附完整预览摘要。应用发布／交付结束前仍保持running，不能在导出份额过程中清理。应用时重新核验状态、锁和每个文件属性；清单变化即拒绝。先提交cleaned状态及原始completed/aborted终止状态和清单，再删文件，删除中断后可重新预览剩余文件。复制旧材料到新位置仍被批次终止标记或消费账本拒绝。账本保留(batch, kind, index/span)，`material-identifiers.json`保留批次、材料数量、环材料ID和掩码ID；没有恢复或重新发放旧材料的入口。
 
@@ -52,7 +52,9 @@ python3 scripts/storage_inventory.py
 
 新官方训练每次成功检查点与报告持久提交后自动预览／清理一次性文件；失败且已确认aborted时同样清理。新发布在模型链接和报告保存后清理。新请求在两方目标份额成功导出后清理。成功检查点目前全保留，未实施淘汰旧检查点。独立底层验证夹具默认延迟清理，便于其明确的故障注入；只能用同一终止清理命令处理，不作为生产实验入口。独立验证现已能在一次性输入删除后用保留的检查点、f12/f7模型、公开作业模板及最终交付核验，不重新生成旧输入。
 
-删除Linux文件本轮没有压缩VHD，宿主可用空间不承诺随之回升。重复构建文件按内容哈希列出，依赖安装树分别计量，均没有擅自删除。
+删除Linux文件本轮没有压缩VHD，宿主可用空间不承诺随之回升。2026-10-06新增清理前后内部/宿主可用空间观测、成功unlink文件分配块和当时最后链接分配块统计，记录于持久事件表。`reclaimable_upper_bytes`仍仅为预览上界；删除块统计及可用空间差值也不能相互替代或当作已证明的实际回收量。重复构建文件按内容哈希列出，依赖安装树分别计量，均没有擅自删除。
+
+异常交付不重执行密码协议，没有补齐入口；失败清理必须等相关执行器停止确认，终止通知由各角色辅助进程保存。当前角色仍共用UID，OS受限执行器及角色清理尚未部署。新验收与权限阻塞见 [lifecycle-role-acceptance.md](lifecycle-role-acceptance.md)，旧报告和历史预览保留。
 
 ## 改动验证
 

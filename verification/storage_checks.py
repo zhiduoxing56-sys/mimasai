@@ -6,7 +6,7 @@ sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from src import storage,offline,runtime
 from src.mpc import Materials,ProtocolError,private_write,VERSION
 from src.retention import preview,apply,auto
-ROOT=storage.ROOT;OUT=ROOT/'results/storage';OUT.mkdir(parents=True,exist_ok=True)
+ROOT=storage.ROOT;OUT=ROOT/'results/lifecycle';OUT.mkdir(parents=True,exist_ok=True)
 
 checks=[]
 def expect(code,fn):
@@ -66,7 +66,15 @@ def main():
  d,sid=directory()
  with patch.object(storage,'snapshot',ample):
   offline.generate(d,sid,32,[dict(type='add',count=1)])
-  attempt,metrics=runtime.launch(d,sid,32,worker='verification.storage_success_worker',defer_completion=True)
+  secret=d/'not-for-child.json';secret.write_text('synthetic inheritable descriptor fixture')
+  secret_fd=os.open(secret,os.O_RDONLY);os.set_inheritable(secret_fd,True)
+  try:attempt,metrics=runtime.launch(d,sid,32,worker='verification.storage_success_worker',defer_completion=True)
+  finally:os.close(secret_fd)
+ for role in (0,1):
+  fds=json.loads((d/f'S{role}/startup-fds.json').read_text())
+  assert fds['0']=='/dev/null' and str(secret) not in fds.values()
+  assert all(name in ('0','1','2') or value.startswith('socket:') for name,value in fds.items()),fds
+ checks.append('INHERITABLE_SECRET_FD_CLOSED_IN_WORKERS')
  assert all(m['success'] for m in metrics) and storage.record(sid)['state']=='running'
  expect('SESSION_NOT_TERMINAL',lambda:preview(sid))
  storage.transition(sid,{'running'},'completed','authorized exports persisted fixture');auto(sid)
@@ -79,7 +87,7 @@ def main():
  with patch.object(storage,'snapshot',one_falling):
   proc,sock,attempt=runtime.launch(d,sid,32,peer=False,worker='verification.storage_worker')
   expect('SESSION_ACTIVE',lambda:preview(sid))
-  proc.communicate(timeout=5);sock.close();proc.storage_monitor.join(timeout=5)
+  proc.storage_monitor.join(timeout=10);proc.communicate(timeout=1);sock.close()
   deadline=time.monotonic()+5
   while storage.record(sid)['state']=='running' and time.monotonic()<deadline:time.sleep(.01)
  assert storage.record(sid)['state']=='aborted';auto(sid)
@@ -87,10 +95,10 @@ def main():
  # Preview rejects concurrent file changes; preserve checkpoint and model.
  d,sid=directory()
  with patch.object(storage,'snapshot',ample):offline.generate(d,sid,32,[dict(type='add',count=1)])
- storage.burn(sid,'terminal test');doc=preview(sid)
+ storage.burn(sid,'terminal test',stopped=True);doc=preview(sid)
  (d/'S0/input.json').write_text('{}')
  expect('CLEAN_PREVIEW_CHANGED',lambda:apply(doc));auto(sid)
  expect('SESSION_UNKNOWN',lambda:preview(secrets.token_hex(16)))
- result=dict(status='PASS_CHANGED_STORAGE_LIFECYCLE',checks=checks,checkpoint_preserved=True,grandchildren_stopped=True,restored_copy_rejected=True,ledger_reset=False)
- (OUT/'checks.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
+ result=dict(cleanup_observation=result,status='PASS_CHANGED_STORAGE_LIFECYCLE',checks=checks,checkpoint_preserved=True,grandchildren_stopped=True,restored_copy_rejected=True,ledger_reset=False)
+ (OUT/'storage-checks.json').write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(result,indent=2))
 if __name__=='__main__':main()

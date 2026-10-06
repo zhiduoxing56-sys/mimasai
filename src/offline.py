@@ -73,7 +73,7 @@ def generate(directory,session,bits,plan,limits=None):
             result['disk_budget']=budget
             return result
         except BaseException as error:
-            burn(session,str(error));raise
+            burn(session,str(error),stopped=True);raise
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('directory');p.add_argument('plan');args=p.parse_args()

@@ -54,26 +54,99 @@ def db():
     os.chmod(directory/'sessions.sqlite', 0o600)
     conn.execute('PRAGMA synchronous=FULL')
     conn.execute('CREATE TABLE IF NOT EXISTS sessions (sid TEXT PRIMARY KEY, directory TEXT UNIQUE, batch TEXT UNIQUE, state TEXT, budget INTEGER, detail TEXT)')
+    conn.execute('CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY AUTOINCREMENT, sid TEXT, body TEXT)')
     return conn
 
 def record(sid):
-    with contextlib.closing(db()) as conn:
+    path=ROOT/'state/storage/sessions.sqlite'
+    if not path.exists():return None
+    with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
         row = conn.execute('SELECT directory,batch,state,budget,detail FROM sessions WHERE sid=?', (sid,)).fetchone()
     return dict(zip(('directory','batch','state','budget','detail'), row)) if row else None
 
+def event(sid,stage,**fields):
+    body=dict(stage=stage,time_ns=time.time_ns(),**fields)
+    with contextlib.closing(db()) as conn, conn:
+        conn.execute('INSERT INTO events(sid,body) VALUES (?,?)',(sid,json.dumps(body,sort_keys=True)))
+    return body
+
+def history(sid):
+    path=ROOT/'state/storage/sessions.sqlite'
+    if not path.exists():return []
+    with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
+        if not conn.execute("SELECT 1 FROM sqlite_master WHERE name='events'").fetchone():return []
+        return [json.loads(row[0]) for row in conn.execute('SELECT body FROM events WHERE sid=? ORDER BY seq',(sid,))]
+
+def stopped(sid):
+    proofs=[row['proof'] for row in history(sid) if 'proof' in row]
+    return bool(proofs and proofs[-1].get('stopped') is True)
+
+def committed(sid):
+    entry=record(sid)
+    if not entry:return False
+    if entry['state']=='completed':return True
+    if entry['state']=='cleaned':
+        return json.loads(entry['detail']).get('termination_state')=='completed'
+    return False
+
+def public_status(sid):
+    """Authoritative allowlisted state; never return paths, ledgers or shares.
+
+    Cached application JSON is not completion evidence when its persistence
+    failed. The durable event stream and tombstone override it.
+    """
+    entry=record(sid);require(entry is not None,'SESSION_UNKNOWN')
+    events=history(sid);termination=entry['state']
+    if termination=='cleaned':termination=json.loads(entry['detail']).get('termination_state')
+    failures=[row for row in events if row.get('status')=='failed' and row['stage'] not in ('failure_report_save','failure_retention')]
+    exports=[role for role in (0,1) if any(row['stage']==f'export_S{role}' and row.get('status')=='persisted' for row in events)]
+    complete=termination=='completed' and any(row['stage']=='completed' for row in events) and exports==[0,1]
+    reason=None
+    if failures:
+        raw=failures[-1]['reason'];kind,_,detail=raw.partition(':')
+        reason={'OSError':'IO_ERROR','KeyboardInterrupt':'INTERRUPTED','CalledProcessError':'ROLE_COMMAND_FAILED','StopUnconfirmed':'STOP_UNCONFIRMED'}.get(kind,'APPLICATION_FAILED')
+        if kind=='ProtocolError':
+            code=detail.split(':',1)[0]
+            if code and all(c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_' for c in code):reason=code
+    return dict(session=sid,state=entry['state'],termination_state=termination,
+        stage=events[-1]['stage'] if events else 'legacy_no_event_journal',
+        stopped=stopped(sid),delivery_state='complete' if complete else ('incomplete' if termination in ('aborted','stopping') else 'pending'),
+        exported_roles=exports,failure_stage=failures[-1]['stage'] if failures else None,
+        failure_reason=reason)
+
+_workflows=threading.local()
 @contextlib.contextmanager
-def lease(sid):
+def workflow_lease(sid):
+    # Delivery lock is separate from the protocol/dealer lock. Same-thread
+    # nesting permits automatic cleanup; another process/thread cannot enter.
+    require(len(sid)==32 and all(c in '0123456789abcdef' for c in sid),'STORAGE_SESSION_ID')
+    owned=getattr(_workflows,'owned',set())
+    if sid in owned:
+        yield;return
+    directory=ROOT/'state/storage';directory.mkdir(parents=True,exist_ok=True,mode=0o700)
+    with (directory/(sid+'.workflow.lock')).open('a') as file:
+        try:fcntl.flock(file,fcntl.LOCK_EX|fcntl.LOCK_NB)
+        except BlockingIOError:raise ProtocolError('SESSION_ACTIVE') from None
+        _workflows.owned=owned|{sid}
+        try:yield
+        finally:_workflows.owned=owned
+
+@contextlib.contextmanager
+def lease(sid, suffix='.lock'):
     require(len(sid)==32 and all(c in '0123456789abcdef' for c in sid), 'STORAGE_SESSION_ID')
+    require(suffix in ('.lock','.workflow.lock'),'STORAGE_LOCK_TYPE')
     directory = ROOT/'state/storage'; directory.mkdir(parents=True, exist_ok=True, mode=0o700)
-    with (directory/(sid+'.lock')).open('a') as file:
+    with (directory/(sid+suffix)).open('a') as file:
         try: fcntl.flock(file, fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError: raise ProtocolError('SESSION_ACTIVE') from None
         yield
 
 def check(directory, budget=0, exclude=None, probe=None, cfg=None):
     cfg = cfg or policy(); status = (probe or snapshot)(directory, cfg)
-    with contextlib.closing(db()) as conn:
-        reservations = conn.execute("SELECT COALESCE(SUM(budget),0) FROM sessions WHERE state IN ('generating','ready','running') AND sid != ?", (exclude or '',)).fetchone()[0]
+    path=ROOT/'state/storage/sessions.sqlite';reservations=0
+    if path.exists():
+        with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
+            reservations = conn.execute("SELECT COALESCE(SUM(budget),0) FROM sessions WHERE state IN ('generating','ready','preparing','running','stopping') AND sid != ?", (exclude or '',)).fetchone()[0]
     status.update(required_growth_bytes=budget+reservations,
                   internal_reserve_bytes=cfg['internal_reserve_bytes'], host_reserve_bytes=cfg['host_reserve_bytes'])
     if status['host_available_bytes'] is None:
@@ -107,25 +180,41 @@ class Guard:
             status=check(self.directory,self.budget,self.sid); self.last=now; return status
 
 def reject_burned(batch):
-    with contextlib.closing(db()) as conn:
+    # Role readers never create/chmod/write the coordinator database.
+    path=ROOT/'state/storage/sessions.sqlite'
+    if not path.exists():return
+    with contextlib.closing(sqlite3.connect(path.as_uri()+'?mode=ro',uri=True)) as conn:
         row=conn.execute('SELECT state FROM sessions WHERE batch=?', (batch,)).fetchone()
     require(not row or row[0] in ('ready','running'), 'SESSION_MATERIAL_PERMANENTLY_UNAVAILABLE')
 
-def burn(sid, detail):
+def burn(sid, detail, *, stopped=False):
     entry=record(sid)
     if not entry: return
     # Central tombstone committed first: even a role-ledger I/O failure cannot
     # make a restored bundle usable through Materials on restart.
-    transition(sid, {'generating','ready','running','aborted'}, 'aborted', detail)
+    # Pending notifications are related processes too. Do not expose a
+    # cleanable abort until their process groups have also stopped.
+    transition(sid, {'generating','ready','preparing','running','aborted','stopping'}, 'stopping', detail)
+    event(sid,'termination_pending',reason=detail,proof=dict(stopped=False),state='stopping')
+    confirmed=stopped
+    # The role helper, never the coordinator, owns writes to its consumption
+    # ledger. Real OS identity deployment is separately gated and verified.
+    from .processes import run
+    import sys
     for role in (0,1):
-        path=ROOT/'state/mpc'/f'S{role}-ledger.sqlite'
-        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-        with sqlite3.connect(path, timeout=30) as conn:
-            conn.execute('PRAGMA synchronous=FULL')
-            conn.execute('CREATE TABLE IF NOT EXISTS batches (batch TEXT PRIMARY KEY, session TEXT, state TEXT)')
-            conn.execute('INSERT OR IGNORE INTO batches VALUES (?,?,?)', (entry['batch'],sid,'aborted_burned'))
-            conn.execute("UPDATE batches SET state='aborted_burned' WHERE batch=?", (entry['batch'],))
-        os.chmod(path,0o600)
+        try:run([sys.executable,'-m','src.role_state',str(role),sid,entry['batch']],cwd=ROOT,timeout=15)
+        except BaseException as error:
+            # A stopped notifier that failed to persist its receipt is also
+            # incomplete termination. Keep cleanup blocked, with central reuse
+            # refusal already durable, until an independently checked receipt.
+            confirmed=False
+            fields={}
+            if getattr(error,'stopped',True) is False:
+                transition(sid,{'aborted','stopping'},'stopping',detail+'; termination helper stop unconfirmed')
+                fields['proof']=dict(stopped=False)
+            event(sid,'role_termination_notification_failed',role=role,reason=str(error),**fields)
+    if confirmed:transition(sid,{'stopping'},'aborted',detail)
+    event(sid,'termination',reason=detail,proof=dict(stopped=confirmed),state='aborted' if confirmed else 'stopping')
 
 @contextlib.contextmanager
 def abort_signals():

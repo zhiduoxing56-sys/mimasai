@@ -2,7 +2,7 @@
 import argparse, hashlib, json, os
 from pathlib import Path
 from .mpc import ROOT,require
-from .storage import lease,record,transition,TERMINAL
+from .storage import lease,workflow_lease,record,transition,TERMINAL,stopped,snapshot,event
 
 # Exact one-shot files, never model/key/config/output/checkpoint/ledger files.
 def disposable(relative):
@@ -32,9 +32,10 @@ def manifest(directory):
                 reclaimable_upper_bytes=sum(f['allocated_bytes'] for f in files if f['links']==1))
 
 def preview(sid):
-    with lease(sid):
+    with workflow_lease(sid),lease(sid):
         entry=record(sid);require(entry is not None,'SESSION_UNKNOWN')
         require(entry['state'] in TERMINAL,'SESSION_NOT_TERMINAL')
+        require(stopped(sid),'SESSION_STOP_UNCONFIRMED')
         directory=Path(entry['directory']);require(directory.is_relative_to(ROOT/'build'),'CLEAN_ROOT_REJECTED')
         result=dict(session=sid,batch=entry['batch'],state=entry['state'],directory=str(directory),**manifest(directory))
         result['digest']=hashlib.sha256(json.dumps(result,sort_keys=True).encode()).hexdigest()
@@ -42,8 +43,9 @@ def preview(sid):
 
 def apply(preview_doc):
     sid=preview_doc['session']
-    with lease(sid):
+    with workflow_lease(sid),lease(sid):
         entry=record(sid);require(entry and entry['state'] in TERMINAL,'SESSION_NOT_TERMINAL')
+        require(stopped(sid),'SESSION_STOP_UNCONFIRMED')
         directory=Path(entry['directory']);require(directory.is_relative_to(ROOT/'build'),'CLEAN_ROOT_REJECTED')
         current=dict(session=sid,batch=entry['batch'],state=entry['state'],directory=str(directory),**manifest(directory))
         require(hashlib.sha256(json.dumps(current,sort_keys=True).encode()).hexdigest()==preview_doc['digest'],'CLEAN_PREVIEW_CHANGED')
@@ -54,14 +56,32 @@ def apply(preview_doc):
             prior=json.loads(entry['detail']);termination=prior.get('termination_state',prior.get('previous'))
         require(termination in ('completed','aborted'),'CLEAN_TERMINATION_UNKNOWN')
         transition(sid,TERMINAL,'cleaned',json.dumps(dict(termination_state=termination,manifest=preview_doc)))
+        before=snapshot(directory);removed=[]
         for row in current['files']:
             path=directory/row['path']
             require(path.resolve().is_relative_to(directory) and not path.is_symlink(),'CLEAN_PATH_REJECTED')
+            st=path.stat()
+            require((st.st_dev,st.st_ino,st.st_size,st.st_mtime_ns)==(row['device'],row['inode'],row['bytes'],row['mtime_ns']),'CLEAN_PREVIEW_CHANGED')
             path.unlink()
+            observed=dict(row,allocated_bytes=st.st_blocks*512,links=st.st_nlink)
+            removed.append(observed)
+            event(sid,'cleanup_unlink',path=row['path'],allocated_bytes=observed['allocated_bytes'],links=observed['links'])
+            fd=os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
+            try:os.fsync(fd)
+            finally:os.close(fd)
         fd=os.open(directory,os.O_RDONLY|os.O_DIRECTORY)
         try:os.fsync(fd)
         finally:os.close(fd)
-        return dict(session=sid,state='cleaned',removed_files=len(current['files']),reclaimable_upper_bytes=current['reclaimable_upper_bytes'])
+        after=snapshot(directory)
+        result=dict(session=sid,state='cleaned',removed_files=len(removed),
+            deleted_file_allocated_bytes=sum(row['allocated_bytes'] for row in removed),
+            unlinked_last_link_allocated_bytes=sum(row['allocated_bytes'] for row in removed if row['links']==1),
+            reclaimable_upper_bytes=current['reclaimable_upper_bytes'],space_before=before,space_after=after,
+            observed_internal_available_delta=after['internal_available_bytes']-before['internal_available_bytes'],
+            observed_host_available_delta=(after['host_available_bytes']-before['host_available_bytes']) if None not in (before['host_available_bytes'],after['host_available_bytes']) else None,
+            interpretation='Allocated blocks unlinked and filesystem free-space deltas are distinct observations; concurrent writes and delayed VHD reclamation prevent attributing free-space delta to this deletion.')
+        event(sid,'cleanup_observation',observation=result)
+        return result
 
 def auto(sid):
     # Uses the exact same preview/revalidation policy as the user-facing command.
