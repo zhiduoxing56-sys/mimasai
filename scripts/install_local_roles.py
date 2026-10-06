@@ -8,7 +8,7 @@ from pathlib import Path
 sys.dont_write_bytecode=True
 PROJECT=Path(__file__).resolve().parents[1];BASE=Path('/var/lib/privacy-gnn');OPT=Path('/opt/privacy-gnn');CODE=OPT/'code';ROLES=('s0','s1','dealer','receiver','coordinator','page');EID='a49152b33097752eaf81a7cba6d910a3'
 sys.path.insert(0,str(PROJECT))
-from src.public_projection import model
+from src.public_projection import model,planning_report
 from src.storage import snapshot
 
 def require(ok,message):
@@ -154,7 +154,7 @@ def install(manifest,public,files):
         else:
             access=secrets.token_hex(32);atomic(token_path,dict(access=access,url='http://127.0.0.1:8765/#access='+access));os.chown(token_path,PROJECT.stat().st_uid,PROJECT.stat().st_gid)
         deployment=dict(public,operator_uid=PROJECT.stat().st_uid,original_workspace=str(PROJECT),code=str(CODE),access_sha256=hashlib.sha256(access.encode()).hexdigest())
-        atomic(release/'config/deployment-public.json',deployment);atomic(release/'config/deployment-report.json',manifest)
+        atomic(release/'config/deployment-public.json',deployment);atomic(release/'config/deployment-report.json',planning_report(manifest))
         atomic(release/'config/source-manifest.json',dict(commit=revision,files=hashes,sha256=hashlib.sha256(json.dumps(hashes,sort_keys=True).encode()).hexdigest()))
         for directory,dirs,names in os.walk(release):
             os.chown(directory,0,0);os.chmod(directory,0o555)

@@ -2,6 +2,18 @@
 import math
 from .mpc import require
 
+def planning_report(report):
+    """Only public fields required to bind the existing inference plan.
+
+    Never install historical worker metrics/message traces as shared config.
+    """
+    publication=report['publication']
+    return dict(experiment_id=report['experiment_id'],nodes=report['nodes'],dimensions=report['dimensions'],
+        allowed_targets=report['allowed_targets'],receiver_id=report['receiver_id'],
+        data={k:report['data'].get(k) for k in ('sampling','sampling_seed')},
+        publication={k:publication[k] for k in ('models','session','source_training_session','source_training_iteration')},
+        he_setup=dict(public=report['he_setup']['public']))
+
 def model(report):
     publication=report['publication'];binding=publication['models'][-1]
     require(report['nodes']==64 and publication['source_training_iteration']==160,'DEMO_FIXED_SCOPE')

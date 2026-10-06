@@ -23,6 +23,10 @@ class Checks(unittest.TestCase):
  def test_metadata_comes_from_existing_model(self):
   report=json.loads((PROJECT/f'results/application/{PUBLIC["experiment_id"]}/manifest.json').read_text())
   self.assertEqual(public_projection.model(report),PUBLIC);self.assertEqual(PUBLIC['nodes'],64);self.assertEqual(PUBLIC['source_iteration'],160)
+  from src.application import inference_plan
+  filtered=public_projection.planning_report(report)
+  self.assertEqual(inference_plan(report,'he','fss',PUBLIC['allowed_targets']),inference_plan(filtered,'he','fss',PUBLIC['allowed_targets']))
+  self.assertNotIn('online',filtered['publication']);self.assertNotIn('offline',filtered['publication']);self.assertNotIn('training_report',filtered)
  def test_http_disconnect_routes_authorization_and_binding(self):
   with patch.object(demo_page.Page,'backend',side_effect=OSError('not deployed')):
    server=demo_page.server(0,PROJECT/'ui',self.path/'page.sqlite');thread=threading.Thread(target=server.serve_forever);thread.start()
