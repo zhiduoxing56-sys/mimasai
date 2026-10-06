@@ -12,7 +12,7 @@ from .mpc import Channel, Engine, Materials, ProtocolError, VERSION, ROOT, priva
 def main():
     p=argparse.ArgumentParser();p.add_argument('role',type=int);p.add_argument('directory');p.add_argument('session');p.add_argument('bits',type=int);p.add_argument('fd',type=int);p.add_argument('attempt');args=p.parse_args()
     role=args.role; own=Path(args.directory)/('S'+str(role));material=None;channel=None;success=False
-    outputs=[]; stages=[]; code=None; active=None; private_reads=[]
+    outputs=[]; stages=[]; code=None; local_error=None; active=None; private_reads=[]
     def audit(event,event_args):
         if event=='open' and isinstance(event_args[0],(str,bytes)):
             path=Path(os.fsdecode(event_args[0])).resolve()
@@ -155,14 +155,18 @@ def main():
             outputs=[outputs[-1]]
         success=True
     except ProtocolError as e: code=e.code
-    except (OSError,ValueError,KeyError,TypeError,IndexError): code='LOCAL_INVALID_OR_IO'
+    except (OSError,ValueError,KeyError,TypeError,IndexError) as error:
+        code='LOCAL_INVALID_OR_IO'
+        import traceback
+        location=traceback.extract_tb(error.__traceback__)[-1]
+        local_error=dict(type=type(error).__name__,errno=getattr(error,'errno',None),file=Path(location.filename).name,line=location.lineno)
     finally:
         if active and channel and material:
             idx,kind,started,start,before=active;after=channel.metrics()
             stages.append(dict(operation=idx,type=kind,error=code,elapsed_seconds=time.perf_counter()-started,bytes_sent=after['bytes_sent']-start['bytes_sent'],rounds=after['exchange_rounds']-start['exchange_rounds'],consumed={k:material.cursor[k]-before[k] for k in before},components=engine.components))
         if material: material.finish(success)
         if channel: channel.sock.close()
-    metric={'pid':os.getpid(),'role':role,'session':args.session,'success':success,'error':code,'communication':channel.metrics() if channel else None,'preprocessing':material.metrics() if material else None,'operations':stages,'message_trace':channel.trace if channel else [],'loaded_private_files':private_reads,'peak_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}
+    metric={'pid':os.getpid(),'role':role,'session':args.session,'success':success,'error':code,'local_error':local_error,'communication':channel.metrics() if channel else None,'preprocessing':material.metrics() if material else None,'operations':stages,'message_trace':channel.trace if channel else [],'loaded_private_files':private_reads,'peak_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss}
     private_write(own/('metrics-'+args.attempt+'.json'),metric)
     if success:
         result=dict(version=VERSION,session=args.session,role=role,shares=outputs)

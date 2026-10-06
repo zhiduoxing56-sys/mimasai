@@ -39,3 +39,16 @@
 范围政策衔接：src/ranges.py唯一从operand_bounds_real导出整数半开区间与包围位宽；Engine/CostCounter共同调用已有秘密有符号比较实现非二次幂验证。训练传播以真实radius计算L1限额，HE也用同一radius证明并在线检查输入，不仅按包围幂计算。score32的稳定概率先验证差分不越环，近似核未改变。公开数值配置绑定握手。V验证同时检查原检查点→刷新f12→秘密floor5并刷新f7三者完整值一致，正式协调器仍不解析参数。
 
 本轮补充：src/query.py同时核对变换/聚合尺度和概率升尺度，verification/application.py实际注入目标、接收者、模型、尺度、词列、HE参数、耗尽及环掩码打开后断连。scripts/summarize_application.py只读公开验收报告，按线上操作划分成本并单独记录握手，HE/BFV嵌套组件不重复计费。verification/application_metrics.py是独立验证端：高精度概率字符串必须Decimal比较，保留旧派生报告并重算分类指标；不生成在线答案，不改变协议输出。原科学计数法按字符串排序曾误报分类不一致，已保留错误证据与回归样例。
+
+## 磁盘保护与交付轮审阅入口（2026-10-05）
+
+* `src/storage.py`／`config/storage.json`：核验发行版、VHD宿主挂载与真实可用块；预算包含两方JSON、环工作区、每行原生密文轨迹和持久记录。宿主未知显式拒绝；会话持久状态、并发准入、SIGTERM处理、永久作废标记不依赖可删除材料。
+* `src/offline.py`／`src/mpc.py:private_write`：材料生成前准入、生成与有界分块序列化中检查。保留材料ID，无完整材料大小的第二个JSON字符串。Materials同时核验中央终止标记和原角色消费账本；不改消费、截断或算术语义。
+* `src/runtime.py`／`src/he.py:native`：执行前与运行中检查；终止整个进程组及原生孙进程，非零退出不能作为成功；单方故障辅助进程也持续持锁监督。应用发布／结果导出结束前保持running，禁止清理；训练停止报告原子保留成功检查点。
+* `src/retention.py`：只接受已知completed/aborted/cleaned，持锁预览、摘要和文件属性重验，先持久记录终止／清理状态再删除明确一次性允许列表。保留全部输出、模型、密钥、公共配置、ID、metrics与账本；不按年龄清理、不清理未知旧会话、不恢复旧材料、不做VHD维护。
+* `scripts/storage_inventory.py`：独立读取分配块、链接与公共状态，主工程／14复跑目录分开记量，重复编译文件做内容哈希。历史逐文件清单不执行删除，公共文档仅保存摘要和位置。
+* `scripts/demo.py`／`src/application.py`／`src/role_io.py`：只复用现有发布模型；新请求使用新批次和真实后端，独立角色进程处理各自份额，独立接收端恢复目标最终概率。目录fsync新增精确导出目录许可，不授予其他结果文件读取；局部异常仅记录类型、errno、源码位置，不把秘密值写入错误日志。
+* `verification/storage_checks.py`、`training_storage_checks.py`、`demo_checks.py`、`retained_query_checks.py`：仅覆盖本轮空间、状态、清理、检查点和新请求边界；故障worker是合成生命周期夹具，不是替代线上后端。原application验证器兼容清理后的公开模板和中央重用拒绝，独立恢复模型与最终查询核验仍在verification侧。
+* `verification/feature_control.py`：固定已有数据／种子／划分／训练验证选择规则的词特征浮点对照；标签无关结果复用已有记录。`verification/numeric_attribution.py`：既有检查点单步消融和既有权重拒绝边界审计；数值协议未修改。`scripts/report_storage_delivery.py`仅汇总公开分类／成本证据。
+
+发现并纠正：原生multiply/extract/packed密文trace需要单独计入预算与一次性清理；应用只在backend退出后就声明completed会允许清理与导出竞态，因此延迟到两方交付／模型持久链接后终止。历史没有生命周期锁的目录不能自动迁移或删除。全部新源码、公共配置与聚合报告纳入更新审阅包，秘密运行目录和账本不纳入；已有半诚实、可信非串谋离线方和可信持久存储假设保持不变。同Unix用户的Python路径审计不等于OS隔离，未交付页面。

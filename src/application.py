@@ -29,6 +29,8 @@ def save(identifier,report):write(report_path(identifier),report)
 def command(args):
     c=settings()
     if args.command=='prepare':
+        from .storage import check
+        check(ROOT,128*1024**2)
         started=time.perf_counter();data=cora(args.archive,args.download,node_count=args.nodes,sampling=args.sampling,seed=args.seed);eid=secrets.token_hex(16);root,out=paths(eid);out.mkdir(parents=True)
         for name in ('S0','S1','V'):(root/name).mkdir(parents=True,mode=0o700)
         write(root/'V/data.json',data)
@@ -56,19 +58,27 @@ def command(args):
         if result['status'] in ('SHARED_TRAINING_PASS','SHARED_TRAINING_STOPPED') and result.get('secure_steps',0)>0:report['checkpoint']=result['checkpoint'];report['training_steps']=result['secure_steps']
         save(args.experiment,report);return dict(command=args.command,status=result['status'],steps=result.get('secure_steps',0),report=report['training_report'])
     if args.command=='publish':
+        from .storage import check
+        check(root,128*1024**2)
         require('checkpoint' in report and 'publication' not in report,'PUBLICATION_STATE')
         checkpoint=report['checkpoint'];source=Path(checkpoint['directory']);n,ff,h,classes=report['dimensions'];ft=c['training_reference']['fraction_bits'];f=c['fraction_bits'];layout=dict(feature_order=[f'word-{j}' for j in report['data']['feature_columns']],class_order=report['data']['label_names']);m12=binding(secrets.token_hex(16),report['data']['node_order'],ff,h,classes,ft,**layout);m7=binding(secrets.token_hex(16),report['data']['node_order'],ff,h,classes,f,**layout);count=ff*h+h*classes;sid=secrets.token_hex(16);d=root/'publication'/sid
         for role in (0,1):(d/f'S{role}').mkdir(parents=True,mode=0o700)
         plan=[dict(type='publish',count=count,source_fraction=ft,model=m12),dict(type='publish',count=count,source_fraction=ft,model=m7,use_previous=True)]
         offline=dealer(d,sid,plan)
         for role in (0,1):role_io('publication_input',role,source,d,checkpoint['attempt'])
-        started=time.perf_counter();attempt,metrics=launch(d,sid,c['ring_bits'],timeout=240);require(all(m['success'] for m in metrics),'PUBLICATION_FAILED')
+        started=time.perf_counter();attempt,metrics=launch(d,sid,c['ring_bits'],timeout=240,defer_completion=True);require(all(m['success'] for m in metrics),'PUBLICATION_FAILED')
         report['publication']=dict(directory=str(d),session=sid,attempt=attempt,models=[m12,m7],source_training_iteration=checkpoint['iteration'],source_training_session=source.name,offline=offline,online=statistics(metrics,time.perf_counter()-started));save(args.experiment,report)
         for role in (0,1):
             os.link(d/f'S{role}/model-{m7["model_id"]}.json',root/f'S{role}/model-{m7["model_id"]}.json')
             write(root/f'S{role}/query-policy.json',dict(model=m7,allowed_targets=report['allowed_targets'],receiver_id=report['receiver_id']))
+        from .retention import auto
+        from .storage import transition
+        transition(sid,{'running'},'completed','publication models and policy persisted')
+        report['publication']['retention']=auto(sid);save(args.experiment,report)
         return dict(command='publish',model_id=m7['model_id'],source_iteration=checkpoint['iteration'])
     if args.command=='provision':
+        from .storage import check
+        check(root,512*1024**2)
         require('publication' in report and 'he_setup' not in report,'PROVISION_STATE');data=read(root/'V/data.json');model=report['publication']['models'][-1];n,ff,h,classes=report['dimensions'];fx=Fixed(c);p=fx.encode(data['propagation']);require(all(0<=v<=fx.scale for row in p for v in row),'OWNER_PROPAGATION_DOMAIN');setup=root/'he-assets'
         for name in ('S0','S1','V'):(setup/name).mkdir(parents=True,mode=0o700)
         binary_write(setup/'V/propagation.bin',struct.pack('<'+'I'*(n*n),*flat(p)));started=time.perf_counter();native_stats=native(['setup',setup,c['he_execution_degree'],c['ring_bits'],*c['he_coefficient_bits'],n,h]);native_stats['wall_seconds']=time.perf_counter()-started
@@ -81,7 +91,11 @@ def command(args):
                 current=copy.deepcopy(pub);current.update(shape=[n,width],column_order=pub['column_order'] if layer==0 else model['class_order']);write(target/'he.json',dict(role=role,public=current,local_integrity=integrity))
         report['he_setup']=dict(directory=str(setup),public=pub,cost=native_stats);save(args.experiment,report);return dict(command='provision',status='HE_ASSETS_READY',key_ids=pub['key_ids'])
     if args.command=='request':
-        require('publication' in report and 'he_setup' in report,'REQUEST_MODEL_NOT_READY');sid=secrets.token_hex(16);d=root/'requests'/sid;model=report['publication']['models'][-1];targets=args.target or report['allowed_targets'];require(targets and len(set(targets))==len(targets) and all(t in report['allowed_targets'] for t in targets),'QUERY_UNAUTHORIZED_TARGET');plan=inference_plan(report,args.route,args.activation,targets);delivery=dict(model=model,targets=targets,receiver_id=report['receiver_id'],request_id=sid)
+        require('publication' in report and 'he_setup' in report,'REQUEST_MODEL_NOT_READY');from .storage import check,estimate
+        from .mpc import costs
+        targets=args.target or report['allowed_targets'];preview_plan=inference_plan(report,args.route,args.activation,targets)
+        check(root,estimate(preview_plan,costs(preview_plan,c['ring_bits']))['total_bytes'])
+        sid=secrets.token_hex(16);d=root/'requests'/sid;model=report['publication']['models'][-1];targets=args.target or report['allowed_targets'];require(targets and len(set(targets))==len(targets) and all(t in report['allowed_targets'] for t in targets),'QUERY_UNAUTHORIZED_TARGET');plan=inference_plan(report,args.route,args.activation,targets);delivery=dict(model=model,targets=targets,receiver_id=report['receiver_id'],request_id=sid)
         for role in (0,1):
             own=d/f'S{role}';own.mkdir(parents=True,mode=0o700)
             for name in (f'model-{model["model_id"]}.json','query-policy.json'):os.link(root/f'S{role}'/name,own/name)
@@ -94,15 +108,40 @@ def command(args):
         write(d/'public-plan.json',dict(session=sid,bits=c['ring_bits'],plan=plan));request=dict(session=sid,directory=str(d),plan=plan,delivery=delivery,route=args.route,activation=args.activation);write(out/f'request-{sid}.json',request);return dict(command='request',request=sid,route=args.route,activation=args.activation)
     require(len(args.request)==32 and all(v in '0123456789abcdef' for v in args.request),'REQUEST_ID');request=read(out/f'request-{args.request}.json');d=Path(request['directory']);sid=request['session']
     if args.command=='offline':
-        require(not request.get('offline_started') and 'offline' not in request and not any((d/f'S{r}/preprocessing.json').exists() for r in (0,1)),'REQUEST_MATERIAL_EXISTS');request['offline_started']=True;write(out/f'request-{sid}.json',request);request['offline']=dealer(d,sid,request['plan']);write(out/f'request-{sid}.json',request);return dict(command='offline',request=sid,generated=request['offline']['generated'])
+        require(not request.get('offline_started') and 'offline' not in request and not any((d/f'S{r}/preprocessing.json').exists() for r in (0,1)),'REQUEST_MATERIAL_EXISTS');request['offline_started']=True;write(out/f'request-{sid}.json',request);
+        try:request['offline']=dealer(d,sid,request['plan'])
+        except BaseException as error:
+            from .storage import record
+            from .retention import auto
+            request['terminal_error']=str(error)
+            if record(sid) and record(sid)['state']=='aborted':request['retention']=auto(sid)
+            write(out/f'request-{sid}.json',request);raise
+        write(out/f'request-{sid}.json',request)
+        return dict(command='offline',request=sid,generated=request['offline']['generated'],disk_budget=request['offline']['disk_budget'],offline_wall_seconds=request['offline']['offline_wall_seconds'])
     if args.command=='execute':
         require('offline' in request and not request.get('execution_started') and 'attempt' not in request,'REQUEST_EXECUTION_STATE');request['execution_started']=True;write(out/f'request-{sid}.json',request)
         write(d/'job-template.json',dict(session=sid,bits=c['ring_bits'],operations=request['plan'],delivery=request['delivery'],route=request['route']))
         for role in (0,1):role_io('query_input',role,root,d)
-        started=time.perf_counter();attempt,metrics=launch(d,sid,c['ring_bits'],timeout=300);request['attempt']=attempt;request['online']=statistics(metrics,time.perf_counter()-started);request['success']=all(m['success'] for m in metrics);write(out/f'request-{sid}.json',request);require(request['success'],'REQUEST_FAILED')
+        started=time.perf_counter()
+        try:attempt,metrics=launch(d,sid,c['ring_bits'],timeout=300,defer_completion=True)
+        except BaseException as error:
+            from .storage import record
+            from .retention import auto
+            request['terminal_error']=str(error)
+            if record(sid)['state']=='aborted':request['retention']=auto(sid)
+            write(out/f'request-{sid}.json',request);raise
+        request['attempt']=attempt;request['online']=statistics(metrics,time.perf_counter()-started);request['success']=all(m['success'] for m in metrics);write(out/f'request-{sid}.json',request)
+        if not request['success']:
+            from .retention import auto
+            request['retention']=auto(sid);write(out/f'request-{sid}.json',request)
+            require(False,'REQUEST_FAILED')
         received=out/'receiver'/sid;received.mkdir(parents=True,mode=0o700)
         for role in (0,1):role_io('export',role,d,received,attempt)
-        return dict(command='execute',request=sid,status='TARGET_SHARES_DELIVERED',receiver_directory=str(received),online={k:v for k,v in request['online'].items() if k!='servers'})
+        from .retention import auto
+        from .storage import transition
+        transition(sid,{'running'},'completed','both authorized target exports persisted')
+        retained=auto(sid);request['retention']=retained;write(out/f'request-{sid}.json',request)
+        return dict(command='execute',request=sid,status='TARGET_SHARES_DELIVERED',receiver_directory=str(received),retention=retained,online={k:v for k,v in request['online'].items() if k!='servers'})
     raise ValueError('unknown application command')
 
 def role_io(operation,role,source,destination,attempt=None):

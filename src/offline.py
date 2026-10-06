@@ -7,15 +7,18 @@ import time
 from pathlib import Path
 from .mpc import VERSION, private_write, costs, require, fss_widths
 
-def generate(directory,session,bits,plan,limits=None):
+def _generate(directory,session,bits,plan,limits,batch,guard):
     require(2<=bits<=32,'DEALER_BITS')
     for op in plan:
         require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus','model_layer','trace_raw','input_bound','loss_mode','range_strategy','input_feature_order','divisor','targets','receiver_id']),'DEALER_NONPUBLIC_FIELDS')
     counts=costs(plan,bits)
     if limits: counts.update(limits)
-    mod=1<<bits; batch=secrets.token_hex(16)
+    mod=1<<bits
     views=[{k:[] for k in counts} for _ in range(2)]
     widths=iter(fss_widths(plan));fss_seconds=0.0
+    ring_ids=[secrets.token_hex(16) for _ in range(counts.get('rlwe_product',0))]
+    mask_ids=[[secrets.token_hex(16) for _ in range(counts.get('he_mask',0))] for _ in (0,1)]
+    private_write(Path(directory)/'material-identifiers.json',dict(session=session,batch=batch,counts=counts,ring_material_ids=ring_ids,he_mask_ids=mask_ids))
     ring_meta=None
     if counts.get('rlwe_product',0):
         from .he import native
@@ -26,8 +29,9 @@ def generate(directory,session,bits,plan,limits=None):
         # replaces millions of system calls, not the entropy or distribution.
         random_bits=secrets.token_bytes(count) if kind=='boolean' else None
         for index in range(count):
+            if index%4096==0:guard.check()
             if kind=='rlwe_product':
-                material_id=secrets.token_hex(16)
+                material_id=ring_ids[index]
                 for role in (0,1):views[role][kind].append(dict(material_id=material_id,folder='ring-preprocessing/'+str(index),degree=ring_meta['degree'],data_moduli=ring_meta['data_moduli']))
                 continue
             if kind=='arithmetic':
@@ -41,7 +45,7 @@ def generate(directory,session,bits,plan,limits=None):
             elif kind=='refresh':
                 for role in (0,1):views[role][kind].append(secrets.randbits(bits))
             elif kind=='he_mask':
-                for role in (0,1):views[role][kind].append(secrets.token_hex(16))
+                for role in (0,1):views[role][kind].append(mask_ids[role][index])
             elif kind=='fss':
                 from .fss import activation_material
                 started=time.perf_counter();pair=activation_material(bits,next(widths));fss_seconds+=time.perf_counter()-started
@@ -50,8 +54,26 @@ def generate(directory,session,bits,plan,limits=None):
                 r=secrets.randbits(1); rb=secrets.randbits(1);ra=secrets.randbelow(mod)
                 views[0][kind].append([rb,ra]); views[1][kind].append([r^rb,(r-ra)%mod])
     for role in range(2):
-        private_write(Path(directory)/('S'+str(role))/'preprocessing.json',dict(version=VERSION,session=session,batch=batch,role=role,bits=bits,materials=views[role]))
+        guard.check(force=True)
+        private_write(Path(directory)/('S'+str(role))/'preprocessing.json',dict(version=VERSION,session=session,batch=batch,role=role,bits=bits,materials=views[role]),guard=guard)
     return {'session':session,'batch':batch,'bits':bits,'generated':counts,'online_inputs_accessed':False,'fss_keygen_seconds':fss_seconds,'peak_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'children_highwater_rss_kib':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss}
+
+def generate(directory,session,bits,plan,limits=None):
+    from .storage import estimate,begin,lease,Guard,transition,burn,abort_signals
+    counts=costs(plan,bits)
+    if limits:counts.update(limits)
+    budget=estimate(plan,counts);batch=secrets.token_hex(16)
+    with lease(session),abort_signals():
+        begin(directory,session,batch,budget['total_bytes'])
+        guard=Guard(directory,session,budget['total_bytes'])
+        try:
+            guard.check(force=True)
+            result=_generate(directory,session,bits,plan,limits,batch,guard)
+            transition(session,{'generating'},'ready')
+            result['disk_budget']=budget
+            return result
+        except BaseException as error:
+            burn(session,str(error));raise
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('directory');p.add_argument('plan');args=p.parse_args()

@@ -1,0 +1,7 @@
+{
+  "host": {"distro": "GNN-Project", "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx", "mount": "/mnt/e", "evidence": "2026-10-05 read-only HKCU Lxss registry and WSL_DISTRO_NAME"},
+  "internal_reserve_bytes": 2147483648,
+  "host_reserve_bytes": 8589934592,
+  "monitor_seconds": 0.5,
+  "budget_multiplier": 2
+}

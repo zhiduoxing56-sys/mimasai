@@ -1,3 +1,5 @@
+本轮交付（2026-10-05）：[磁盘预算与保留政策](docs/disk-retention.md)、[结果解释与命令行验收](docs/storage-delivery-acceptance.md)、[聚合证据](docs/storage-delivery-results.json)。无需重训即可演示：`python3 scripts/demo.py`，复用既有64节点160轮发布模型，每次使用新材料，只由授权接收端恢复最终概率。历史清理仅交付预览，未删除；页面等待OS角色权限隔离。
+
 本轮真实64节点160轮共享训练与多类指标见[验收报告](docs/representative-acceptance.md)，抽样与训练概率f14见[实验说明](docs/representative-experiment.md)；旧64节点96轮回归保留。正式入口支持 `--sampling stratified_frontier --seed 20261005`，不外推到完整Cora。
 
 # 图隐私计算工程

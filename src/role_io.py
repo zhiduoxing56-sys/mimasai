@@ -15,7 +15,9 @@ def main():
             if any(path.is_relative_to(ROOT/folder) for folder in ('results','state','data','verification/fixtures','参考资料')):
                 # Only write this role's final export, never read results.
                 flags=args[2] if len(args)>2 else 0
-                require(a.operation=='export' and path==destination/f'{own}.json' and flags & os.O_WRONLY,'ROLE_IO_RESULT_VIEW')
+                final_write=path==destination/f'{own}.json' and flags & os.O_WRONLY
+                directory_sync=path==destination and flags & os.O_DIRECTORY
+                require(a.operation=='export' and (final_write or directory_sync),'ROLE_IO_RESULT_VIEW')
     sys.addaudithook(audit)
     require(source.is_relative_to(ROOT/'build') and (a.operation=='export' or destination.is_relative_to(ROOT/'build')),'ROLE_IO_PATH')
     read=lambda path:json.loads(path.read_text())

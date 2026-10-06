@@ -18,8 +18,27 @@ from src.ranges import operand,bit_width
 
 flat=lambda rows:[v for row in rows for v in row]
 
+def restart_errors(directory,sid):
+    try:_,metrics=launch(directory,sid,32)
+    except ProtocolError as error:
+        assert error.code in ('SESSION_STATE_REJECTED','SESSION_MATERIAL_PERMANENTLY_UNAVAILABLE')
+        return [error.code,error.code]
+    assert all(m['error']=='BATCH_ALREADY_RESERVED' for m in metrics)
+    return [m['error'] for m in metrics]
+
+def publication_input_evidence(source,old,session):
+    if all((source/f'S{r}/input.json').exists() for r in (0,1)):
+        assert all(read(source/f'S{r}/input.json')['operations'][0]['x']==old[r] for r in (0,1))
+    else:
+        from src.storage import record
+        state=record(session);assert state and state['state']=='cleaned'
+        assert json.loads(state['detail'])['termination_state']=='completed'
+        # Actual checkpoint == restored refreshed f12 model was already checked
+        # above; deleted one-shot role-input files are not recreated.
+
+
 def published_reference(eid):
-    root,out=paths(eid);report=read(out/'manifest.json');model=report['publication']['models'][-1];source=Path(report['publication']['directory']);own=[read(source/f'S{r}/model-{model["model_id"]}.json')['shares'] for r in (0,1)];w=[(a+b)%(1<<32) for a,b in zip(*own)];ff,h,classes=model['dimensions'];count=ff*h+h*classes;checkpoint=report['checkpoint'];original=Path(checkpoint['directory']);old=[read(original/f'S{r}/output-{checkpoint["attempt"]}.json')['shares'][0][-count:] for r in (0,1)];source_w=[(a+b)%(1<<32) for a,b in zip(*old)];ft=config()['training_reference']['fraction_bits'];f=model['fraction_bits'];expected=[((v if v<1<<31 else v-(1<<32))//(1<<(ft-f)))%(1<<32) for v in source_w];assert w==expected;model12=report['publication']['models'][0];first=[read(source/f'S{r}/model-{model12["model_id"]}.json')['shares'] for r in (0,1)];assert [(a+b)%(1<<32) for a,b in zip(*first)]==source_w;assert all(read(source/f'S{r}/input.json')['operations'][0]['x']==old[r] for r in (0,1));weights=[ [w[i*h:(i+1)*h] for i in range(ff)], [w[ff*h+i*classes:ff*h+(i+1)*classes] for i in range(h)]];data=read(root/'V/data.json');c=config();fx=Fixed(c);trace=fx.forward(fx.encode(data['propagation']),fx.encode(data['features']),weights,'transform_then_aggregate');scaled=[[fx.signed(v)*(1<<(c['probability_fraction_bits']-c['fraction_bits'])) for v in row] for row in trace['logits']];prob,_=probability_reference(scaled,c['probability_fraction_bits']);high=precise_softmax(fx.decode(trace['logits']));error=max(abs(a/(1<<c['probability_fraction_bits'])-float(b)) for row,rr in zip(prob,high) for a,b in zip(row,rr));pub=dict(report['publication'],input_share_directory=str(root),reference=trace,activation_bits=bit_width(operand('state',c['fraction_bits'])),probability_error=error,classification_equal=all(max(range(classes),key=lambda j:row[j])==max(range(classes),key=lambda j:Decimal(high[i][j])) for i,row in enumerate(prob)))
+    root,out=paths(eid);report=read(out/'manifest.json');model=report['publication']['models'][-1];source=Path(report['publication']['directory']);own=[read(source/f'S{r}/model-{model["model_id"]}.json')['shares'] for r in (0,1)];w=[(a+b)%(1<<32) for a,b in zip(*own)];ff,h,classes=model['dimensions'];count=ff*h+h*classes;checkpoint=report['checkpoint'];original=Path(checkpoint['directory']);old=[read(original/f'S{r}/output-{checkpoint["attempt"]}.json')['shares'][0][-count:] for r in (0,1)];source_w=[(a+b)%(1<<32) for a,b in zip(*old)];ft=config()['training_reference']['fraction_bits'];f=model['fraction_bits'];expected=[((v if v<1<<31 else v-(1<<32))//(1<<(ft-f)))%(1<<32) for v in source_w];assert w==expected;model12=report['publication']['models'][0];first=[read(source/f'S{r}/model-{model12["model_id"]}.json')['shares'] for r in (0,1)];assert [(a+b)%(1<<32) for a,b in zip(*first)]==source_w;publication_input_evidence(source,old,report['publication']['session']);weights=[ [w[i*h:(i+1)*h] for i in range(ff)], [w[ff*h+i*classes:ff*h+(i+1)*classes] for i in range(h)]];data=read(root/'V/data.json');c=config();fx=Fixed(c);trace=fx.forward(fx.encode(data['propagation']),fx.encode(data['features']),weights,'transform_then_aggregate');scaled=[[fx.signed(v)*(1<<(c['probability_fraction_bits']-c['fraction_bits'])) for v in row] for row in trace['logits']];prob,_=probability_reference(scaled,c['probability_fraction_bits']);high=precise_softmax(fx.decode(trace['logits']));error=max(abs(a/(1<<c['probability_fraction_bits'])-float(b)) for row,rr in zip(prob,high) for a,b in zip(row,rr));pub=dict(report['publication'],input_share_directory=str(root),reference=trace,activation_bits=bit_width(operand('state',c['fraction_bits'])),probability_error=error,classification_equal=all(max(range(classes),key=lambda j:row[j])==max(range(classes),key=lambda j:Decimal(high[i][j])) for i,row in enumerate(prob)))
     return report,data,pub,prob
 
 def verify_queries(eid,prob,faults=False):
@@ -32,15 +51,15 @@ def verify_queries(eid,prob,faults=False):
         for role in (0,1):
             output=read(d/f'S{role}/output-{request["attempt"]}.json');assert len(output['shares'])==1 and len(output['shares'][0])==classes*len(expected);assert len(read(received/f'S{role}.json')['shares'])==classes*len(expected)
             assert all(p.startswith(f'S{role}/') for p in request['online']['servers'][role]['loaded_private_files'])
-        _,restart=launch(d,sid,32);assert all(m['error']=='BATCH_ALREADY_RESERVED' for m in restart)
+        restart=restart_errors(d,sid)
         policy_faults=[]
-        job=read(d/'S0/input.json');authorization=read(d/'S0/query-policy.json')
+        job=read(d/'S0/input.json') if (d/'S0/input.json').exists() else read(d/'job-template.json');authorization=read(d/'S0/query-policy.json')
         for name,mutate in [('unauthorized_target',lambda j:j['delivery'].update(targets=[next(t for t in manifest['data']['node_order'] if t not in manifest['allowed_targets'])])),('receiver',lambda j:j['delivery'].update(receiver_id='someone-else')),('final_type',lambda j:j['operations'][-1].update(type='add'))]:
             bad=copy.deepcopy(job);mutate(bad)
             try:validate_delivery(bad,authorization)
             except ProtocolError as e:policy_faults.append(dict(name=name,error=e.code))
             else:raise AssertionError(name)
-        summaries.append(dict(session=sid,model_id=result['model_id'],route=request['route'],activation=request['activation'],offline=request['offline'],online=request['online'],result=result,restart_errors=[m['error'] for m in restart],policy_rejections=policy_faults,export_bytes=sum((received/f'S{r}.json').stat().st_size for r in (0,1))))
+        summaries.append(dict(session=sid,model_id=result['model_id'],route=request['route'],activation=request['activation'],offline=request['offline'],online=request['online'],result=result,restart_errors=restart,policy_rejections=policy_faults,export_bytes=sum((received/f'S{r}.json').stat().st_size for r in (0,1))))
     assert len(summaries)>=2 and len({s['session'] for s in summaries})==len(summaries) and len({s['offline']['batch'] for s in summaries})==len(summaries)
     if faults:
         # Actual server rejection BEFORE work, fresh reserved materials, no outputs.
@@ -51,7 +70,7 @@ def verify_queries(eid,prob,faults=False):
             # a subprocess monkeypatch only in this verifier process.
             code='''import json,sys\nfrom src import application as a\nfrom src.runtime import launch as original\nfrom src.mpc import ProtocolError
 from src.ranges import operand,bit_width\nfault=sys.argv[1]\ndef intercept(d,sid,bits,**kw):\n for role in (0,1):\n  path=d/f'S{role}/input.json';job=json.loads(path.read_text())\n  if fault=='target':job['delivery']['targets']=[next(t for t in job['delivery']['model']['node_order'] if t not in job['delivery']['targets'])];job['operations'][-1]['targets']=job['delivery']['targets']\n  if fault=='receiver':job['delivery']['receiver_id']='unauthorized';job['operations'][-1]['receiver_id']='unauthorized'\n  if fault=='model':job['operations'][0]['model']['model_id']='0'*32\n  if fault=='scale':job['operations'][1]['fraction']+=1\n  if fault=='columns':job['operations'][0]['input_feature_order']=list(reversed(job['operations'][0]['input_feature_order']))\n  if fault=='parameters':job['operations'][1]['he']['degree']*=2\n  path.write_text(json.dumps(job))\n  if fault=='exhaustion':\n   path=d/f'S{role}/preprocessing.json';doc=json.loads(path.read_text());doc['materials']['arithmetic']=[];path.write_text(json.dumps(doc))\n if fault=='disconnect':kw['worker']='verification.he_private_fault_worker'\n return original(d,sid,bits,**kw)\na.launch=intercept\nsys.argv=['application','execute','--experiment',sys.argv[2],'--request',sys.argv[3]]\ntry:a.main()\nexcept ProtocolError:pass\n'''
-            subprocess.run([sys.executable,'-c',code,fault,eid,sid],cwd=paths(eid)[0].parents[2],capture_output=True,text=True,check=True);failed=read(out/f'request-{sid}.json');assert not failed['success'];assert not any((d/f'S{r}/output-{failed["attempt"]}.json').exists() for r in (0,1));_,again=launch(d,sid,32);assert all(m['error']=='BATCH_ALREADY_RESERVED' for m in again);summaries.append(dict(fault=fault,session=sid,status='PASS_NO_OUTPUT_AND_BURN',errors=[m['error'] for m in failed['online']['servers']],restart_errors=[m['error'] for m in again]))
+            subprocess.run([sys.executable,'-c',code,fault,eid,sid],cwd=paths(eid)[0].parents[2],capture_output=True,text=True,check=True);failed=read(out/f'request-{sid}.json');assert not failed['success'];assert not any((d/f'S{r}/output-{failed["attempt"]}.json').exists() for r in (0,1));again=restart_errors(d,sid);summaries.append(dict(fault=fault,session=sid,status='PASS_NO_OUTPUT_AND_BURN',errors=[m['error'] for m in failed['online']['servers']],restart_errors=again))
     return summaries
 
 def main():

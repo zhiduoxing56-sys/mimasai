@@ -1,14 +1,27 @@
 """Public-data reference and independent-process shared training entry."""
-import argparse,copy,json,math,random,time,sys
+import argparse,copy,json,math,random,subprocess,time,sys
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from src.data import cora
 from src.reference import config,Fixed,loss_grad,forward
+from src.mpc import ProtocolError
 from src.numerical import training_reference,probability_reference
 from verification.stage2 import session,launch,ROOT
 flat=lambda a:[v for row in a for v in row]
 
 def accuracy(prob,labels,indices):return sum(max(range(len(prob[i])),key=lambda j:prob[i][j])==labels[i] for i in indices)/len(indices)
+def save_stopped(result,out,secure,paramcount,next_iteration,reason,sid=None):
+ from src.application import write
+ from src.storage import record
+ from src.retention import auto
+ result.update(status='SHARED_TRAINING_STOPPED' if secure else 'SHARED_TRAINING_REFUSED',secure_steps=len(secure),secure_training=secure,storage_stop=dict(next_iteration=next_iteration,reason=reason,successful_checkpoint_preserved=bool(secure)))
+ if secure:result['checkpoint']=dict(directory=secure[-1]['directory'],attempt=secure[-1]['attempt'],parameter_count=paramcount,iteration=len(secure))
+ else:result.pop('checkpoint',None)
+ write(out,result)
+ if sid and record(sid) and record(sid)['state']=='aborted':
+  result['storage_stop']['retention']=auto(sid);write(out,result)
+
+
 def run(args):
  nodes=args.nodes if args.nodes is not None else config()['data_experiment']['nodes'];directory=Path(args.output_directory) if getattr(args,'output_directory',None) else ROOT/('results/real-data' if nodes==16 else f'results/real-data-{nodes}');directory.mkdir(parents=True,exist_ok=True)
  old_result=json.loads((directory/'reference.json').read_text()) if args.resume else None
@@ -28,16 +41,28 @@ def run(args):
   secure=old_result['secure_training'];checkpoint=old_result['checkpoint'];prior=Path(checkpoint['directory']);previous=[json.loads((prior/f'S{role}/output-{checkpoint["attempt"]}.json').read_text())['shares'][0] for role in (0,1)];assert [(a+b)%(1<<32) for a,b in zip(*previous)]==[v for trace in refs[len(secure)-1].values() for v in trace]
  for it in range(len(secure),steps):
   op=dict(type='train_step',dims=[n,f,h,classes],fraction=cc['fraction_bits'],training_mask=mask,aggregation='dense',range_strategy='row_l1',loss_mode='range_reduced',x=flat(x),p=flat(p),labels=flat(labels),y=flat(initialfixed[0])+flat(initialfixed[1]) if it==0 else [0]*paramcount,expected=[])
-  d,s,dealer=session(32,[op]);
-  if previous:
-   for role in (0,1):
-    job=d/f'S{role}/input.json';body=json.loads(job.read_text());body['operations'][0]['y']=previous[role][-paramcount:];job.write_text(json.dumps(body)+'\n')
-  started=time.perf_counter();attempt,metrics=launch(d,s,32,timeout=300);
+  d=None;s=None
+  try:
+   d,s,dealer=session(32,[op]);
+   if previous:
+    for role in (0,1):
+     job=d/f'S{role}/input.json';body=json.loads(job.read_text());body['operations'][0]['y']=previous[role][-paramcount:];job.write_text(json.dumps(body)+'\n')
+   started=time.perf_counter();attempt,metrics=launch(d,s,32,timeout=300);
+  except (subprocess.CalledProcessError,OSError,KeyboardInterrupt,ProtocolError) as error:
+   save_stopped(result,out,secure,paramcount,it+1,str(error),s)
+   raise
   if not all(m['success'] for m in metrics):
-   result.update(status='SHARED_TRAINING_STOPPED',secure_training=secure,secure_steps=len(secure),checkpoint=old_result['checkpoint'] if not secure else dict(directory=secure[-1]['directory'],attempt=secure[-1]['attempt'],parameter_count=paramcount,iteration=len(secure)),training_failure=dict(iteration=it+1,directory=str(d),session=s,attempt=attempt,dealer=dealer,servers=[{k:v for k,v in m.items() if k!='message_trace'} for m in metrics]))
-   out.write_text(json.dumps(result,indent=2)+'\n');raise RuntimeError('Training failed: '+','.join(str(m['error']) for m in metrics))
+   result['training_failure']=dict(iteration=it+1,directory=str(d),session=s,attempt=attempt,dealer=dealer,servers=[{k:v for k,v in m.items() if k!='message_trace'} for m in metrics])
+   reason='Training failed: '+','.join(str(m['error']) for m in metrics)
+   save_stopped(result,out,secure,paramcount,it+1,reason,s)
+   raise RuntimeError(reason)
   assert all(m['preprocessing']['consumed']==dealer['generated'] for m in metrics)
   previous=[json.loads((d/f'S{role}/output-{attempt}.json').read_text())['shares'][0] for role in (0,1)];actual=[(a+b)%(1<<32) for a,b in zip(*previous)];expected=[v for trace in refs[it].values() for v in trace];assert actual==expected,(it,'shared trace mismatch')
-  entry=dict(iteration=it,directory=str(d),session=s,attempt=attempt,seconds=time.perf_counter()-started,loss=refs[it]['loss'][0]/fx.scale,dealer=dealer,servers=[{k:v for k,v in m.items() if k!='message_trace'} for m in metrics],wire_bytes=sum(m['communication']['bytes_sent'] for m in metrics),rounds=metrics[0]['communication']['exchange_rounds']);secure.append(entry);result.update(status='SHARED_TRAINING_PASS',secure_training=secure,checkpoint=dict(directory=str(d),attempt=attempt,parameter_count=paramcount,iteration=it+1),secure_steps=it+1);out.write_text(json.dumps(result,indent=2)+'\n');print(json.dumps(dict(iteration=it+1,loss=entry['loss'],seconds=entry['seconds'],bytes=entry['wire_bytes'],rounds=entry['rounds'])),flush=True)
+  entry=dict(iteration=it,directory=str(d),session=s,attempt=attempt,seconds=time.perf_counter()-started,loss=refs[it]['loss'][0]/fx.scale,dealer=dealer,servers=[{k:v for k,v in m.items() if k!='message_trace'} for m in metrics],wire_bytes=sum(m['communication']['bytes_sent'] for m in metrics),rounds=metrics[0]['communication']['exchange_rounds']);secure.append(entry);result.update(status='SHARED_TRAINING_PASS',secure_training=secure,checkpoint=dict(directory=str(d),attempt=attempt,parameter_count=paramcount,iteration=it+1),secure_steps=it+1);from src.application import write
+  write(out,result)
+  from src.retention import auto
+  entry['retention']=auto(s)
+  write(out,result)
+  print(json.dumps(dict(iteration=it+1,loss=entry['loss'],seconds=entry['seconds'],bytes=entry['wire_bytes'],rounds=entry['rounds'])),flush=True)
 if __name__=='__main__':
  p=argparse.ArgumentParser();p.add_argument('--download',action='store_true');p.add_argument('--archive');p.add_argument('--secure-steps',type=int,default=0);p.add_argument('--resume',action='store_true');p.add_argument('--nodes',type=int,choices=(16,32,64));p.add_argument('--output-directory');p.add_argument('--sampling',choices=('fixed_bfs','uniform','multi_start','stratified_frontier'),default='fixed_bfs');p.add_argument('--sampling-seed',type=int);run(p.parse_args())

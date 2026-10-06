@@ -26,10 +26,33 @@ def require(ok,code):
 def settings():
     return json.loads((ROOT/'config/phase0.json').read_text())
 
-def private_write(path,data):
+def private_write(path,data,guard=None):
     path=Path(path)
     with os.fdopen(os.open(path,os.O_WRONLY|os.O_CREAT|os.O_EXCL,0o600),'w') as f:
-        json.dump(data,f,separators=(',',':')); f.write('\n'); f.flush(); os.fsync(f.fileno())
+        if guard:
+            def emit(value):
+                # C encoder on bounded chunks avoids one capacity probe per
+                # scalar/token and avoids a second full material-sized string.
+                guard.check()
+                if isinstance(value,dict):
+                    f.write('{')
+                    for index,(key,item) in enumerate(value.items()):
+                        if index:f.write(',')
+                        f.write(json.dumps(key)+':');emit(item)
+                    f.write('}')
+                elif isinstance(value,list):
+                    f.write('[')
+                    for start in range(0,len(value),4096):
+                        if start:f.write(',')
+                        guard.check();f.write(json.dumps(value[start:start+4096],separators=(',',':'))[1:-1])
+                    f.write(']')
+                else:f.write(json.dumps(value,separators=(',',':')))
+            emit(data);guard.check(force=True)
+        else:json.dump(data,f,separators=(',',':'))
+        f.write('\n'); f.flush(); os.fsync(f.fileno())
+    directory_fd=os.open(path.parent,os.O_RDONLY|os.O_DIRECTORY)
+    try:os.fsync(directory_fd)
+    finally:os.close(directory_fd)
 
 class Materials:
     """Claim the whole batch before online execution; abort burns unused entries.
@@ -40,6 +63,8 @@ class Materials:
         require(self.data['version']==VERSION and self.data['role']==role and self.data['session']==session and self.data['bits']==bits,'PREPROCESSING_BINDING')
         self.directory=Path(path).parent
         self.role=role; self.session=session; self.batch=self.data['batch']
+        from .storage import reject_burned
+        reject_burned(self.batch)
         ledger=ROOT/'state/mpc'/('S'+str(role)+'-ledger.sqlite')
         ledger.parent.mkdir(parents=True,exist_ok=True,mode=0o700)
         self.db=sqlite3.connect(ledger,timeout=5)

@@ -17,8 +17,22 @@ def binary_write(path,data):
         f.write(data);f.flush();os.fsync(f.fileno())
 def native(args):
     env=os.environ.copy();env['LD_LIBRARY_PATH']=str(ROOT/'deps/toolchain/usr/lib/x86_64-linux-gnu')
-    try:p=subprocess.run([str(ROOT/'build/he_bridge')]+[str(a) for a in args],capture_output=True,text=True,env=env,timeout=240)
-    except subprocess.TimeoutExpired:raise ProtocolError('HE_NATIVE_TIMEOUT') from None
+    from .storage import check
+    proc=subprocess.Popen([str(ROOT/'build/he_bridge')]+[str(a) for a in args],stdout=subprocess.PIPE,stderr=subprocess.PIPE,text=True,env=env)
+    deadline=time.monotonic()+240
+    try:
+        while True:
+            try:out,err=proc.communicate(timeout=.5);break
+            except subprocess.TimeoutExpired:
+                check(ROOT)
+                if time.monotonic()>deadline:raise ProtocolError('HE_NATIVE_TIMEOUT')
+    except BaseException:
+        proc.terminate()
+        try:proc.communicate(timeout=3)
+        except subprocess.TimeoutExpired:proc.kill();proc.communicate()
+        raise
+    class Response:pass
+    p=Response();p.returncode=proc.returncode;p.stdout=out
     if p.returncode: raise ProtocolError('HE_NATIVE_FAILURE')
     try:return json.loads(p.stdout)
     except ValueError: raise ProtocolError('HE_NATIVE_RESPONSE') from None
