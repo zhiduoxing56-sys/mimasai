@@ -1,8 +1,8 @@
-新增交付（2026-10-06，基线 ebfc489）：[本机页面与部署验收状态](docs/local-page-acceptance.md)、[一次性管理员终端步骤](docs/local-admin-deployment.md)。公开页面及受限接口已实现，短测试通过；真实账户、模型权限迁移和页面查询等待管理员部署，页面保持未连接。禁止重训、扩图及改变数值语义。
+新增交付（2026-10-07，冻结部署1c8f376）：[本机页面与部署验收状态](docs/local-page-acceptance.md)、[管理员步骤及只读故障诊断](docs/local-admin-deployment.md)。六真实身份128项权限检查通过，现有模型及消费账本迁移保持inode；实际页面空闲截图已交付。首次真实查询准备失败，旧会话已清理且重执行被拒绝；成功查询及后续页面故障验收仍未完成。禁止重训、扩图及改变数值语义。
 
 本轮交付（2026-10-06，基线 c9840ed）：[停止与交付异常验收、权限矩阵及阻塞](docs/lifecycle-role-acceptance.md)、[本轮独立证据](docs/lifecycle-role-results.json)。已修复进程组后代停止、完整工作流异常收尾及清理观测；独立角色账户创建被 sudo 身份验证阻止，页面未接入。既有模型与160轮训练结果保留，本轮不重训。
 
-本轮交付（2026-10-05）：[磁盘预算与保留政策](docs/disk-retention.md)、[结果解释与命令行验收](docs/storage-delivery-acceptance.md)、[聚合证据](docs/storage-delivery-results.json)。无需重训即可演示：`python3 scripts/demo.py`，复用既有64节点160轮发布模型，每次使用新材料，只由授权接收端恢复最终概率。历史清理仅交付预览，未删除；页面等待OS角色权限隔离。
+既有交付（2026-10-05）：[磁盘预算与保留政策](docs/disk-retention.md)、[结果解释与命令行验收](docs/storage-delivery-acceptance.md)、[聚合证据](docs/storage-delivery-results.json)。当时命令行演示复用既有64节点160轮发布模型，每次使用新材料，只由授权接收端恢复最终概率。历史清理仅交付预览，未删除。管理员迁移后的在线资产由真实角色管理，普通操作员不再直接运行旧`demo.py`读取私有目录；使用受限页面/接口，当前先完成上述失败诊断。
 
 本轮真实64节点160轮共享训练与多类指标见[验收报告](docs/representative-acceptance.md)，抽样与训练概率f14见[实验说明](docs/representative-experiment.md)；旧64节点96轮回归保留。正式入口支持 `--sampling stratified_frontier --seed 20261005`，不外推到完整Cora。
 

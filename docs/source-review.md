@@ -1,5 +1,20 @@
 # 自有源码审阅入口与发现
 
+2026-10-07当前状态以[本机部署验收](local-page-acceptance.md)和[机器记录](local-deployment-progress.json)为准：冻结部署`1c8f376`的六个真实身份128项检查通过，现有发布资产与账本迁移保留inode。以下较早段落的“同Unix用户”“未交付页面”属于当时状态；当前页面空闲视图已实际截图，但首次真实查询失败，成功交付仍未完成。本轮不重训、不扩大图、不改变数值语义。
+
+新增审阅入口：
+
+|主题|源码入口|证据/验证|
+|---|---|---|
+|固定角色执行器及真实UID授权|src/role_broker.py、deployment.py、isolated_actor.py|results/local-page/real-uid-permissions.json（128项实测）|
+|角色账本与管理员迁移|src/role_state.py、scripts/install_local_roles.py|results/local-page/migration-evidence.json（同inode/迁移时SHA-256）|
+|协调器生命周期与页面允许列表|src/demo_coordinator.py、demo_page.py、public_projection.py、ui/|verification/local_page_checks.py（既有7项短测试）；真实成功查询仍待验收|
+|失败尝试持久记录、禁止自动重跑|scripts/local_deployment.py|verification/deployment_diagnostics_checks.py（新增5项短测试）|
+|只读单会话管理员诊断|scripts/diagnose_local_query.py|只读状态/阶段/错误码/空间及准备文件元数据；不读取账本/份额|
+|实际浏览器及公开证据包装|scripts/capture_local_page.ps1、build_page_evidence.py|results/local-page/connected-ready.png（实际空闲页，非成功预测）|
+
+`python3 scripts/build_page_evidence.py`另外生成`review/local-page-evidence.tar.gz`，只选择明确列出的公开JSON和截图，不扫描角色私有目录或浏览器配置目录。`results/page/access-link.json`、`browser-session.json`中的访问能力/cookie不纳入两个包。源码包清单记录当前源码提交；实际运行证据另行绑定冻结提交，不能把未部署修复称为运行结果。
+
 |主题|准确源码入口|验证入口|
 |---|---|---|
 |真实同态聚合与旧转换|src/he.py:aggregate；src/he_bridge.cpp 的 eval、extract/pack、decrypt|verification/stage3.py、two_layer_he.py（旧转换仅诊断）|

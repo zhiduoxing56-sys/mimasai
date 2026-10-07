@@ -9,7 +9,7 @@ for name in paths:
  if not name or not (name.startswith(allowed) or name in ('README.md','.gitignore')):continue
  p=ROOT/name
  if p.is_symlink() or not p.is_file():raise RuntimeError('Only regular own-source files accepted: '+name)
- if p.suffix not in ('.py','.cpp','.md','.json','.sh','.html','.css','.js') and name!='.gitignore':raise RuntimeError('Unexpected source extension: '+name)
+ if p.suffix not in ('.py','.cpp','.md','.json','.sh','.html','.css','.js','.ps1') and name!='.gitignore':raise RuntimeError('Unexpected source extension: '+name)
  rows.append(dict(path=name,bytes=p.stat().st_size,sha256=hashlib.sha256(p.read_bytes()).hexdigest()))
 manifest=dict(commit=subprocess.check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip(),scope='Tracked own source, public config, synthetic fixtures, protocol docs; no third-party code or private runtime artifacts',files=rows)
 (OUT/'manifest.json').write_text(json.dumps(manifest,indent=2)+'\n')
