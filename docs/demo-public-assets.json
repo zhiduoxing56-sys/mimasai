@@ -1,0 +1,51 @@
+{
+  "kind": "OFFLINE_ALLOWLISTED_PUBLIC_ASSETS",
+  "sources": [
+    {
+      "path": "docs/representative-results.json",
+      "report": "representative",
+      "sha256": "b485d4dba6fb2cc8eb59983704d39bceb955629205415055067db080a2d05575"
+    },
+    {
+      "path": "docs/storage-delivery-results.json",
+      "report": "storage_delivery",
+      "sha256": "03905e57f01d561c8afe7118f7985ae98464f6ed491e746b80c002d78d701043"
+    },
+    {
+      "path": "results/local-page/real-uid-permissions-cf7da5b3c1929bbc299a7ad1a688035d4ba88643e453fed8b43add54dd972509.json",
+      "report": "real_uid",
+      "sha256": "2ab1df7922f5ddaa69519a41bb41ccabcb6e0f74188411ef8e0b36ab61e15d25"
+    },
+    {
+      "path": "results/local-page/query-success.json",
+      "report": "query_success",
+      "sha256": "43e3441be8ea40351076a09422d70710ad7be552f94234352ce9183daf2dbb43"
+    },
+    {
+      "path": "results/local-page/query-failure.json",
+      "report": "query_failure",
+      "sha256": "5822371f97eeeb45b966e6ff533b30aed37ca588f2aa8c63a84f31b401187375"
+    },
+    {
+      "path": "results/local-page/request-independence.json",
+      "report": "independence",
+      "sha256": "6ac391f7988d96c0f7bcecaec52d3a81a2e810950646708a2f0a3008aa6cd110"
+    }
+  ],
+  "assets": [
+    {
+      "path": "ui/training-public.json",
+      "bytes": 84080,
+      "sha256": "b2f403f9d68f7a478efd92fff5ed28a6afb84d85c9d0bfea686aacdc22ac348c"
+    },
+    {
+      "path": "ui/safety-public.json",
+      "bytes": 3570,
+      "sha256": "98a77cd091b39c0dcefccfb1dfa381a15008ee4b2affccebae973ccb370bd380"
+    }
+  ],
+  "training_executed": false,
+  "materials_generated": false,
+  "private_reports_opened": false,
+  "scope": "Existing public aggregate metrics/loss curve and acceptance metadata only; page never opens source reports"
+}

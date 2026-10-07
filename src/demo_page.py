@@ -5,6 +5,7 @@ from urllib.parse import urlsplit
 from .deployment import CODE,PUBLIC_API,root,identity,exact,hexid,call
 from .mpc import require,ProtocolError
 from .public_projection import status
+from .demo_assets import validate_training,validate_safety
 
 class Page(http.server.BaseHTTPRequestHandler):
     server_version='PrivacyGNNLocal/1';protocol_version='HTTP/1.1'
@@ -43,10 +44,16 @@ class Page(http.server.BaseHTTPRequestHandler):
                 try:connected=self.backend('overview')['connected'];reason='LOCAL_AUTHORIZATION_REQUIRED' if not self.authorized else 'REAL_UID_PERMISSIONS_NOT_ACCEPTED'
                 except (OSError,ProtocolError):connected=False;reason='PUBLIC_INTERFACE_NOT_CONNECTED'
                 return self.reply(200,dict(model=self.server.public_model,connected=bool(connected and self.authorized),connection_reason=reason,csrf=self.csrf))
-            assets={'/':('index.html','text/html'),'/style.css':('style.css','text/css'),'/app.js':('app.js','application/javascript')}
+            if path in self.server.public_assets:return self.reply(200,self.server.public_assets[path])
+            assets={'/':('index.html','text/html'),'/training':('training.html','text/html'),'/privacy':('privacy.html','text/html'),
+                '/style.css':('style.css','text/css'),'/common.js':('common.js','application/javascript'),
+                '/app.js':('app.js','application/javascript'),'/training.js':('training.js','application/javascript'),'/privacy.js':('privacy.js','application/javascript')}
             if path not in assets:return self.reply(404,dict(error='PAGE_ROUTE_NOT_FOUND'))
             name,content=assets[path];body=(self.server.assets/name).read_text()
-            if name=='index.html':body=body.replace('__PUBLIC_MODEL__',json.dumps(self.server.public_model,ensure_ascii=False).replace('<','\\u003c'))
+            if content=='text/html':
+                for marker,value in (('__PUBLIC_MODEL__',self.server.public_model),('__DISPLAY_CONTEXT__',dict(mode=self.server.display_mode)),
+                        ('__PUBLIC_TRAINING__',self.server.public_assets['/training-public.json']),('__PUBLIC_SAFETY__',self.server.public_assets['/safety-public.json'])):
+                    body=body.replace(marker,json.dumps(value,ensure_ascii=False).replace('<','\\u003c'))
             self.reply(200,body,content)
         except (ProtocolError,ValueError):self.reply(403,dict(error='PAGE_REQUEST_REJECTED'))
     def do_POST(self):
@@ -73,9 +80,16 @@ class Page(http.server.BaseHTTPRequestHandler):
             code=str(error).split(':',1)[0] if isinstance(error,ProtocolError) else 'PUBLIC_INTERFACE_NOT_CONNECTED'
             self.reply(403 if code in ('PAGE_CSRF_REJECTED','PAGE_ORIGIN_REJECTED','LOCAL_AUTHORIZATION_REQUIRED') else 409,dict(error=code))
 
-def server(port=8765,assets=CODE/'ui',page_db=None):
+def server(port=8765,assets=CODE/'ui',page_db=None,display_mode='live'):
+    require(display_mode in ('live','pending_deployment','record_validation'),'DISPLAY_MODE')
+    assets=Path(assets)
+    public_model=json.loads((assets/'model-public.json').read_text())
+    training=validate_training(json.loads((assets/'training-public.json').read_text()))
+    safety=validate_safety(json.loads((assets/'safety-public.json').read_text()))
+    require(training['model_id']==public_model['model_id'] and training['classes']==public_model['classes'],'DISPLAY_MODEL_BINDING')
     result=http.server.ThreadingHTTPServer(('127.0.0.1',port),Page)
-    result.assets=Path(assets);result.page_db=page_db or root('page')/'state/page.sqlite';result.public_model=json.loads((result.assets/'model-public.json').read_text());return result
+    result.assets=assets;result.page_db=page_db or root('page')/'state/page.sqlite';result.public_model=public_model
+    result.display_mode=display_mode;result.public_assets={'/training-public.json':training,'/safety-public.json':safety};return result
 def main():
     require(os.geteuid()==identity('page').pw_uid,'PAGE_UID_REQUIRED')
     with server() as http:http.serve_forever()

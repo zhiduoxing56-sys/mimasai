@@ -1,0 +1,140 @@
+{
+  "schema": "demo-safety-summary-v1",
+  "audit": {
+    "runtime_commit": "e7e5436ad69167b86440db9f171444c5c50c88fe",
+    "source_sha256": "cf7da5b3c1929bbc299a7ad1a688035d4ba88643e453fed8b43add54dd972509",
+    "timestamp_ns": 1791387253271983645,
+    "roles": [
+      {
+        "role": "s0",
+        "uid": 999,
+        "checks": 24,
+        "passed": 24
+      },
+      {
+        "role": "s1",
+        "uid": 997,
+        "checks": 24,
+        "passed": 24
+      },
+      {
+        "role": "dealer",
+        "uid": 995,
+        "checks": 23,
+        "passed": 23
+      },
+      {
+        "role": "receiver",
+        "uid": 994,
+        "checks": 23,
+        "passed": 23
+      },
+      {
+        "role": "coordinator",
+        "uid": 993,
+        "checks": 23,
+        "passed": 23
+      },
+      {
+        "role": "page",
+        "uid": 992,
+        "checks": 23,
+        "passed": 23
+      }
+    ],
+    "startup_fds_closed": true,
+    "cross_secret_role_aliases": 0
+  },
+  "requests": [
+    {
+      "kind": "success",
+      "request_id": "3b51037357e803f5ad868c26534bb568",
+      "phase": "complete",
+      "delivery_state": "complete",
+      "has_result": true,
+      "error": null,
+      "cost": {
+        "wall_seconds": 72.3137802149995,
+        "wire_bytes": 96792628,
+        "rounds": 1306
+      },
+      "state": "cleaned",
+      "reuse_rejected": true
+    },
+    {
+      "kind": "failure",
+      "request_id": "0cce9d0b2e93b1e7b03afe683baae8d3",
+      "phase": "failed",
+      "delivery_state": "incomplete",
+      "has_result": false,
+      "error": "INJECTED_INPUT_PREPARATION_FAILURE",
+      "cost": {
+        "wall_seconds": 28.530999177999547,
+        "wire_bytes": null,
+        "rounds": null
+      },
+      "state": "cleaned",
+      "reuse_rejected": true
+    }
+  ],
+  "cleanup": [
+    {
+      "kind": "success",
+      "removed_files": 3812,
+      "deleted_file_allocated_bytes": 1727062016,
+      "unlinked_last_link_allocated_bytes": 1726849024,
+      "reclaimable_upper_bytes": 1726849024,
+      "space_before": {
+        "internal_available_bytes": 817864327168,
+        "host_available_bytes": 32467075072,
+        "host_status": "READABLE"
+      },
+      "space_after": {
+        "internal_available_bytes": 819590066176,
+        "host_available_bytes": 32467075072,
+        "host_status": "READABLE"
+      }
+    },
+    {
+      "kind": "failure",
+      "removed_files": 158,
+      "deleted_file_allocated_bytes": 340516864,
+      "unlinked_last_link_allocated_bytes": 340516864,
+      "reclaimable_upper_bytes": 340516864,
+      "space_before": {
+        "internal_available_bytes": 819248390144,
+        "host_available_bytes": 32467075072,
+        "host_status": "READABLE"
+      },
+      "space_after": {
+        "internal_available_bytes": 819588878336,
+        "host_available_bytes": 32467075072,
+        "host_status": "READABLE"
+      }
+    }
+  ],
+  "independence": {
+    "distinct_batches": true,
+    "ring_material_ids_disjoint": true,
+    "he_mask_ids_disjoint": true,
+    "protocol_rerun": false
+  },
+  "sources": [
+    {
+      "report": "real_uid",
+      "sha256": "2ab1df7922f5ddaa69519a41bb41ccabcb6e0f74188411ef8e0b36ab61e15d25"
+    },
+    {
+      "report": "query_success",
+      "sha256": "43e3441be8ea40351076a09422d70710ad7be552f94234352ce9183daf2dbb43"
+    },
+    {
+      "report": "query_failure",
+      "sha256": "5822371f97eeeb45b966e6ff533b30aed37ca588f2aa8c63a84f31b401187375"
+    },
+    {
+      "report": "independence",
+      "sha256": "6ac391f7988d96c0f7bcecaec52d3a81a2e810950646708a2f0a3008aa6cd110"
+    }
+  ]
+}

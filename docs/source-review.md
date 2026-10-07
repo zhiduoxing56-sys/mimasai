@@ -1,5 +1,18 @@
 # 自有源码审阅入口与发现
 
+2026-10-08展示收尾以fbd0123为基线；新版三页**待管理员部署**，实际服务仍e7e5436。见[本轮清单](demo-final-acceptance.md)、[机器记录](demo-final-results.json)与[操作说明](demo-runbook.md)。在线/离线协议、停止、账本、数值及范围守卫18个核心文件与冻结版逐字节一致，本轮没有新密码查询。既有真实UID与查询证据复用；新源码冻结后需重新绑定权限审计，不将操作员预览当作页面UID运行。
+
+| 本轮展示改动 | 审阅入口 | 独立验证 |
+| --- | --- | --- |
+| 离线公开成果审核与只读资产 | scripts/build_demo_assets.py、src/demo_assets.py、ui/*-public.json | 严格递归字段允许列表，类别/指标/真实曲线与公开来源哈希；页面只校验已整理资产 |
+| 三页固定路由与中文显示 | src/demo_page.py、ui/ | 固定GET路由；查询POST与授权绑定不变；完整交付、错误清空、刷新只读、中文类别顺序 |
+| 安装公共资产预检 | scripts/install_local_roles.py | 启动前模式校验及模型绑定；安装/新版本权限验收仍待管理员执行 |
+| 待部署界面与保留记录适配器 | scripts/demo_preview.py、verification/demo_browser_server.py、demo_display_checks.py | 7项短测；适配器明确仅为独立验收，拒绝submit，不调用密码后端，生产安装不包含verification |
+| 三页浏览器及交付检查 | scripts/capture_demo_display.ps1、check_demo_deployment.py、page_preview.py | 五张标明待部署的截图、160个保存曲线点、两项故障清空和新文档刷新；实际部署检查返回PENDING_ADMIN_DEPLOYMENT |
+
+源码包使用Git跟踪的自有文件允许目录；公开证据包使用逐文件清单，不扫描角色目录或私有浏览器配置。此前fbd0123审阅包及哈希清单完整保留在review/archive/fbd0123。下方保持历史审阅发现和实际e7e5436验收描述。
+
+
 最新修复审阅：`src/deployment.py:atomic`在新inode发布前显式应用请求模式，解决服务0077掩码把公共计划/模板从0444变为0400；默认私有元数据仍0600。`deployment_diagnostics.py`只持久记录异常类型、errno和源码文件名/行号，页面不获得内部诊断字段。三角色执行器按终止和停止证明预览/清理自身一次性材料，不改算术或材料生成算法。冻结运行e7e5436现已实际验收：六真实UID140项通过、双方/dealer内部及宿主探针可读、dealer已有桥公开参数加载通过。旧会话公共文件实际0400、新请求0444交叉核实，旧会话不补权限或重跑。6项模式、安全故障短测试、7项受影响页面测试和5项诊断测试保留独立证据。
 
 2026-10-07当前状态以[本机部署验收](local-page-acceptance.md)和[机器记录](local-deployment-progress.json)为准：一次真实页面HTTP接口查询完整交付，一次输入准备故障未交付；新材料分离、重复提交与清理后重用拒绝通过。实际Edge浏览器展示同一成功及故障请求，失败清空旧预测，刷新只读取状态。现有模型与账本迁移保留inode，没有训练、扩图或改变数值语义。下方历史“同Unix用户”“未交付页面”描述保留当时证据，不能代替当前真实OS身份验收。

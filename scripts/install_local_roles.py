@@ -10,6 +10,7 @@ PROJECT=Path(__file__).resolve().parents[1];BASE=Path('/var/lib/privacy-gnn');OP
 sys.path.insert(0,str(PROJECT))
 from src.public_projection import model,planning_report
 from src.storage import snapshot
+from src.demo_assets import validate_training,validate_safety
 
 TOOL_NAMES=('git','systemctl','useradd','groupadd','gpasswd','nologin')
 TOOL_DIRS=(Path('/usr/sbin'),Path('/usr/bin'),Path('/sbin'),Path('/bin'))
@@ -99,6 +100,9 @@ def preflight():
     helpers=check_system_tools() # Before account/group creation or any migration.
     require(not git('status','--porcelain').strip(),'Commit/review the complete deployment code before installing.')
     manifest=json.loads((PROJECT/f'results/application/{EID}/manifest.json').read_text());public=model(manifest)
+    training=validate_training(json.loads((PROJECT/'ui/training-public.json').read_text()))
+    validate_safety(json.loads((PROJECT/'ui/safety-public.json').read_text()))
+    require(training['model_id']==public['model_id'] and training['classes']==public['classes'],'Public display/model binding mismatch')
     require(public['model_id']=='829a29a6913d505e7167f418a94674ee','Unexpected published model')
     require(manifest['checkpoint']['iteration']==160,'Existing 160-step checkpoint required')
     checkpoint=Path(manifest['checkpoint']['directory']);require(checkpoint.is_relative_to(PROJECT/'build'),'Unexpected checkpoint root')

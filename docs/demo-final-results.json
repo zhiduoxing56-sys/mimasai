@@ -1,0 +1,146 @@
+{
+  "kind": "LOCAL_DEMO_DISPLAY_FINAL_ACCEPTANCE",
+  "observed_utc": "2026-10-07T16:46:35.571650+00:00",
+  "baseline_commit": "fbd01230794a36512d8c1c99db41baa77ce83b08",
+  "runtime_frozen_commit": "e7e5436ad69167b86440db9f171444c5c50c88fe",
+  "source_version": "See review/manifest.json and review/delivery.json after local commit",
+  "status": "DISPLAY_COMPLETE_PENDING_ADMIN_DEPLOYMENT",
+  "pages": [
+    "隐私推理",
+    "训练与效果",
+    "隐私与运行保障"
+  ],
+  "model_id": "829a29a6913d505e7167f418a94674ee",
+  "fixed_target": 936,
+  "nodes": 64,
+  "source_iteration": 160,
+  "independent": {
+    "short_tests": {
+      "status": "PASS_DISPLAY_CHANGED_SURFACES",
+      "tests": 7,
+      "failures": 0,
+      "errors": 0,
+      "scope": "Independent public assets/routes and retained-result HTTP rendering; synthetic adapter, no real UID acceptance or new cryptographic query",
+      "materials_generated": false,
+      "training_executed": false
+    },
+    "browser": {
+      "status": "PASS",
+      "scope": "Existing authorized success/failure HTTP records through isolated test adapter, not deployed page UID",
+      "deployment": "PENDING_ADMIN_UPDATE",
+      "chinese_classes_in_order": true,
+      "curve_recorded_points": 160,
+      "partial_delivery_clears": true,
+      "status_failure_clears": true,
+      "refresh_new_document_same_failure": true,
+      "stage_clock_synthetic_check": true,
+      "mobile_no_horizontal_overflow": true,
+      "submit_requests": 0,
+      "new_crypto_queries": 0,
+      "screenshots": [
+        "inference-pending.png",
+        "training-pending.png",
+        "privacy-pending.png",
+        "inference-acceptance-pending.png",
+        "failure-acceptance-pending.png"
+      ]
+    },
+    "core_byte_identical_files": 18,
+    "public_assets": [
+      {
+        "path": "ui/training-public.json",
+        "bytes": 84080,
+        "sha256": "b2f403f9d68f7a478efd92fff5ed28a6afb84d85c9d0bfea686aacdc22ac348c"
+      },
+      {
+        "path": "ui/safety-public.json",
+        "bytes": 3570,
+        "sha256": "98a77cd091b39c0dcefccfb1dfa381a15008ee4b2affccebae973ccb370bd380"
+      }
+    ]
+  },
+  "reused": {
+    "real_uid_permission_checks": 140,
+    "real_uid_source_sha256": "cf7da5b3c1929bbc299a7ad1a688035d4ba88643e453fed8b43add54dd972509",
+    "real_query_success": "3b51037357e803f5ad868c26534bb568",
+    "real_input_fault": "0cce9d0b2e93b1e7b03afe683baae8d3",
+    "old_runtime_browser_records": "results/local-page/browser-evidence.json",
+    "lifecycle_and_disk_checks": "Existing reports referenced in docs/demo-final-acceptance.md; unchanged protocol surfaces"
+  },
+  "pending": {
+    "reason": "sudo -n requires local operator password",
+    "automatic_approval_rejection": false,
+    "password_requested_or_saved": false,
+    "items": [
+      "管理员冻结新版源码与公共资产",
+      "新冻结源码绑定的六身份权限审计",
+      "新版实际页面UID及三页浏览器验收"
+    ],
+    "instructions": "docs/demo-runbook.md",
+    "deployment_check": "results/demo-final/deployment-display-check.json"
+  },
+  "space_observation": {
+    "before": {
+      "internal_available_bytes": 819583352832,
+      "host_available_bytes": 32467075072,
+      "host_status": "READABLE"
+    },
+    "final": {
+      "internal_available_bytes": 819576512512,
+      "host_available_bytes": 32467660800,
+      "host_status": "READABLE",
+      "host_mount": "/mnt/e",
+      "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+      "vhd_logical_bytes": 216304451584
+    },
+    "interpretation": "Independent available-space snapshots, no cleanup; not measured reclaimed space"
+  },
+  "temporary_servers": {
+    "kind": "TEMPORARY_DISPLAY_SERVERS_STOPPED",
+    "observed_utc": "2026-10-07T16:40:29.881178+00:00",
+    "ports": [
+      {
+        "port": 8766,
+        "closed": true
+      },
+      {
+        "port": 8767,
+        "closed": true
+      }
+    ],
+    "matched_live_test_servers": 0,
+    "production_services_stopped": false,
+    "crypto_queries": 0
+  },
+  "historical_packages": {
+    "directory": "review/archive/fbd0123",
+    "source_commit": "fbd01230794a36512d8c1c99db41baa77ce83b08",
+    "packages": [
+      {
+        "path": "review/privacy-gnn-source-review.tar.gz",
+        "bytes": 594759,
+        "sha256": "1d9bfbb52bb4b561176714af4903cdacb4af53cdf72301e2e78f7061983114ef",
+        "files": 174,
+        "hashes_verified": true,
+        "private_capabilities_absent": true
+      },
+      {
+        "path": "review/local-page-evidence.tar.gz",
+        "bytes": 706014,
+        "sha256": "ebd7ff223602f4947938cc95f7be8cb5698c323f9c0b4fd7d2aa3663f6bc09da",
+        "files": 29,
+        "hashes_verified": true,
+        "private_capabilities_absent": true
+      }
+    ]
+  },
+  "training_executed": false,
+  "scale_changed": false,
+  "numerical_semantics_changed": false,
+  "range_guards_disabled": false,
+  "materials_generated": false,
+  "new_crypto_queries": 0,
+  "historical_deletion": false,
+  "vhd_maintenance": false,
+  "security_scope": "Local operating-system identity isolation; existing two-party semi-honest, trusted non-colluding offline party, administrator and persistent-state assumptions remain; 64-node/22-test scope is not full-dataset performance"
+}
