@@ -28,6 +28,10 @@ def atomic(path,value,mode=0o600):
     path=Path(path);temporary=path.with_name(path.name+'.pending-'+secrets.token_hex(8))
     fd=os.open(temporary,os.O_CREAT|os.O_EXCL|os.O_WRONLY,mode)
     with os.fdopen(fd,'w') as stream:
+        # systemd uses UMask=0077. Public plans/templates explicitly need 0444;
+        # apply the requested mode to this new inode before publishing it.
+        # Default private metadata remains 0600 under every caller umask.
+        os.fchmod(stream.fileno(),mode)
         json.dump(value,stream,separators=(',',':'));stream.flush();os.fsync(stream.fileno())
     os.replace(temporary,path)
     fd=os.open(path.parent,os.O_DIRECTORY|os.O_RDONLY)

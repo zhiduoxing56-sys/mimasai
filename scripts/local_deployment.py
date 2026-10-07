@@ -3,6 +3,7 @@ import argparse,http.cookiejar,json,os,secrets,sys,time,urllib.request
 from pathlib import Path
 sys.path.insert(0,str(Path(__file__).resolve().parents[1]))
 from src.deployment import BROKER,call,hexid,atomic
+from src.mpc import ProtocolError
 ROOT=Path(__file__).resolve().parents[1];OUT=ROOT/'results/local-page'
 def store(name,document):
  OUT.mkdir(parents=True,exist_ok=True);atomic(OUT/name,document)
@@ -15,8 +16,30 @@ def browser_session(client,token,sid,view):
  with os.fdopen(fd,'w') as stream:json.dump(previous,stream);stream.flush();os.fsync(stream.fileno())
  os.chmod(path,0o600)
 def audit():
- matrix=call(BROKER,dict(action='audit'));evidence=call(BROKER,dict(action='evidence'));store('real-uid-permissions.json',matrix);store('migration-evidence.json',evidence['migration'])
+ matrix=call(BROKER,dict(action='audit'));evidence=call(BROKER,dict(action='evidence'))
+ require_deployment(matrix)
+ previous=OUT/'real-uid-permissions.json'
+ if previous.exists():
+  old=json.loads(previous.read_text());archive=OUT/('real-uid-permissions-'+old['source_sha256']+'.json')
+  if not archive.exists():store(archive.name,old)
+ previous=OUT/'migration-evidence.json'
+ if previous.exists():
+  old=json.loads(previous.read_text());archive=OUT/('migration-evidence-'+old['commit']+'.json')
+  if not archive.exists():store(archive.name,old)
+ store('real-uid-permissions-'+matrix['source_sha256']+'.json',matrix);store('real-uid-permissions.json',matrix);store('migration-evidence.json',evidence['migration'])
  print(json.dumps(dict(status=matrix['status'],roles=len(matrix['roles']),checks=sum(len(r['checks']) for r in matrix['roles']),evidence=str(OUT/'real-uid-permissions.json'))))
+def require_deployment(matrix):
+ if not matrix or matrix.get('status')!='PASS_REAL_UID_MATRIX':raise RuntimeError('UPDATED_REAL_UID_AUDIT_REQUIRED')
+ roles=matrix.get('roles',[])
+ if {r['role'] for r in roles}!={'s0','s1','dealer','receiver','coordinator','page'}:raise RuntimeError('UPDATED_REAL_UID_AUDIT_REQUIRED')
+ for role in roles:
+  resources={c['resource']:c for c in role['checks']}
+  for name in ('atomic_public_metadata','atomic_private_metadata'):
+   if name not in resources or not resources[name]['pass_check']:raise RuntimeError('UPDATED_DEPLOYMENT_REQUIRED: public atomic mode acceptance is absent')
+  if role['role'] in ('s0','s1','dealer'):
+   space=role.get('readiness',{}).get('space',{})
+   if space.get('host_status')!='READABLE' or space.get('host_available_bytes') is None:raise RuntimeError('ROLE_HOST_SPACE_ACCEPTANCE_REQUIRED')
+  if role['role']=='dealer' and 'native_public_metadata' not in role.get('readiness',{}):raise RuntimeError('DEALER_NATIVE_READINESS_REQUIRED')
 class Client:
  def __init__(self):
   self.jar=http.cookiejar.CookieJar();self.http=urllib.request.build_opener(urllib.request.HTTPCookieProcessor(self.jar));self.csrf=None
@@ -63,6 +86,7 @@ def query(client,fault=False):
   record['validation_error']=type(error).__name__
   record['automatic_protocol_retry']=False;store(name,record);raise
 def validate():
+ require_deployment(call(BROKER,dict(action='evidence'))['permissions'])
  client=Client();client.authorize();success=query(client);failure=query(client,True)
  assert success['batch']!=failure['batch'];a=success['identifiers'];b=failure['identifiers']
  assert not set(a['ring_material_ids'])&set(b['ring_material_ids']);assert not {v for row in a['he_mask_ids'] for v in row}&{v for row in b['he_mask_ids'] for v in row}
@@ -77,4 +101,9 @@ def main():
  elif a.command=='reuse-probe':
   sid=hexid(a.session);value=call(BROKER,dict(action='reuse_probe',sid=sid));store('reuse-'+sid+'.json',value);print(json.dumps(value))
  else:store('deployment-evidence.json',call(BROKER,dict(action='evidence')));print('Saved deployment evidence; no private roles read by operator.')
-if __name__=='__main__':main()
+if __name__=='__main__':
+ try:main()
+ except (RuntimeError,ProtocolError,OSError,ValueError,AssertionError) as error:
+  raw=str(error).split(':',1)[0]
+  reason=raw if raw and all(c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_' for c in raw) else 'LOCAL_VALIDATION_FAILED'
+  print(json.dumps(dict(status='VALIDATION_REFUSED_OR_FAILED',reason=reason,error_type=type(error).__name__,automatic_protocol_retry=False)),file=sys.stderr);sys.exit(1)

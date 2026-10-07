@@ -24,10 +24,10 @@ def cleanup(sid):
     before=snapshot(root('coordinator'));preview=broker('clean_preview',sid)
     current=record(sid);termination=current['state']
     transition(sid,{'completed','aborted'},'cleaned',json.dumps(dict(termination_state=termination,role_previews=preview)))
-    result=broker('clean_apply',sid,digest0=preview['s0']['digest'],digest1=preview['s1']['digest']);after=snapshot(root('coordinator'))
+    result=broker('clean_apply',sid,digest0=preview['s0']['digest'],digest1=preview['s1']['digest'],digest_dealer=preview['dealer']['digest']);after=snapshot(root('coordinator'))
     observation=dict(space_before=before,space_after=after,deleted_file_allocated_bytes=sum(v['deleted_file_allocated_bytes'] for v in result['roles']),
         unlinked_last_link_allocated_bytes=sum(v['unlinked_last_link_allocated_bytes'] for v in result['roles']),removed_files=sum(v['removed_files'] for v in result['roles']),
-        reclaimable_upper_bytes=sum(preview[r]['reclaimable_upper_bytes'] for r in ('s0','s1')),
+        reclaimable_upper_bytes=sum(preview[r]['reclaimable_upper_bytes'] for r in ('s0','s1','dealer')),
         observed_internal_available_delta=after['internal_available_bytes']-before['internal_available_bytes'],
         observed_host_available_delta=after['host_available_bytes']-before['host_available_bytes'] if None not in (after['host_available_bytes'],before['host_available_bytes']) else None,
         interpretation='Deletion blocks and observed filesystem deltas are separate; no claim of actual VHD reclamation.')

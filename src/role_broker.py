@@ -8,7 +8,8 @@ from pathlib import Path
 from .deployment import BASE,CODE,RUN,BROKER,ROLES,EXPERIMENT,root,identity,hexid,policy,atomic,exact,receive,send,peer_uid,actor_environment
 from .mpc import require,ProtocolError,settings,ROOT
 from .processes import stop,quiescent,StopUnconfirmed
-from .storage import record,Guard,estimate
+from .storage import record,Guard,estimate,history
+from .deployment_diagnostics import failure,filtered
 from .application import inference_plan
 from .mpc import costs
 
@@ -39,9 +40,11 @@ def actor(role,action,sid,attempt=None,digest=None):
     try:
         out,err=proc.communicate(timeout=300);quiescent([proc])
         if proc.returncode!=0:
-            try:code=json.loads(out)['actor_error']
-            except (ValueError,KeyError,TypeError):code='ROLE_OPERATION_FAILED'
+            try:
+                error=json.loads(out);code=error['actor_error'];diagnostic=filtered(error.get('actor_diagnostic'))
+            except (ValueError,KeyError,TypeError):code='ROLE_OPERATION_FAILED';diagnostic=None
             require(isinstance(code,str) and code and all(c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_' for c in code),'ROLE_OPERATION_FAILED')
+            atomic(ADMIN/(sid+'-'+role+'-'+action+'-failure.json'),dict(role=role,action=action,error=code,diagnostic=diagnostic,time_ns=time.time_ns(),source_sha256=codehash()))
             raise ProtocolError(code)
         return json.loads(out)
     except BaseException:
@@ -57,6 +60,14 @@ def chown_tree(path,role):
 def permission_matrix():
     quiet_roles()
     public=policy();rows=[];secret=root('s0')/'build/assets/S0'/('model-'+public['model_id']+'.json')
+    # Exercise the exact atomic writer under the service's restrictive umask.
+    # These are mode-only fixtures; no secret or protocol material is generated.
+    for role in ROLES:
+        atomic(root(role)/'permission-atomic-public.json',dict(public_fixture=True,nodes=64),0o444)
+        atomic(root(role)/'permission-atomic-private.json',dict(public_fixture=True))
+    native=root('dealer')/'permission-native';native.mkdir(mode=0o750,exist_ok=True)
+    os.chown(native,0,identity('dealer').pw_gid);os.chmod(native,0o750)
+    shutil.copyfile(root('s0')/'build/assets/S0/he-layer0/parameters.seal',native/'parameters.seal');os.chmod(native/'parameters.seal',0o444)
     fd=os.open(secret,os.O_RDONLY);os.set_inheritable(fd,True)
     try:
         for role in ROLES:
@@ -126,7 +137,8 @@ def command(request,uid):
         exact(request,('action',));require(admin,'BROKER_ADMIN_ONLY');quiet_roles();atomic(ADMIN/'fault-next.json',dict(phase='input'));return dict(armed=True)
     if action=='evidence':
         exact(request,('action',));require(admin,'BROKER_ADMIN_ONLY')
-        return dict(migration=json.loads((ADMIN/'migration.json').read_text()),permissions=json.loads((ADMIN/'permissions.json').read_text()) if attested() else None)
+        return dict(migration=json.loads((ADMIN/'migration.json').read_text()),permissions=json.loads((ADMIN/'permissions.json').read_text()) if attested() else None,
+            readiness_failures=[json.loads(path.read_text()) for path in sorted(ADMIN.glob('0'*32+'-*-probe-failure.json'))])
     if action in ('query_evidence','reuse_probe'):
         exact(request,('action','sid'));require(admin,'BROKER_ADMIN_ONLY');sid=hexid(request['sid']);entry=registered(sid)
         if action=='reuse_probe':
@@ -136,11 +148,15 @@ def command(request,uid):
             raise ProtocolError('REUSE_PROBE_UNEXPECTED_ACCEPTANCE')
         identifiers_path=ADMIN/(sid+'-identifiers.json');identifiers=json.loads(identifiers_path.read_text()) if identifiers_path.exists() else None
         source=root('coordinator')/'results'/('query-'+sid+'.json')
+        public_files=dict(dealer_public_plan=d('dealer',sid)/'public-plan.json',
+            s0_job_template=d('s0',sid)/'job-template.json',s1_job_template=d('s1',sid)/'job-template.json')
         return dict(session=sid,state=entry['state'],batch=entry['batch'],identifiers=identifiers,
+            lifecycle=history(sid),actor_failures=[json.loads(path.read_text()) for path in sorted(ADMIN.glob(sid+'-*-failure.json'))],
+            public_file_modes={name:format(path.stat().st_mode&0o777,'04o') if path.exists() else None for name,path in public_files.items()},
             report=json.loads(source.read_text()) if source.exists() else None,
-            cleanup_previews={r:{k:v for k,v in json.loads((ADMIN/(sid+'-'+r+'-cleanup.json')).read_text()).items() if k!='files'} for r in ('s0','s1') if (ADMIN/(sid+'-'+r+'-cleanup.json')).exists()})
+            cleanup_previews={r:{k:v for k,v in json.loads((ADMIN/(sid+'-'+r+'-cleanup.json')).read_text()).items() if k!='files'} for r in ('s0','s1','dealer') if (ADMIN/(sid+'-'+r+'-cleanup.json')).exists()})
     require(coordinator,'BROKER_COORDINATOR_ONLY');require(attested(),'REAL_UID_PERMISSIONS_NOT_ACCEPTED')
-    fields=('action','sid','digest0','digest1') if action=='clean_apply' else ('action','sid')
+    fields=('action','sid','digest0','digest1','digest_dealer') if action=='clean_apply' else ('action','sid')
     exact(request,fields);sid=hexid(request['sid']);entry=record(sid)
     if action=='prepare':
         quiet_roles()
@@ -206,16 +222,19 @@ def command(request,uid):
         proofs=[actor(role,'terminate',sid) for role in ('s0','s1')]
         return dict(stopped=True,receipts_saved=all(p['receipt_saved'] for p in proofs))
     if action=='clean_preview':
+        quiet_roles()
         result={}
-        for role in ('s0','s1'):
+        for role in ('s0','s1','dealer'):
             doc=actor(role,'clean_preview',sid);atomic(ADMIN/(sid+'-'+role+'-cleanup.json'),doc)
             result[role]={k:v for k,v in doc.items() if k!='files'};result[role]['files_count']=len(doc['files'])
         return result
     if action=='clean_apply':
+        quiet_roles()
         result=[]
-        for number,role in enumerate(('s0','s1')):
+        for number,role in enumerate(('s0','s1','dealer')):
             saved=json.loads((ADMIN/(sid+'-'+role+'-cleanup.json')).read_text())
-            require(request['digest'+str(number)]==saved['digest'],'BROKER_CLEAN_DIGEST')
+            field='digest_dealer' if role=='dealer' else 'digest'+str(number)
+            require(request[field]==saved['digest'],'BROKER_CLEAN_DIGEST')
             result.append(actor(role,'clean_apply',sid,digest=saved['digest']))
         return dict(roles=result,stopped=True)
     raise ProtocolError('BROKER_ACTION_REJECTED')
@@ -233,6 +252,13 @@ class Handler(socketserver.BaseRequestHandler):
         except BaseException as error:
             if getattr(error,'stopped',True) is False:atomic(ADMIN/'unsafe-stop.json',dict(error='STOP_UNCONFIRMED',time_ns=time.time_ns()))
             code=str(error).split(':',1)[0] if isinstance(error,ProtocolError) else 'ROLE_INTERFACE_FAILED'
+            # Fixed-source location and errno only. Never persist stderr or
+            # exception text; the operator uses a bounded metadata endpoint.
+            if 'request' in locals() and isinstance(request,dict) and isinstance(request.get('sid'),str):
+                try:
+                    sid=hexid(request['sid']);registered(sid)
+                    atomic(ADMIN/(sid+'-interface-failure.json'),dict(error=code,diagnostic=failure(error),time_ns=time.time_ns()))
+                except (OSError,ProtocolError):pass
             try:send(self.request,dict(ok=False,error=code,stopped=getattr(error,'stopped',True)))
             except OSError:pass
 class Server(socketserver.ThreadingUnixStreamServer):daemon_threads=False

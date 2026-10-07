@@ -37,6 +37,24 @@ def operation(action,sid,attempt=None,expected=None):
         from .public_projection import final
         received=ROOT/'results/application'/public['experiment_id']/'receiver'/sid
         return final(receive(received,public['receiver_id']),public,sid)
+    if action in ('clean_preview','clean_apply'):
+        require(role in ('s0','s1','dealer'),'ACTOR_OPERATION')
+        from .storage import record,stopped,TERMINAL
+        from .retention import manifest
+        entry=record(sid);require(entry and entry['state'] in TERMINAL and stopped(sid),'ACTOR_CLEAN_STATE')
+        number=int(role[-1]) if role!='dealer' else 'dealer'
+        doc=dict(session=sid,role=number,**manifest(d));value=digest(doc)
+        if action=='clean_preview':return dict(doc,digest=value)
+        require(expected==value,'CLEAN_PREVIEW_CHANGED');removed=[]
+        allowed=('S0','S1') if role=='dealer' else ('S'+str(number),)
+        for row in doc['files']:
+            path=d/row['path'];require(path.relative_to(d).parts[0] in allowed and not path.is_symlink(),'ACTOR_CLEAN_PATH')
+            st=path.stat();require((st.st_dev,st.st_ino,st.st_size,st.st_mtime_ns)==(row['device'],row['inode'],row['bytes'],row['mtime_ns']),'CLEAN_PREVIEW_CHANGED')
+            path.unlink();removed.append(dict(allocated=st.st_blocks*512,last=st.st_nlink==1))
+            fd=os.open(path.parent,os.O_DIRECTORY|os.O_RDONLY)
+            try:os.fsync(fd)
+            finally:os.close(fd)
+        return dict(removed_files=len(removed),deleted_file_allocated_bytes=sum(r['allocated'] for r in removed),unlinked_last_link_allocated_bytes=sum(r['allocated'] for r in removed if r['last']))
     require(role in ('s0','s1'),'ACTOR_OPERATION');number=int(role[-1]);own='S'+str(number)
     if action=='prepare':
         (d/own).mkdir(parents=True,mode=0o700)
@@ -60,21 +78,6 @@ def operation(action,sid,attempt=None,expected=None):
         from .role_state import terminate
         entry=record(sid);require(entry and entry['state']=='stopping','ACTOR_TERMINATION')
         terminate(number,sid,entry['batch']);return dict(receipt_saved=True)
-    if action in ('clean_preview','clean_apply'):
-        from .storage import record,stopped,TERMINAL
-        from .retention import manifest
-        entry=record(sid);require(entry and entry['state'] in TERMINAL and stopped(sid),'ACTOR_CLEAN_STATE')
-        doc=dict(session=sid,role=number,**manifest(d));value=digest(doc)
-        if action=='clean_preview':return dict(doc,digest=value)
-        require(expected==value,'CLEAN_PREVIEW_CHANGED');removed=[]
-        for row in doc['files']:
-            path=d/row['path'];require(path.relative_to(d).parts[0]==own and not path.is_symlink(),'ACTOR_CLEAN_PATH')
-            st=path.stat();require((st.st_dev,st.st_ino,st.st_size,st.st_mtime_ns)==(row['device'],row['inode'],row['bytes'],row['mtime_ns']),'CLEAN_PREVIEW_CHANGED')
-            path.unlink();removed.append(dict(allocated=st.st_blocks*512,last=st.st_nlink==1))
-            fd=os.open(path.parent,os.O_DIRECTORY|os.O_RDONLY)
-            try:os.fsync(fd)
-            finally:os.close(fd)
-        return dict(removed_files=len(removed),deleted_file_allocated_bytes=sum(r['allocated'] for r in removed),unlinked_last_link_allocated_bytes=sum(r['allocated'] for r in removed if r['last']))
     raise ValueError('ACTOR_OPERATION')
 
 def probe():
@@ -94,6 +97,8 @@ def probe():
         'verification_directory':(Path(public['original_workspace'])/'verification',False),
         'original_private_data':(Path(public['original_workspace'])/'build/application'/public['experiment_id']/'V/data.json',False),
         'public_plan':(base/'permission-public-plan.json',True),
+        'atomic_public_metadata':(base/'permission-atomic-public.json',True),
+        'atomic_private_metadata':(base/'permission-atomic-private.json',False),
         'public_code':(Path(public['code'])/'src/mpc.py',True),
         'public_config':(Path(public['code'])/'config/phase0.json',True),
         'central_gate_read':(Path('/var/lib/privacy-gnn/gate/sessions.sqlite'),role in ('s0','s1','dealer','coordinator')),
@@ -114,11 +119,18 @@ def probe():
         except RemoteError as error:allowed=False;reason=str(error)
         except PermissionError:allowed=False;reason='OS_DAC_DENIED'
         rows.append(dict(resource=label,expected='ALLOW' if expected else 'DENY',actual='ALLOW' if allowed else 'DENY',pass_check=allowed==expected,reason=reason))
+    readiness={}
+    if role in ('s0','s1','dealer'):
+        from .storage import check
+        readiness['space']=check(ROOT)
+    if role=='dealer':
+        from .he import native
+        readiness['native_public_metadata']=native(['metadata',ROOT/'permission-native'])
     fds={}
     for path in Path('/proc/self/fd').iterdir():
         try:fds[path.name]=os.readlink(path)
         except FileNotFoundError:pass
-    return dict(role=role,uid=os.getuid(),euid=os.geteuid(),groups=os.getgroups(),checks=rows,startup_fds=fds)
+    return dict(role=role,uid=os.getuid(),euid=os.geteuid(),groups=os.getgroups(),checks=rows,startup_fds=fds,readiness=readiness)
 
 def main():
     p=argparse.ArgumentParser();p.add_argument('action',choices=('prepare','offline','input','report','export','receive','terminate','clean_preview','clean_apply','probe'));p.add_argument('sid');p.add_argument('--attempt');p.add_argument('--digest');a=p.parse_args()
@@ -129,4 +141,5 @@ if __name__=='__main__':
     except BaseException as error:
         raw=str(error).split(':',1)[0] if isinstance(error,ProtocolError) else 'ROLE_OPERATION_FAILED'
         code=raw if raw and all(c in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_' for c in raw) else 'ROLE_OPERATION_FAILED'
-        print(json.dumps(dict(actor_error=code)),flush=True);sys.exit(1)
+        from .deployment_diagnostics import failure
+        print(json.dumps(dict(actor_error=code,actor_diagnostic=failure(error))),flush=True);sys.exit(1)
