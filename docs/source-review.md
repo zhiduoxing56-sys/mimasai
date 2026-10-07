@@ -1,19 +1,19 @@
 # 自有源码审阅入口与发现
 
-最新修复审阅：`src/deployment.py:atomic`在新inode发布前显式应用请求模式，解决服务0077掩码把公共计划/模板从0444变为0400；默认私有元数据仍0600。`src/deployment_diagnostics.py`只记录异常类型、errno、源码文件名/行号；角色及接口失败持久记录限操作员固定证据端点，页面不获得这些内部字段。`isolated_actor`／`role_broker`／`demo_coordinator`补齐dealer自身部分材料的预览及终止后清理，不改算术和材料生成算法。新版身份验收预计140项，并在各实际角色中检查宿主探针及dealer公开参数加载；待管理员更新后运行，旧128项证据保留。`verification/deployment_mode_checks.py`的6项新短测试及7项受影响页面测试通过；旧运行部署的CLI已独立实测在创建查询前拒绝。用户终端诊断、独立模式复现和实际权限结果分别标记来源，当前没有新成功查询。
+最新修复审阅：`src/deployment.py:atomic`在新inode发布前显式应用请求模式，解决服务0077掩码把公共计划/模板从0444变为0400；默认私有元数据仍0600。`deployment_diagnostics.py`只持久记录异常类型、errno和源码文件名/行号，页面不获得内部诊断字段。三角色执行器按终止和停止证明预览/清理自身一次性材料，不改算术或材料生成算法。冻结运行e7e5436现已实际验收：六真实UID140项通过、双方/dealer内部及宿主探针可读、dealer已有桥公开参数加载通过。旧会话公共文件实际0400、新请求0444交叉核实，旧会话不补权限或重跑。6项模式、安全故障短测试、7项受影响页面测试和5项诊断测试保留独立证据。
 
-2026-10-07当前状态以[本机部署验收](local-page-acceptance.md)和[机器记录](local-deployment-progress.json)为准：冻结部署`1c8f376`的六个真实身份128项检查通过，现有发布资产与账本迁移保留inode。以下较早段落的“同Unix用户”“未交付页面”属于当时状态；当前页面空闲视图已实际截图，但首次真实查询失败，成功交付仍未完成。本轮不重训、不扩大图、不改变数值语义。
+2026-10-07当前状态以[本机部署验收](local-page-acceptance.md)和[机器记录](local-deployment-progress.json)为准：一次真实页面HTTP接口查询完整交付，一次输入准备故障未交付；新材料分离、重复提交与清理后重用拒绝通过。实际Edge浏览器展示同一成功及故障请求，失败清空旧预测，刷新只读取状态。现有模型与账本迁移保留inode，没有训练、扩图或改变数值语义。下方历史“同Unix用户”“未交付页面”描述保留当时证据，不能代替当前真实OS身份验收。
 
 新增审阅入口：
 
 |主题|源码入口|证据/验证|
 |---|---|---|
-|固定角色执行器及真实UID授权|src/role_broker.py、deployment.py、isolated_actor.py|results/local-page/real-uid-permissions.json（128项实测）|
+|固定角色执行器及真实UID授权|src/role_broker.py、deployment.py、isolated_actor.py|results/local-page/real-uid-permissions.json（140项实测）|
 |角色账本与管理员迁移|src/role_state.py、scripts/install_local_roles.py|results/local-page/migration-evidence.json（同inode/迁移时SHA-256）|
-|协调器生命周期与页面允许列表|src/demo_coordinator.py、demo_page.py、public_projection.py、ui/|verification/local_page_checks.py（既有7项短测试）；真实成功查询仍待验收|
+|协调器生命周期与页面允许列表|src/demo_coordinator.py、demo_page.py、public_projection.py、ui/|verification/local_page_checks.py（既有7项短测试）；真实成功及输入故障查询已验收|
 |失败尝试持久记录、禁止自动重跑|scripts/local_deployment.py|verification/deployment_diagnostics_checks.py（新增5项短测试）|
 |只读单会话管理员诊断|scripts/diagnose_local_query.py|只读状态/阶段/错误码/空间及准备文件元数据；不读取账本/份额|
-|实际浏览器及公开证据包装|scripts/capture_local_page.ps1、build_page_evidence.py|results/local-page/connected-ready.png（实际空闲页，非成功预测）|
+|实际浏览器及公开证据包装|scripts/capture_local_page.ps1、build_page_evidence.py|results/local-page/connected-success.png、connected-failure.png（实际授权结果与故障页）|
 
 `python3 scripts/build_page_evidence.py`另外生成`review/local-page-evidence.tar.gz`，只选择明确列出的公开JSON和截图，不扫描角色私有目录或浏览器配置目录。`results/page/access-link.json`、`browser-session.json`中的访问能力/cookie不纳入两个包。源码包清单记录当前源码提交；实际运行证据另行绑定冻结提交，不能把未部署修复称为运行结果。
 

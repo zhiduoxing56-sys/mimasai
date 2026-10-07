@@ -1,14 +1,14 @@
-新增交付（2026-10-07，运行冻结部署1c8f376）：[本机页面与部署验收状态](docs/local-page-acceptance.md)、[管理员更新部署步骤](docs/local-admin-deployment.md)。六真实身份128项权限检查通过，现有模型及消费账本迁移保持inode；实际页面空闲截图已交付。管理员诊断确认首次查询在offline失败；已复现并修复0077掩码将公共计划/模板变为0400的问题，6项新增及7项受影响短测试通过。源码待更新冻结部署，旧版验收已不能启动新CLI查询；成功查询及后续页面故障验收仍未完成。禁止重训、扩图及改变数值语义。
+新增交付（2026-10-07，冻结运行版本 e7e5436）：[本机页面与部署验收](docs/local-page-acceptance.md)、[管理员部署步骤](docs/local-admin-deployment.md)。六真实身份140项检查通过，账本与原发布资产保持inode。真实页面HTTP接口查询完整交付：目标936，Case_Based概率71.875%，实际72.31秒、在线发送92.31 MiB。输入故障、独立新材料、重复提交、清理后重用拒绝及实际浏览器成功/失败/刷新均通过；没有新增管理员阻塞。源码包和公开证据包在review目录，能力令牌/cookie不打包。不重训、扩图、改变数值语义或历史批量删除。
 
-本轮交付（2026-10-06，基线 c9840ed）：[停止与交付异常验收、权限矩阵及阻塞](docs/lifecycle-role-acceptance.md)、[本轮独立证据](docs/lifecycle-role-results.json)。已修复进程组后代停止、完整工作流异常收尾及清理观测；独立角色账户创建被 sudo 身份验证阻止，页面未接入。既有模型与160轮训练结果保留，本轮不重训。
+本轮交付（2026-10-06，基线 c9840ed）：[停止与交付异常验收、权限矩阵及阻塞](docs/lifecycle-role-acceptance.md)、[本轮独立证据](docs/lifecycle-role-results.json)。已修复进程组后代停止、完整工作流异常收尾及清理观测；当时账户创建被sudo身份验证阻止，现已由上述部署完成身份及页面验收。既有模型与160轮训练结果保留，本轮不重训。
 
-既有交付（2026-10-05）：[磁盘预算与保留政策](docs/disk-retention.md)、[结果解释与命令行验收](docs/storage-delivery-acceptance.md)、[聚合证据](docs/storage-delivery-results.json)。当时命令行演示复用既有64节点160轮发布模型，每次使用新材料，只由授权接收端恢复最终概率。历史清理仅交付预览，未删除。管理员迁移后的在线资产由真实角色管理，普通操作员不再直接运行旧`demo.py`读取私有目录；使用受限页面/接口，当前先完成上述失败诊断。
+既有交付（2026-10-05）：[磁盘预算与保留政策](docs/disk-retention.md)、[结果解释与命令行验收](docs/storage-delivery-acceptance.md)、[聚合证据](docs/storage-delivery-results.json)。当时命令行演示复用既有64节点160轮发布模型，每次使用新材料，只由授权接收端恢复最终概率。历史清理仅交付预览，未删除。管理员迁移后的在线资产由真实角色管理，普通操作员不再直接运行旧`demo.py`读取私有目录；使用受限页面/接口，访问方法及真实查询证据见上述部署验收。
 
 本轮真实64节点160轮共享训练与多类指标见[验收报告](docs/representative-acceptance.md)，抽样与训练概率f14见[实验说明](docs/representative-experiment.md)；旧64节点96轮回归保留。正式入口支持 `--sampling stratified_frontier --seed 20261005`，不外推到完整Cora。
 
 # 图隐私计算工程
 
-真实Cora数据入口现支持16、32和64节点诱导图，使用自有两层GCN、两进程共享训练、持续共享发布、受保护同态推理及秘密近似概率。完整运行：
+以下保留原数据/训练入口及历轮报告。本轮演示只复用现有64节点160轮发布模型，通过127.0.0.1:8765页面及受限角色接口查询。原真实Cora数据入口支持16、32和64节点诱导图，使用自有两层GCN、两进程共享训练、持续共享发布、受保护同态推理及秘密近似概率；历史完整运行命令：
 
 ```sh
 sh scripts/run_application.sh --nodes 64 --sampling stratified_frontier --seed 20261005 --steps 160 --validate --faults

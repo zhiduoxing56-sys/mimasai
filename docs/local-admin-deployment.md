@@ -1,5 +1,7 @@
 # 本机管理员部署步骤
 
+2026-10-07已由用户终端完成冻结版本`e7e5436`安装/验证，后续真实六UID140项、查询和浏览器验收全部通过，见[实际验收](local-page-acceptance.md)。当前无需再次安装；下方保留一次性部署及以后更新的准确命令。管理员验证中的PENDING_REAL_UID_AUDIT是当时阶段，后续已由受限操作员审计接续完成。
+
 从工程终端执行以下命令。密码仅由 sudo 在该终端提示输入，不传给页面、服务或聊天；不要使用 `sudo -S` 或把密码写入配置。服务用专用系统账户，不为这些账户设置登录密码。
 
 ```sh
@@ -17,7 +19,7 @@ sudo --preserve-env=WSL_DISTRO_NAME /usr/bin/python3 scripts/install_local_roles
 
 安装三个服务：管理员角色执行器、受限协调器和只监听127.0.0.1的页面。页面初始为未连接，后端只有真实身份权限验证通过后才接受密码查询；未连接不产生概率或虚构成本。协调器不能读双方秘密或调用任意命令；执行器固定角色、动作、模型、授权目标和接收端。
 
-`--verify`检查账户实际UID、服务身份、代码/配置所有权及只读属性、账本迁移校验记录。完成后保留终端输出，并在聊天里回复“部署完成”。我会通过受限执行器继续真实UID权限矩阵、连接门控和查询验证。无需发送密码。
+`--verify`检查账户实际UID、服务身份、代码/配置所有权及只读属性、账本迁移校验记录。该检查与实际UID权限矩阵分开；安装后的权限审计通过受限执行器进行。无需发送密码。
 
 ```sh
 systemctl status pgnn-role-broker pgnn-coordinator pgnn-page --no-pager
@@ -45,7 +47,7 @@ sudo --preserve-env=WSL_DISTRO_NAME /usr/bin/python3 scripts/diagnose_local_quer
 
 ## 公共文件模式修复后的更新部署
 
-已复现并修复`UMask=0077`将执行器新公共计划/输入模板从0444掩码成0400的问题；默认私有记录仍为0600。增加持久安全错误元数据、新公共模式身份检查和dealer自身部分材料清理。修复和受影响短测试通过，当前运行服务仍为旧冻结版本。请在本地终端执行：
+已复现并修复`UMask=0077`将执行器新公共计划/输入模板从0444掩码成0400的问题；默认私有记录仍为0600。增加持久安全错误元数据、新公共模式身份检查和dealer自身部分材料清理。修复和受影响短测试通过，用户随后已执行以下更新命令，当前运行服务已冻结到`e7e5436`；以下作为更新操作记录：
 
 ```sh
 cd /home/tenggn/projects/privacy_gnn &&
@@ -53,6 +55,21 @@ sudo --preserve-env=WSL_DISTRO_NAME /usr/bin/python3 scripts/install_local_roles
 sudo --preserve-env=WSL_DISTRO_NAME /usr/bin/python3 scripts/install_local_roles.py --verify
 ```
 
-安装器要求提交后干净源码，将当前HEAD冻结为新的只读版本；复用六账户、原账本inode及已发布模型，不重建账本、不重新训练，不修复旧会话权限、不重新运行旧协议，也不删除历史。三个服务按既有KillMode=control-group停止/重启，迁移和状态文件仍打开时拒绝继续。更新后旧权限证据与新源码哈希不匹配，页面保持未连接，直至自主完成新版六身份140项实测、实际角色空间探针和公开参数加载检查；该准备验收不生成密码材料。随后才使用独立新材料完成成功查询和输入故障验收。提供安装/验证输出即可；无需发送密码或能力令牌。
+安装器要求提交后干净源码，将当前HEAD冻结为新的只读版本；复用六账户、原账本inode及已发布模型，不重建账本、不重新训练，不修复旧会话权限、不重新运行旧协议，也不删除历史。三个服务按既有KillMode=control-group停止/重启，迁移和状态文件仍打开时拒绝继续。更新后旧权限证据与新源码哈希不匹配，页面保持未连接，直至自主完成新版六身份140项实测、实际角色空间探针和公开参数加载检查；该准备验收不生成密码材料。随后才使用独立新材料完成成功查询和输入故障验收。本轮更新和后续实际验收已经完成；无需发送密码或能力令牌。
 
 后续源码与冻结运行代码分别标明版本，不把未部署的修改当作实际服务已修复。
+
+## 已完成后的只读复核与访问
+
+```sh
+cd /home/tenggn/projects/privacy_gnn
+python3 scripts/local_deployment.py evidence
+python3 scripts/local_deployment.py query-evidence --session 3b51037357e803f5ad868c26534bb568
+python3 scripts/local_deployment.py reuse-probe --session 0cce9d0b2e93b1e7b03afe683baae8d3
+```
+
+这些是固定证据/拒绝探针接口，不直接访问双方秘密，不生成材料、不重新执行协议。审计命令`python3 scripts/local_deployment.py audit`在角色无可执行进程时更新源码绑定权限证据，不执行密码协议。`validate`会启动一成功查询和一输入故障，各自生成独立新材料；本轮已验收，无需为查看结果再次运行。
+
+本机浏览器用`results/page/access-link.json`中的url登录，页面只监听127.0.0.1:8765；文件仅操作员可读。点击新的授权查询将生成新材料和运行真实后端，刷新已有请求只取状态。同一会话不能恢复或重用。`scripts/capture_local_page.ps1`只读取操作员已有结果查看能力、拍摄同一成功和失败请求，未发起新协议。
+
+协调器不获双方账本/秘密目录权限，角色终止与清理各自由受限执行器处理。管理员信任边界保留；程序从不收集sudo密码。

@@ -8,7 +8,7 @@ $Port=19376
 $Profile=Join-Path $env:TEMP ('privacy-gnn-browser-'+[guid]::NewGuid().ToString('N'))
 $Edge='C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe'
 $Process=Start-Process -FilePath $Edge -ArgumentList @('--headless=new','--disable-gpu','--disable-extensions','--no-first-run','--no-default-browser-check','--disable-background-networking',"--remote-debugging-port=$Port",'--remote-debugging-address=127.0.0.1',"--user-data-dir=`"$Profile`"",'about:blank') -PassThru
-$Socket=$null;$Serial=0
+$Socket=$null;$Serial=0;$RequestLog=@()
 function Invoke-CDP([string]$Method,$Parameters){
  $script:Serial++
  $id=$script:Serial
@@ -20,6 +20,13 @@ function Invoke-CDP([string]$Method,$Parameters){
    $memory=[IO.MemoryStream]::new();$buffer=New-Object byte[] 65536
    do{$received=$script:Socket.ReceiveAsync([ArraySegment[byte]]::new($buffer),$cancel.Token).GetAwaiter().GetResult();$memory.Write($buffer,0,$received.Count)}while(-not $received.EndOfMessage)
    $message=[Text.Encoding]::UTF8.GetString($memory.ToArray())|ConvertFrom-Json;$memory.Dispose()
+   if($message.method -eq 'Network.requestWillBeSent'){
+    $requestUri=[Uri]$message.params.request.url
+    if($requestUri.Host -eq '127.0.0.1' -and $requestUri.Port -eq 8765){
+     # Record method/path only, never headers, cookies, query, or request body.
+     $script:RequestLog+=@{method=$message.params.request.method;path=$requestUri.AbsolutePath}
+    }
+   }
   }while($message.id -ne $id)
   if($message.error){throw ('CDP '+$Method+' failed: '+$message.error.code)}
   return $message.result
@@ -57,6 +64,7 @@ try{
  if(-not $target){throw 'Loopback browser debugging endpoint unavailable.'}
  $Socket=[Net.WebSockets.ClientWebSocket]::new();$Socket.ConnectAsync([Uri]$target.webSocketDebuggerUrl,[Threading.CancellationToken]::None).GetAwaiter().GetResult()|Out-Null
  Invoke-CDP 'Page.enable' @{}|Out-Null
+ Invoke-CDP 'Network.enable' @{}|Out-Null
  Invoke-CDP 'Emulation.setDeviceMetricsOverride' @{width=1440;height=1280;deviceScaleFactor=1;mobile=$false}|Out-Null
  if($ReadyOnly){
   Invoke-CDP 'Page.navigate' @{url=$Access.url}|Out-Null
@@ -87,11 +95,22 @@ try{
  if($failure.prediction_visible -or $failure.probability_rows -ne 0){throw 'Failure view retained a prior prediction.'}
  # Initialization hook is removed. Reload retains the actual current nonce,
  # so this checks application refresh behavior without overriding view state.
+ $beforeReload=Evaluate 'performance.timeOrigin'
  Invoke-CDP 'Page.reload' @{ignoreCache=$true}|Out-Null
+ $reloadDeadline=[DateTime]::UtcNow.AddSeconds(25)
+ do{
+  $afterReload=Evaluate 'performance.timeOrigin'
+  if($afterReload -ne $beforeReload){break}
+  Start-Sleep -Milliseconds 200
+ }while([DateTime]::UtcNow -lt $reloadDeadline)
+ if($afterReload -eq $beforeReload){throw 'Reload did not navigate to a new document.'}
  Wait-View $Private.failure.request_id
  $refresh=Evaluate '(document.getElementById("request-id")||{}).textContent'
  if($refresh -ne $Private.failure.request_id){throw 'Refresh did not retain the failed request.'}
- @{kind='REAL_BROWSER_AUTHORIZED_EXISTING_REQUEST_VIEWS';success=$success;failure=$failure;refresh_same_failed_request=$true;new_protocol_runs=0;view_url='http://127.0.0.1:8765/';capabilities_in_evidence=$false}|ConvertTo-Json -Depth 10|Set-Content -Encoding UTF8 (Join-Path $Out 'browser-evidence.json')
+ $submits=@($RequestLog|Where-Object {$_.path -eq '/api/submit'})
+ $statusReads=@($RequestLog|Where-Object {$_.path -eq '/api/status' -and $_.method -eq 'POST'})
+ if($submits.Count -ne 0 -or $statusReads.Count -lt 3){throw 'Browser trace was not status-only across success, failure and reload.'}
+ @{kind='REAL_BROWSER_AUTHORIZED_EXISTING_REQUEST_VIEWS';success=$success;failure=$failure;refresh_same_failed_request=$true;refresh_new_document=$true;status_reads=$statusReads.Count;submit_requests=$submits.Count;request_methods_and_paths=$RequestLog;new_protocol_runs=0;view_url='http://127.0.0.1:8765/';capabilities_in_evidence=$false}|ConvertTo-Json -Depth 10|Set-Content -Encoding UTF8 (Join-Path $Out 'browser-evidence.json')
  Write-Output 'PASS actual browser: authorized success, failure clears previous prediction, refresh status only. No new query.'
 }finally{
  if($Socket){$Socket.Dispose()}

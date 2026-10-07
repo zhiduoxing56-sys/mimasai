@@ -1,54 +1,111 @@
 {
-  "observed_utc": "2026-10-07T12:05:24.094502+00:00",
-  "status": "PATCH_READY_AWAITING_ADMIN_UPDATE",
-  "runtime_frozen_commit": "1c8f376416c7a07d18749d9f77f69e282ac9d339",
+  "observed_utc": "2026-10-07T15:42:45.261693+00:00",
+  "status": "PASS_DEPLOYED_LOCAL_PAGE_ACCEPTANCE",
+  "runtime_frozen_commit": "e7e5436ad69167b86440db9f171444c5c50c88fe",
   "real_uid_audit": {
     "status": "PASS_REAL_UID_MATRIX",
-    "source_sha256": "a761ba5b7e034e52b21efbeafc6569e19520189c1bcf6c6d06122b7f488c6dfb",
+    "source_sha256": "cf7da5b3c1929bbc299a7ad1a688035d4ba88643e453fed8b43add54dd972509",
+    "checks": 140,
     "roles": [
       {
         "role": "s0",
         "uid": 999,
         "euid": 999,
-        "checks": 22,
-        "all_pass": true
+        "checks": 24,
+        "all_pass": true,
+        "readiness": {
+          "space": {
+            "internal_available_bytes": 819598508032,
+            "host_available_bytes": 32467075072,
+            "host_status": "READABLE",
+            "host_mount": "/mnt/e",
+            "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+            "vhd_logical_bytes": 216304451584,
+            "required_growth_bytes": 2013266880,
+            "internal_reserve_bytes": 2147483648,
+            "host_reserve_bytes": 8589934592
+          }
+        }
       },
       {
         "role": "s1",
         "uid": 997,
         "euid": 997,
-        "checks": 22,
-        "all_pass": true
+        "checks": 24,
+        "all_pass": true,
+        "readiness": {
+          "space": {
+            "internal_available_bytes": 819598508032,
+            "host_available_bytes": 32467075072,
+            "host_status": "READABLE",
+            "host_mount": "/mnt/e",
+            "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+            "vhd_logical_bytes": 216304451584,
+            "required_growth_bytes": 2013266880,
+            "internal_reserve_bytes": 2147483648,
+            "host_reserve_bytes": 8589934592
+          }
+        }
       },
       {
         "role": "dealer",
         "uid": 995,
         "euid": 995,
-        "checks": 21,
-        "all_pass": true
+        "checks": 23,
+        "all_pass": true,
+        "readiness": {
+          "space": {
+            "internal_available_bytes": 819598508032,
+            "host_available_bytes": 32467075072,
+            "host_status": "READABLE",
+            "host_mount": "/mnt/e",
+            "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+            "vhd_logical_bytes": 216304451584,
+            "required_growth_bytes": 2013266880,
+            "internal_reserve_bytes": 2147483648,
+            "host_reserve_bytes": 8589934592
+          },
+          "native_public_metadata": {
+            "degree": 8192,
+            "security_bits": 128,
+            "data_moduli": [
+              36028797017571329,
+              36028797018652673,
+              18014398508138497
+            ]
+          }
+        }
       },
       {
         "role": "receiver",
         "uid": 994,
         "euid": 994,
-        "checks": 21,
-        "all_pass": true
+        "checks": 23,
+        "all_pass": true,
+        "readiness": {}
       },
       {
         "role": "coordinator",
         "uid": 993,
         "euid": 993,
-        "checks": 21,
-        "all_pass": true
+        "checks": 23,
+        "all_pass": true,
+        "readiness": {}
       },
       {
         "role": "page",
         "uid": 992,
         "euid": 992,
-        "checks": 21,
-        "all_pass": true
+        "checks": 23,
+        "all_pass": true,
+        "readiness": {}
       }
-    ]
+    ],
+    "hardlink_audit": {
+      "cross_secret_role_aliases": 0,
+      "existing_aliases_preserved": true
+    },
+    "inheritable_secret_descriptor_not_passed": true
   },
   "migration_proof": "results/local-page/migration-evidence.json",
   "failed_real_request": {
@@ -211,28 +268,99 @@
     }
   },
   "browser": {
-    "new_protocol_runs": 0,
-    "real_query_completed": false,
-    "capabilities_in_evidence": false,
-    "ready": {
-      "request_id": "尚未创建",
+    "failure": {
+      "request_id": "0cce9d0b2e93b1e7b03afe683baae8d3",
       "connection": "真实后端已连接",
-      "phase": "未连接",
-      "delivery": "等待完整交付",
+      "phase": "失败 / 未完成交付",
+      "delivery": "失败 / 未完成交付",
       "prediction_visible": false,
       "probability_rows": 0,
-      "wall_seconds": "—",
+      "wall_seconds": "28.53",
       "wire_mib": "—",
       "rounds": "—"
     },
-    "kind": "REAL_BROWSER_CONNECTED_IDLE_VIEW_ONLY"
+    "view_url": "http://127.0.0.1:8765/",
+    "kind": "REAL_BROWSER_AUTHORIZED_EXISTING_REQUEST_VIEWS",
+    "new_protocol_runs": 0,
+    "capabilities_in_evidence": false,
+    "status_reads": 3,
+    "success": {
+      "request_id": "3b51037357e803f5ad868c26534bb568",
+      "connection": "真实后端已连接",
+      "phase": "完整交付",
+      "delivery": "本次完整交付",
+      "prediction_visible": true,
+      "probability_rows": 7,
+      "wall_seconds": "72.31",
+      "wire_mib": "92.31",
+      "rounds": "1,306"
+    },
+    "request_methods_and_paths": [
+      {
+        "method": "GET",
+        "path": "/"
+      },
+      {
+        "method": "GET",
+        "path": "/style.css"
+      },
+      {
+        "method": "GET",
+        "path": "/app.js"
+      },
+      {
+        "method": "GET",
+        "path": "/api/overview"
+      },
+      {
+        "method": "POST",
+        "path": "/api/status"
+      },
+      {
+        "method": "GET",
+        "path": "/favicon.ico"
+      },
+      {
+        "method": "POST",
+        "path": "/api/status"
+      },
+      {
+        "method": "GET",
+        "path": "/"
+      },
+      {
+        "method": "GET",
+        "path": "/style.css"
+      },
+      {
+        "method": "GET",
+        "path": "/app.js"
+      },
+      {
+        "method": "GET",
+        "path": "/api/overview"
+      },
+      {
+        "method": "GET",
+        "path": "/favicon.ico"
+      },
+      {
+        "method": "POST",
+        "path": "/api/status"
+      }
+    ],
+    "refresh_new_document": true,
+    "refresh_same_failed_request": true,
+    "submit_requests": 0,
+    "real_query_completed": true,
+    "query_submission_scope": "Operator CLI submits through deployed page HTTP API; browser displays the same authorized success and failure requests, refresh only polls"
   },
   "space": {
-    "kind": "READ_ONLY_CURRENT_SPACE_OBSERVATION",
-    "observed_utc": "2026-10-07T12:00:01.890815+00:00",
-    "scope": "Current operator workspace and configured host disk; not cleanup before/after evidence",
-    "internal_available_bytes": 819592970240,
-    "host_available_bytes": 32467124224,
+    "kind": "READ_ONLY_FINAL_SPACE_OBSERVATION",
+    "observed_utc": "2026-10-07T15:41:40.839682+00:00",
+    "scope": "Final current-space snapshot; cleanup before/after observations remain in query evidence",
+    "internal_available_bytes": 819584692224,
+    "host_available_bytes": 32467075072,
     "host_status": "READABLE",
     "host_mount": "/mnt/e",
     "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
@@ -247,21 +375,9 @@
     "errors": 0,
     "scope": "Synthetic read-only metadata and operator transport fault checks; no cryptographic protocol or real UID acceptance"
   },
-  "source_only_pending_deployment": [
-    "Atomic public mode fix and idle phase label correction",
-    "Safe persistent actor and interface error metadata",
-    "Dealer partial-material preview and stopped-terminal cleanup",
-    "140 real UID checks and role disk/native readiness probes"
-  ],
-  "remaining": [
-    "Update administrator-owned frozen runtime from committed code",
-    "Run new 140-check real UID matrix and role readiness",
-    "Successful real page query and complete authorized delivery",
-    "Actual browser success/failure/refresh evidence",
-    "Independent fresh material evidence for two new requests",
-    "New-query cleanup before/after observations"
-  ],
-  "administrator_block": "sudo -n /usr/bin/id still requires password in user terminal; update deployment is the remaining external step",
+  "source_only_pending_deployment": [],
+  "remaining": [],
+  "administrator_block": null,
   "training_executed": false,
   "graph_size_changed": false,
   "numeric_semantics_changed": false,
@@ -269,7 +385,7 @@
   "vhd_maintenance": false,
   "security_scope": "Local OS deployment only; half-honest parties, trusted offline dealer and administrator access retained",
   "mode_fix": {
-    "evidence_scope": "Source inspection plus independent temporary-file reproduction; old request modes to be read through updated fixed metadata endpoint after deployment",
+    "evidence_scope": "Source inspection, independent temporary-file reproduction, and actual retained old/new request metadata through fixed deployed endpoint",
     "before": {
       "kind": "INDEPENDENT_PUBLIC_MODE_REPRODUCTION",
       "service_umask": "0077",
@@ -285,14 +401,24 @@
       "cryptographic_material_generated": false
     },
     "secret_default_mode": "0600",
-    "old_session_permissions_repaired": false
+    "old_session_permissions_repaired": false,
+    "actual_old_request_modes": {
+      "dealer_public_plan": "0400",
+      "s0_job_template": "0400",
+      "s1_job_template": "0400"
+    },
+    "actual_new_request_modes": {
+      "dealer_public_plan": "0444",
+      "s0_job_template": "0444",
+      "s1_job_template": "0444"
+    }
   },
   "new_mode_tests": {
     "status": "PASS_CHANGED_DEPLOYMENT_MODES",
     "tests": 6,
     "failures": 0,
     "errors": 0,
-    "scope": "Real temporary-file mode checks under service umask; synthetic actor fault metadata; no cryptographic protocol, real role UID acceptance pending updated deployment"
+    "scope": "Independent temporary-file mode checks and synthetic actor fault metadata; separate 140-check real UID deployment acceptance passed"
   },
   "affected_page_tests": {
     "status": "PASS_CHANGED_SURFACES",
@@ -316,5 +442,441 @@
     "failure_point": "require_deployment before Client construction or query",
     "cryptographic_material_generated": false,
     "query_started": false
+  },
+  "services": {
+    "kind": "REAL_SYSTEMD_AND_LOOPBACK_METADATA",
+    "observed_utc": "2026-10-07T15:41:47.457880+00:00",
+    "status": "PASS",
+    "runtime_frozen_commit": "e7e5436ad69167b86440db9f171444c5c50c88fe",
+    "services": [
+      {
+        "MainPID": "4942",
+        "UMask": "0077",
+        "User": "",
+        "Group": "",
+        "ProtectSystem": "strict",
+        "NoNewPrivileges": "yes",
+        "KillMode": "control-group",
+        "ActiveState": "active",
+        "SubState": "running",
+        "unit": "pgnn-role-broker",
+        "actual_process_uids": [
+          "0",
+          "0",
+          "0",
+          "0"
+        ]
+      },
+      {
+        "MainPID": "4943",
+        "UMask": "0077",
+        "User": "pgnn-coordinator",
+        "Group": "pgnn-coordinator",
+        "ProtectSystem": "strict",
+        "NoNewPrivileges": "yes",
+        "KillMode": "control-group",
+        "ActiveState": "active",
+        "SubState": "running",
+        "unit": "pgnn-coordinator",
+        "actual_process_uids": [
+          "993",
+          "993",
+          "993",
+          "993"
+        ]
+      },
+      {
+        "MainPID": "4944",
+        "UMask": "0077",
+        "User": "pgnn-page",
+        "Group": "pgnn-page",
+        "ProtectSystem": "strict",
+        "NoNewPrivileges": "yes",
+        "KillMode": "control-group",
+        "ActiveState": "active",
+        "SubState": "running",
+        "unit": "pgnn-page",
+        "actual_process_uids": [
+          "992",
+          "992",
+          "992",
+          "992"
+        ]
+      }
+    ],
+    "page_listeners": [
+      "127.0.0.1:8765"
+    ],
+    "private_contents_read": false
+  },
+  "successful_real_query": {
+    "evidence": "results/local-page/query-success.json",
+    "request_id": "3b51037357e803f5ad868c26534bb568",
+    "batch": "f58e63421d2746361e29aca0ade65f32",
+    "state": "cleaned",
+    "public_response": {
+      "request_id": "3b51037357e803f5ad868c26534bb568",
+      "phase": "complete",
+      "terminal": true,
+      "delivery_state": "complete",
+      "result": {
+        "request_id": "3b51037357e803f5ad868c26534bb568",
+        "model_id": "829a29a6913d505e7167f418a94674ee",
+        "classes": [
+          "Case_Based",
+          "Genetic_Algorithms",
+          "Neural_Networks",
+          "Probabilistic_Methods",
+          "Reinforcement_Learning",
+          "Rule_Learning",
+          "Theory"
+        ],
+        "results": [
+          {
+            "node_id": "936",
+            "probabilities": [
+              0.71875,
+              0.01416015625,
+              0.0048828125,
+              0.22900390625,
+              0.006103515625,
+              0.016357421875,
+              0.009765625
+            ],
+            "predicted_class": "Case_Based",
+            "probability_sum": 0.9990234375
+          }
+        ]
+      },
+      "cost": {
+        "wall_seconds": 72.3137802149995,
+        "wire_bytes": 96792628,
+        "rounds": 1306
+      },
+      "error": null
+    },
+    "lifecycle": [
+      {
+        "stage": "admission",
+        "status": "started",
+        "time_ns": 1791387461102603794
+      },
+      {
+        "stage": "offline",
+        "status": "started",
+        "time_ns": 1791387461630285230
+      },
+      {
+        "stage": "input",
+        "status": "started",
+        "time_ns": 1791387488896992926
+      },
+      {
+        "stage": "online",
+        "status": "started",
+        "time_ns": 1791387489017035616
+      },
+      {
+        "proof": {
+          "criterion": "no non-zombie process-group members in /proc",
+          "groups": [
+            5325,
+            5326
+          ],
+          "stopped": true
+        },
+        "stage": "backend_stopped",
+        "time_ns": 1791387525620686267
+      },
+      {
+        "stage": "export",
+        "status": "started",
+        "time_ns": 1791387525630397222
+      },
+      {
+        "receiver_id": "local-authorized-recipient",
+        "stage": "export_S0",
+        "status": "persisted",
+        "time_ns": 1791387525678198211
+      },
+      {
+        "receiver_id": "local-authorized-recipient",
+        "stage": "export_S1",
+        "status": "persisted",
+        "time_ns": 1791387525729323088
+      },
+      {
+        "stage": "receiver",
+        "status": "started",
+        "time_ns": 1791387525738061508
+      },
+      {
+        "proof": {
+          "stopped": true
+        },
+        "stage": "completed",
+        "status": "complete",
+        "time_ns": 1791387525798905964
+      },
+      {
+        "stage": "complete",
+        "status": "started",
+        "time_ns": 1791387525808228407
+      },
+      {
+        "observation": {
+          "deleted_file_allocated_bytes": 1727062016,
+          "interpretation": "Deletion blocks and observed filesystem deltas are separate; no claim of actual VHD reclamation.",
+          "observed_host_available_delta": 0,
+          "observed_internal_available_delta": 1725739008,
+          "reclaimable_upper_bytes": 1726849024,
+          "removed_files": 3812,
+          "space_after": {
+            "host_available_bytes": 32467075072,
+            "host_mount": "/mnt/e",
+            "host_status": "READABLE",
+            "internal_available_bytes": 819590066176,
+            "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+            "vhd_logical_bytes": 216304451584
+          },
+          "space_before": {
+            "host_available_bytes": 32467075072,
+            "host_mount": "/mnt/e",
+            "host_status": "READABLE",
+            "internal_available_bytes": 817864327168,
+            "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+            "vhd_logical_bytes": 216304451584
+          },
+          "unlinked_last_link_allocated_bytes": 1726849024
+        },
+        "stage": "cleanup_observation",
+        "time_ns": 1791387534387405692
+      }
+    ],
+    "duplicate_submission_same_request": true,
+    "post_cleanup_reuse": {
+      "rejected": true,
+      "reason": "BROKER_PROTOCOL_STATE",
+      "protocol_reexecuted": false
+    },
+    "cleanup_observation": {
+      "deleted_file_allocated_bytes": 1727062016,
+      "interpretation": "Deletion blocks and observed filesystem deltas are separate; no claim of actual VHD reclamation.",
+      "observed_host_available_delta": 0,
+      "observed_internal_available_delta": 1725739008,
+      "reclaimable_upper_bytes": 1726849024,
+      "removed_files": 3812,
+      "space_after": {
+        "host_available_bytes": 32467075072,
+        "host_mount": "/mnt/e",
+        "host_status": "READABLE",
+        "internal_available_bytes": 819590066176,
+        "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+        "vhd_logical_bytes": 216304451584
+      },
+      "space_before": {
+        "host_available_bytes": 32467075072,
+        "host_mount": "/mnt/e",
+        "host_status": "READABLE",
+        "internal_available_bytes": 817864327168,
+        "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+        "vhd_logical_bytes": 216304451584
+      },
+      "unlinked_last_link_allocated_bytes": 1726849024
+    },
+    "actor_failures": []
+  },
+  "expected_input_failure": {
+    "evidence": "results/local-page/query-failure.json",
+    "request_id": "0cce9d0b2e93b1e7b03afe683baae8d3",
+    "batch": "1d9faa8bfbbe60ca02a6b909b4ff9e13",
+    "state": "cleaned",
+    "public_response": {
+      "request_id": "0cce9d0b2e93b1e7b03afe683baae8d3",
+      "phase": "failed",
+      "terminal": true,
+      "delivery_state": "incomplete",
+      "result": null,
+      "cost": {
+        "wall_seconds": 28.530999177999547,
+        "wire_bytes": null,
+        "rounds": null
+      },
+      "error": "INJECTED_INPUT_PREPARATION_FAILURE"
+    },
+    "lifecycle": [
+      {
+        "stage": "admission",
+        "status": "started",
+        "time_ns": 1791387535602237356
+      },
+      {
+        "stage": "offline",
+        "status": "started",
+        "time_ns": 1791387536141333376
+      },
+      {
+        "stage": "input",
+        "status": "started",
+        "time_ns": 1791387564384365894
+      },
+      {
+        "reason": "INJECTED_INPUT_PREPARATION_FAILURE",
+        "stage": "input",
+        "status": "failed",
+        "time_ns": 1791387564427523468
+      },
+      {
+        "proof": {
+          "stopped": false
+        },
+        "stage": "termination_pending",
+        "time_ns": 1791387564435979648
+      },
+      {
+        "proof": {
+          "stopped": true
+        },
+        "reason": "INJECTED_INPUT_PREPARATION_FAILURE",
+        "stage": "termination",
+        "time_ns": 1791387564557558895
+      },
+      {
+        "observation": {
+          "deleted_file_allocated_bytes": 340516864,
+          "interpretation": "Deletion blocks and observed filesystem deltas are separate; no claim of actual VHD reclamation.",
+          "observed_host_available_delta": 0,
+          "observed_internal_available_delta": 340488192,
+          "reclaimable_upper_bytes": 340516864,
+          "removed_files": 158,
+          "space_after": {
+            "host_available_bytes": 32467075072,
+            "host_mount": "/mnt/e",
+            "host_status": "READABLE",
+            "internal_available_bytes": 819588878336,
+            "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+            "vhd_logical_bytes": 216304451584
+          },
+          "space_before": {
+            "host_available_bytes": 32467075072,
+            "host_mount": "/mnt/e",
+            "host_status": "READABLE",
+            "internal_available_bytes": 819248390144,
+            "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+            "vhd_logical_bytes": 216304451584
+          },
+          "unlinked_last_link_allocated_bytes": 340516864
+        },
+        "stage": "cleanup_observation",
+        "time_ns": 1791387565269803530
+      }
+    ],
+    "duplicate_submission_same_request": true,
+    "post_cleanup_reuse": {
+      "rejected": true,
+      "reason": "BROKER_PROTOCOL_STATE",
+      "protocol_reexecuted": false
+    },
+    "cleanup_observation": {
+      "deleted_file_allocated_bytes": 340516864,
+      "interpretation": "Deletion blocks and observed filesystem deltas are separate; no claim of actual VHD reclamation.",
+      "observed_host_available_delta": 0,
+      "observed_internal_available_delta": 340488192,
+      "reclaimable_upper_bytes": 340516864,
+      "removed_files": 158,
+      "space_after": {
+        "host_available_bytes": 32467075072,
+        "host_mount": "/mnt/e",
+        "host_status": "READABLE",
+        "internal_available_bytes": 819588878336,
+        "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+        "vhd_logical_bytes": 216304451584
+      },
+      "space_before": {
+        "host_available_bytes": 32467075072,
+        "host_mount": "/mnt/e",
+        "host_status": "READABLE",
+        "internal_available_bytes": 819248390144,
+        "vhd": "/mnt/e/WSL/GNN-Project/ext4.vhdx",
+        "vhd_logical_bytes": 216304451584
+      },
+      "unlinked_last_link_allocated_bytes": 340516864
+    },
+    "actor_failures": [
+      {
+        "error": "INJECTED_INPUT_PREPARATION_FAILURE",
+        "diagnostic": {
+          "type": "ProtocolError",
+          "errno": null,
+          "source_file": "role_broker.py",
+          "source_line": 195
+        },
+        "time_ns": 1791387564423060078
+      }
+    ]
+  },
+  "request_independence": {
+    "status": "PASS_REAL_NEW_MATERIALS",
+    "sessions": [
+      "3b51037357e803f5ad868c26534bb568",
+      "0cce9d0b2e93b1e7b03afe683baae8d3"
+    ],
+    "distinct_batches": true,
+    "ring_material_ids_disjoint": true,
+    "he_mask_ids_disjoint": true,
+    "protocol_rerun": false
+  },
+  "real_page_api_denials": {
+    "kind": "REAL_DEPLOYED_LOOPBACK_API_DENIALS",
+    "status": "PASS",
+    "existing_request_id": "3b51037357e803f5ad868c26534bb568",
+    "checks": [
+      {
+        "path": "/api/status",
+        "status": 403,
+        "error": "LOCAL_AUTHORIZATION_REQUIRED",
+        "expected": "LOCAL_AUTHORIZATION_REQUIRED"
+      },
+      {
+        "path": "/api/status",
+        "status": 409,
+        "error": "REQUEST_CAPABILITY_REJECTED",
+        "expected": "REQUEST_CAPABILITY_REJECTED"
+      },
+      {
+        "path": "/api/submit",
+        "status": 409,
+        "error": "DEPLOY_FIELDS",
+        "expected": "DEPLOY_FIELDS"
+      },
+      {
+        "path": "/api/submit",
+        "status": 409,
+        "error": "DEPLOY_FIELDS",
+        "expected": "DEPLOY_FIELDS"
+      },
+      {
+        "path": "/api/submit",
+        "status": 409,
+        "error": "DEPLOY_FIELDS",
+        "expected": "DEPLOY_FIELDS"
+      },
+      {
+        "path": "/api/submit",
+        "status": 409,
+        "error": "DEPLOY_FIELDS",
+        "expected": "DEPLOY_FIELDS"
+      }
+    ],
+    "new_protocol_runs": 0,
+    "capabilities_in_evidence": false
+  },
+  "historical_long_training_evidence": "docs/representative-acceptance.md; not re-executed",
+  "prior_fault_and_stop_tests": "docs/lifecycle-role-results.json; existing 21 lifecycle checks and short pairs, not re-executed",
+  "accepted_but_limited": {
+    "role_isolation": "Local OS deployment only",
+    "receiver_permission_fixtures": "Matrix current/other receiver requests use fixtures; separate real success request delivered through receiver UID",
+    "cost_scope": "Wall time includes preprocessing and cleanup; wire_bytes sums both online workers only, excludes offline material size and local file exports",
+    "delivery_retry_supported": false
   }
 }
