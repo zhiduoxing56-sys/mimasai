@@ -17,6 +17,18 @@ def loaded(token,client):
     with DB_LOCK,contextlib.closing(db()) as conn:row=conn.execute('SELECT document FROM queries WHERE token=? AND client=?',(token,client)).fetchone()
     require(row,'REQUEST_CAPABILITY_REJECTED');return json.loads(row[0])
 def broker(action,sid,**fields):return call(BROKER,dict(action=action,sid=sid,**fields))
+def stage_summary(metrics):
+    """Both-direction bytes, paired rounds, and concurrent-role stage wall bounds."""
+    a,b=(item['stages'] for item in metrics)
+    require(len(a)==len(b),'STAGE_COUNT_MISMATCH')
+    rows=[]
+    for left,right in zip(a,b):
+        require((left['operation'],left['type'])==(right['operation'],right['type']) and left['rounds']==right['rounds'],'STAGE_ROLE_MISMATCH')
+        require(all(type(row['bytes_sent']) is int and row['bytes_sent']>=0 and row['elapsed_seconds']>=0 for row in (left,right)),'STAGE_COST_INVALID')
+        rows.append(dict(operation=left['operation'],type=left['type'],elapsed_seconds=max(left['elapsed_seconds'],right['elapsed_seconds']),
+                         wire_bytes=left['bytes_sent']+right['bytes_sent'],rounds=left['rounds'],
+                         role_components=[left['components'],right['components']]))
+    return rows
 def connected():
     try:return call(BROKER,dict(action='overview'),timeout=2)['connected'] and not STOPPED
     except (OSError,ProtocolError):return False
@@ -53,13 +65,14 @@ def run_query(token,client,doc):
             transition(sid,{'ready'},'preparing');step('input');Guard(directory,sid,budget['total_bytes']).check(force=True);broker('input',sid)
             transition(sid,{'preparing'},'running');step('online');backend=broker('protocol',sid)
             require(backend['proof']['stopped'],'BACKEND_STOP_UNCONFIRMED');event(sid,'backend_stopped',proof=backend['proof'])
-            metrics=backend['metrics'];online=dict(wall_seconds=backend['wall_seconds'],wire_bytes=sum(v['communication']['bytes_sent'] for v in metrics),rounds=metrics[0]['communication']['exchange_rounds'])
+            metrics=backend['metrics'];online=dict(wall_seconds=backend['wall_seconds'],wire_bytes=sum(v['communication']['bytes_sent'] for v in metrics),rounds=metrics[0]['communication']['exchange_rounds'],stages=stage_summary(metrics))
             step('export')
             for number in (0,1):
                 broker('export'+str(number),sid);event(sid,'export_S'+str(number),status='persisted',receiver_id=public['receiver_id'])
             step('receiver');received=broker('receive',sid);require(received['stopped'],'RECEIVER_STOP_UNCONFIRMED')
             # Keep the result withheld until delivery evidence is durable.
-            private_record=dict(request_id=sid,offline=offline,online=online,source_iteration=160,model_id=public['model_id'],result=received['result'],authorized_receiver=public['receiver_id'],full_state_restored=False)
+            private_record=dict(request_id=sid,offline=offline,online=online,plan_mode='cache_hit' if plan[0]['type']=='load_hidden' else 'cold_full',cache_source_session=cached['source_session'] if plan[0]['type']=='load_hidden' else None,
+                                source_iteration=160,model_id=public['model_id'],result=received['result'],authorized_receiver=public['receiver_id'],full_state_restored=False)
             destination=root('coordinator')/'results'/('query-'+sid+'.json');atomic(destination,private_record)
             transition(sid,{'running'},'completed','Authorized receiver final result and run report persisted');event(sid,'completed',status='complete',proof=dict(stopped=True))
             try:

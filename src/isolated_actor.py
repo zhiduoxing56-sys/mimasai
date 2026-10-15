@@ -13,6 +13,15 @@ def own_role():
     return role
 def directory(sid):return ROOT/'build/requests'/hexid(sid)
 def digest(doc):return hashlib.sha256(json.dumps(doc,sort_keys=True).encode()).hexdigest()
+def public_stages(doc):
+    """Export timings and traffic only; private traces and shares stay role-local."""
+    rows=[]
+    for stage in doc.get('operations',[]):
+        row={key:stage[key] for key in ('operation','type','elapsed_seconds','bytes_sent','rounds')}
+        row['components']=[{key:item[key] for key in ('name','elapsed_seconds','bytes_sent','rounds') if key in item}
+                           for item in stage.get('components',[])]
+        rows.append(row)
+    return rows
 def clones(source,target):
     for path in source.rglob('*'):
         relative=path.relative_to(source);require(not path.is_symlink(),'ASSET_SYMLINK')
@@ -67,7 +76,7 @@ def operation(action,sid,attempt=None,expected=None):
     if action=='report':
         hexid(attempt,16);doc=json.loads((d/own/f'metrics-{attempt}.json').read_text())
         c=doc.get('communication');communication={key:c[key] for key in ('bytes_sent','exchange_rounds')} if c else None
-        return dict(role=number,success=doc['success'],error=doc.get('error','WORKER_FAILED') if not doc['success'] else None,communication=communication)
+        return dict(role=number,success=doc['success'],error=doc.get('error','WORKER_FAILED') if not doc['success'] else None,communication=communication,stages=public_stages(doc))
     if action=='install_hidden':
         from .hidden_cache import sources
         hexid(attempt,16)
