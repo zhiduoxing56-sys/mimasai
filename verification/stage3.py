@@ -19,19 +19,28 @@ from verification.stage2 import launch
 C=config();OUT=ROOT/'results/stage3';OUT.mkdir(exist_ok=True)
 MOD=1<<C['ring_bits'];WIDTH=C['model_reference']['hidden_width']
 
-def fixture(n):
-    if n==C['graph_reference']['nodes']:
+def fixture(n, average_degree=None):
+    if average_degree is None and n==C['graph_reference']['nodes']:
         inp=json.loads((ROOT/'results/stage1/quantized-inputs.json').read_text());trace=json.loads((ROOT/'results/stage1/fixed-transform-first.json').read_text())
         return inp['propagation'],trace['transform0'],C['graph_reference']['node_order'],inp
     # Small public synthetic graph. Last node isolated, duplicate edge tests sum.
-    edges=[[i,i+1,1.0+(i%3)/4] for i in range(n-2)]+[[0,1,0.25]]
+    if average_degree is None:
+        edges=[[i,i+1,1.0+(i%3)/4] for i in range(n-2)]+[[0,1,0.25]]
+    else:
+        assert average_degree in (2,4,8,16) and average_degree<n and n>=32
+        pairs=set()
+        for i in range(n):
+            for distance in range(1,average_degree//2+1):
+                j=(i+distance)%n;pairs.add(tuple(sorted((i,j))))
+        edges=[[i,j,1.0] for i,j in sorted(pairs)]
+        assert len(edges)*2//n==average_degree
     g=dict(nodes=n,node_order=[f'node-{j}' for j in range(n-1)]+['isolated'],features=[[0.1]*WIDTH for _ in range(n)],undirected_edges=edges,duplicate_policy=C['graph_reference']['duplicate_policy'],self_loop_policy=C['graph_reference']['self_loop_policy'])
     _,_,p=graph(g);fixed=Fixed(C)
     t=[[((i+1)*(j+3)*19%801)-400 for j in range(WIDTH)] for i in range(n)]
     return fixed.encode(p),[[v%MOD for v in row] for row in t],g['node_order'],None
 
-def bundle(n):
-    pp,tt,order,inputs=fixture(n);sid=secrets.token_hex(16);d=ROOT/'build/stage3'/sid
+def bundle(n, average_degree=None):
+    pp,tt,order,inputs=fixture(n,average_degree);sid=secrets.token_hex(16);d=ROOT/'build/stage3'/sid
     for role in ('S0','S1','V'):(d/role).mkdir(parents=True,mode=0o700)
     binary_write(d/'V/propagation.bin',struct.pack('<'+'I'*(n*n),*[v for row in pp for v in row]))
     degree=C['he_execution_degree'];start=time.perf_counter()

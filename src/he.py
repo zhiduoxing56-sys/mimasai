@@ -64,7 +64,9 @@ def aggregate(engine,own,op,x):
     binary_write(own/'features.bin',struct.pack('<'+'I'*len(x),*x))
     binary_write(own/'masks.bin',struct.pack('<'+'I'*len(mask),*mask))
     mask_generation_seconds=time.perf_counter()-mask_started
-    profile=native(['eval',own,n,c]);profile['mask_generation_and_input_io_seconds']=mask_generation_seconds
+    trace=op.get('trace_ciphertexts',True)
+    require(type(trace)==bool,'HE_TRACE_MODE')
+    profile=native(['eval',own,n,c,'trace' if trace else 'no_trace']);profile['mask_generation_and_input_io_seconds']=mask_generation_seconds
     if op.get('conversion')=='private_decryption':
         from .he_secure import secure_convert
         result,converted=secure_convert(engine,own,op,mask,ids);profile.update(converted);profile.update(mask_coefficients=c*degree,mask_items_consumed=c,bridge_wall_seconds=time.perf_counter()-started)

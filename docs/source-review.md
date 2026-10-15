@@ -1,5 +1,7 @@
 # 自有源码审阅入口与发现
 
+2026-10-15第五章实验新增：[统一入口](../scripts/final_experiments.py)、[报告渲染](../scripts/report_chapter5.py)、[事实结果](chapter5-results.md)及[运行说明](chapter5-runbook.md)。`verification/final_he_compare.py`、`final_aggregate.py`、`final_activation.py`在独立实验根目录生成全新材料；`final_experiment_checks.py`只复核留存记录。`src/he_bridge.cpp:eval`和`src/he.py:aggregate`新增公开绑定的可选诊断密文落盘开关，原入口默认保留完整轨迹，数值与密码运算不变；`src/storage.py:estimate`按选择估算轨迹，并补足旧转换路径的轨迹预算。实际本机服务仍运行旧冻结版，新开关仅在隔离实验中逐值通过；不能把本轮实验代码宣称为已部署页面路径。原始性能、阶段通信、缩减位宽反向结果与1000节点单层限制见`results/chapter5/summary.json`，不把旧低交互路径当成新增安全性质证明。
+
 2026-10-08展示收尾以fbd0123为基线；新版三页**待管理员部署**，实际服务仍e7e5436。见[本轮清单](demo-final-acceptance.md)、[机器记录](demo-final-results.json)与[操作说明](demo-runbook.md)。在线/离线协议、停止、账本、数值及范围守卫18个核心文件与冻结版逐字节一致，本轮没有新密码查询。既有真实UID与查询证据复用；新源码冻结后需重新绑定权限审计，不将操作员预览当作页面UID运行。
 
 | 本轮展示改动 | 审阅入口 | 独立验证 |

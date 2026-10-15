@@ -1,0 +1,9 @@
+{
+  "accuracy_drop_le_1pp_64_node": "MEASURED_ON_THIS_64_NODE_SAME_160_CHECKPOINT_PAIR",
+  "same160_accuracy_drop_percentage_points": -13.636363636363647,
+  "degree_independent_core_count": "MEASURED_64_NODE_2_4_8_16",
+  "external_20x_latency": "MISSING_COMPARABLE_BASELINE",
+  "external_400x_communication": "MISSING_COMPARABLE_BASELINE",
+  "three_real_datasets_1000_full_queries": "NOT_MEASURED",
+  "scope": "Experimental data shall not be interpreted as full-dataset accuracy or active security"
+}

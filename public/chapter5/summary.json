@@ -1,0 +1,2383 @@
+{
+  "status": "PARTIAL_MEASURED_CHAPTER5",
+  "groups": {
+    "1_training": {
+      "status": "REUSED_160_REAL_UPDATES",
+      "nodes": 64,
+      "dimensions": [
+        64,
+        551,
+        6,
+        7
+      ],
+      "train_count": 28,
+      "validation_count": 14,
+      "test_count": 22,
+      "secure_model": {
+        "train": {
+          "count": 28,
+          "accuracy": 1.0,
+          "macro_f1": 1.0
+        },
+        "validation": {
+          "count": 14,
+          "accuracy": 0.8571428571428571,
+          "macro_f1": 0.8095238095238095
+        },
+        "test": {
+          "count": 22,
+          "accuracy": 0.8181818181818182,
+          "macro_f1": 0.8200680272108843
+        }
+      },
+      "float_checkpoint160_posthoc": {
+        "train": {
+          "count": 28,
+          "accuracy": 0.8571428571428571,
+          "macro_f1": 0.8095238095238095
+        },
+        "validation": {
+          "count": 14,
+          "accuracy": 0.7142857142857143,
+          "macro_f1": 0.619047619047619
+        },
+        "test": {
+          "count": 22,
+          "accuracy": 0.6818181818181818,
+          "macro_f1": 0.6404761904761905
+        }
+      },
+      "float_selected320_test_accuracy": 0.8181818181818182,
+      "training_online_seconds": 5402.429401555065,
+      "training_online_wire_bytes": 14764569920,
+      "training_offline_seconds": 10069.793012724005,
+      "initial_secure_loss": 1.943603515625,
+      "final_secure_loss": 0.2734375,
+      "condition": "64-node label-stratified induced Cora; 551-6-7; 28/14/22 split; same seed and fixed nodes for checkpoint160 diagnostic"
+    },
+    "2_publication": {
+      "status": "REUSED_ACCEPTED_PUBLICATION",
+      "checkpoint_iteration": 160,
+      "source_parameter_count": 3348,
+      "model_id": "829a29a6913d505e7167f418a94674ee",
+      "m12_fraction_bits": 12,
+      "m7_fraction_bits": 7,
+      "online_seconds": 1.6737158220003039,
+      "online_wire_bytes": 5467874,
+      "online_rounds": 228,
+      "offline_seconds": 3.634329763999631,
+      "checkpoint_binding_verified": true,
+      "trace_bitwise_verified": true,
+      "published_test_accuracy": 0.8181818181818182,
+      "parameter_error_measured": "UNAVAILABLE_TO_UNPRIVILEGED_REPORTER",
+      "conversion_rule": "signed floor(q12/32) mod 2^32; no floating rounding; max theoretical absolute real error <1/128, not an empirical maximum"
+    },
+    "3_aggregation": [
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 64,
+        "trace_ciphertexts": false,
+        "average_degree": 2,
+        "columns": 1,
+        "session": "d7525008d96aa757ab72c858778f3574",
+        "setup_seconds": 0.39500114700058475,
+        "offline_seconds": 1.2849845780001488,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 885248,
+          "dabit": 1856,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 2.3815943609997703,
+        "online_wire_bytes": 5145034,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 5144580,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 2.121640839000065,
+        "native_eval_seconds": 1.32897,
+        "native_multiply_seconds": 0.0625435,
+        "native_extract_seconds": 1.2221,
+        "native_pack_seconds": 0.00631459,
+        "conversion_seconds": 0.552375003000634,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0625435,
+            "extract_trace_seconds": 1.2221,
+            "pack_seconds": 0.00631459,
+            "full_mask_seconds": 5.8597e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.32897,
+            "peak_rss_kib": 130256,
+            "mask_generation_and_input_io_seconds": 0.0099084009998478,
+            "conversion_seconds": 0.5489114920001157,
+            "ring_local_seconds": 0.0219962,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 1.9611756989997957
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0615287,
+            "extract_trace_seconds": 1.22189,
+            "pack_seconds": 0.00631106,
+            "full_mask_seconds": 7.7751e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.32658,
+            "peak_rss_kib": 130476,
+            "mask_generation_and_input_io_seconds": 0.009403932999703102,
+            "conversion_seconds": 0.552375003000634,
+            "ring_local_seconds": 0.0210218,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 1.960684336999293
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 139788,
+              "children_highwater_rss_kib": 131084,
+              "elapsed_seconds": 0.4134543810005198,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 139788,
+              "children_highwater_rss_kib": 131084,
+              "elapsed_seconds": 1.9612641650001024,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0625435,
+                "extract_trace_seconds": 1.2221,
+                "pack_seconds": 0.00631459,
+                "full_mask_seconds": 5.8597e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.32897,
+                "peak_rss_kib": 130256,
+                "mask_generation_and_input_io_seconds": 0.0099084009998478,
+                "conversion_seconds": 0.5489114920001157,
+                "ring_local_seconds": 0.0219962,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 1.9611756989997957
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 139788,
+              "children_highwater_rss_kib": 131084,
+              "elapsed_seconds": 0.15797470699999394,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 138984,
+              "children_highwater_rss_kib": 131560,
+              "elapsed_seconds": 0.41448841100009304,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 138984,
+              "children_highwater_rss_kib": 131560,
+              "elapsed_seconds": 1.960749921999195,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0615287,
+                "extract_trace_seconds": 1.22189,
+                "pack_seconds": 0.00631106,
+                "full_mask_seconds": 7.7751e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.32658,
+                "peak_rss_kib": 130476,
+                "mask_generation_and_input_io_seconds": 0.009403932999703102,
+                "conversion_seconds": 0.552375003000634,
+                "ring_local_seconds": 0.0210218,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 1.960684336999293
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 138984,
+              "children_highwater_rss_kib": 131560,
+              "elapsed_seconds": 0.15822257800027728,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline",
+        "route": "he_private_decryption",
+        "operation_count": 64
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "route": "shared_dense",
+        "nodes": 64,
+        "columns": 1,
+        "average_degree": 2,
+        "session": "bc4dd8f7487b1ed3ef699e8ea02f1aa3",
+        "online_wall_seconds": 0.8870181579995915,
+        "online_wire_bytes": 1747786,
+        "online_rounds": 128,
+        "aggregation_worker_seconds": 0.7274830509995809,
+        "offline_seconds": 0.6014325720007037,
+        "offline_generated": {
+          "arithmetic": 4096,
+          "boolean": 405246,
+          "dabit": 1600,
+          "fss": 0
+        },
+        "operation_count": 4096,
+        "scope": "Secret-shared dense matrix baseline; every P entry secret-shared"
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 64,
+        "trace_ciphertexts": false,
+        "average_degree": 4,
+        "columns": 1,
+        "session": "84c602f2be3b0634b4fc1a21f61ef63a",
+        "setup_seconds": 0.3129861829993388,
+        "offline_seconds": 1.2066746700002113,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 885248,
+          "dabit": 1856,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 2.3598025669998606,
+        "online_wire_bytes": 5145034,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 5144580,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 2.1082817650003562,
+        "native_eval_seconds": 1.32189,
+        "native_multiply_seconds": 0.0624407,
+        "native_extract_seconds": 1.21779,
+        "native_pack_seconds": 0.00623118,
+        "conversion_seconds": 0.5664872019997347,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0624407,
+            "extract_trace_seconds": 1.21696,
+            "pack_seconds": 0.00623118,
+            "full_mask_seconds": 6.5802e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.32109,
+            "peak_rss_kib": 130480,
+            "mask_generation_and_input_io_seconds": 0.010645712000041385,
+            "conversion_seconds": 0.5664872019997347,
+            "ring_local_seconds": 0.021792600000000002,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 1.9677560389991413
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0614614,
+            "extract_trace_seconds": 1.21779,
+            "pack_seconds": 0.00611694,
+            "full_mask_seconds": 5.9926e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.32189,
+            "peak_rss_kib": 130480,
+            "mask_generation_and_input_io_seconds": 0.0120898519999173,
+            "conversion_seconds": 0.5638794449996567,
+            "ring_local_seconds": 0.0204973,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 1.967701658999431
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 139276,
+              "children_highwater_rss_kib": 130828,
+              "elapsed_seconds": 0.4333262370000739,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 139276,
+              "children_highwater_rss_kib": 130828,
+              "elapsed_seconds": 1.9678317430007155,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0624407,
+                "extract_trace_seconds": 1.21696,
+                "pack_seconds": 0.00623118,
+                "full_mask_seconds": 6.5802e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.32109,
+                "peak_rss_kib": 130480,
+                "mask_generation_and_input_io_seconds": 0.010645712000041385,
+                "conversion_seconds": 0.5664872019997347,
+                "ring_local_seconds": 0.021792600000000002,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 1.9677560389991413
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 139276,
+              "children_highwater_rss_kib": 130828,
+              "elapsed_seconds": 0.13791943800060835,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 138252,
+              "children_highwater_rss_kib": 130828,
+              "elapsed_seconds": 0.43448078900019027,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 138252,
+              "children_highwater_rss_kib": 130828,
+              "elapsed_seconds": 1.967769899999439,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0614614,
+                "extract_trace_seconds": 1.21779,
+                "pack_seconds": 0.00611694,
+                "full_mask_seconds": 5.9926e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.32189,
+                "peak_rss_kib": 130480,
+                "mask_generation_and_input_io_seconds": 0.0120898519999173,
+                "conversion_seconds": 0.5638794449996567,
+                "ring_local_seconds": 0.0204973,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 1.967701658999431
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 138252,
+              "children_highwater_rss_kib": 130828,
+              "elapsed_seconds": 0.13781522800036328,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline",
+        "route": "he_private_decryption",
+        "operation_count": 64
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "route": "shared_dense",
+        "nodes": 64,
+        "columns": 1,
+        "average_degree": 4,
+        "session": "8a2bb6dee9421c0fe5501d1c55684e02",
+        "online_wall_seconds": 0.8953745220005658,
+        "online_wire_bytes": 1747786,
+        "online_rounds": 128,
+        "aggregation_worker_seconds": 0.7302867610005706,
+        "offline_seconds": 0.618197928999507,
+        "offline_generated": {
+          "arithmetic": 4096,
+          "boolean": 405246,
+          "dabit": 1600,
+          "fss": 0
+        },
+        "operation_count": 4096,
+        "scope": "Secret-shared dense matrix baseline; every P entry secret-shared"
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 64,
+        "trace_ciphertexts": false,
+        "average_degree": 8,
+        "columns": 1,
+        "session": "0b112dd2aa8d23e0025b4dc5b47a2244",
+        "setup_seconds": 0.3248749690001205,
+        "offline_seconds": 1.311031967999952,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 885248,
+          "dabit": 1856,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 2.3673294319996785,
+        "online_wire_bytes": 5145034,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 5144580,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 2.067389464000371,
+        "native_eval_seconds": 1.25412,
+        "native_multiply_seconds": 0.0588136,
+        "native_extract_seconds": 1.15609,
+        "native_pack_seconds": 0.0058973,
+        "conversion_seconds": 0.6009611749996111,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0587638,
+            "extract_trace_seconds": 1.15609,
+            "pack_seconds": 0.00585008,
+            "full_mask_seconds": 5.7396e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.25412,
+            "peak_rss_kib": 130388,
+            "mask_generation_and_input_io_seconds": 0.008297318000586529,
+            "conversion_seconds": 0.6009611749996111,
+            "ring_local_seconds": 0.0228107,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 1.9337844140000016
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0588136,
+            "extract_trace_seconds": 1.15478,
+            "pack_seconds": 0.0058973,
+            "full_mask_seconds": 6.0603e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.25332,
+            "peak_rss_kib": 130480,
+            "mask_generation_and_input_io_seconds": 0.00798892600050749,
+            "conversion_seconds": 0.6006303730000582,
+            "ring_local_seconds": 0.0226133,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 1.9340253440004744
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 139920,
+              "children_highwater_rss_kib": 131216,
+              "elapsed_seconds": 0.46924421099993197,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 139920,
+              "children_highwater_rss_kib": 131216,
+              "elapsed_seconds": 1.9338593590000528,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0587638,
+                "extract_trace_seconds": 1.15609,
+                "pack_seconds": 0.00585008,
+                "full_mask_seconds": 5.7396e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.25412,
+                "peak_rss_kib": 130388,
+                "mask_generation_and_input_io_seconds": 0.008297318000586529,
+                "conversion_seconds": 0.6009611749996111,
+                "ring_local_seconds": 0.0228107,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 1.9337844140000016
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 139920,
+              "children_highwater_rss_kib": 131216,
+              "elapsed_seconds": 0.1307877400004145,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 138508,
+              "children_highwater_rss_kib": 131084,
+              "elapsed_seconds": 0.46722123400013515,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 138508,
+              "children_highwater_rss_kib": 131084,
+              "elapsed_seconds": 1.9340984789996583,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0588136,
+                "extract_trace_seconds": 1.15478,
+                "pack_seconds": 0.0058973,
+                "full_mask_seconds": 6.0603e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.25332,
+                "peak_rss_kib": 130480,
+                "mask_generation_and_input_io_seconds": 0.00798892600050749,
+                "conversion_seconds": 0.6006303730000582,
+                "ring_local_seconds": 0.0226133,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 1.9340253440004744
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 138508,
+              "children_highwater_rss_kib": 131084,
+              "elapsed_seconds": 0.13057325699992361,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline",
+        "route": "he_private_decryption",
+        "operation_count": 64
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "route": "shared_dense",
+        "nodes": 64,
+        "columns": 1,
+        "average_degree": 8,
+        "session": "010feea787728c1ab712ac7c347618c7",
+        "online_wall_seconds": 0.8672428540003239,
+        "online_wire_bytes": 1747786,
+        "online_rounds": 128,
+        "aggregation_worker_seconds": 0.6940389370001867,
+        "offline_seconds": 0.5802498530001685,
+        "offline_generated": {
+          "arithmetic": 4096,
+          "boolean": 405246,
+          "dabit": 1600,
+          "fss": 0
+        },
+        "operation_count": 4096,
+        "scope": "Secret-shared dense matrix baseline; every P entry secret-shared"
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 64,
+        "trace_ciphertexts": false,
+        "average_degree": 16,
+        "columns": 1,
+        "session": "cdb423efd22d67fb4df06c766fab7ae0",
+        "setup_seconds": 0.32113984299940057,
+        "offline_seconds": 1.2725917039997512,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 885248,
+          "dabit": 1856,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 2.4051863490003598,
+        "online_wire_bytes": 5145034,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 5144580,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 2.1513373699999647,
+        "native_eval_seconds": 1.33334,
+        "native_multiply_seconds": 0.0622492,
+        "native_extract_seconds": 1.22909,
+        "native_pack_seconds": 0.00648687,
+        "conversion_seconds": 0.590119417999631,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0620635,
+            "extract_trace_seconds": 1.22091,
+            "pack_seconds": 0.00637559,
+            "full_mask_seconds": 7.7337e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.32602,
+            "peak_rss_kib": 130476,
+            "mask_generation_and_input_io_seconds": 0.008951046999754908,
+            "conversion_seconds": 0.590119417999631,
+            "ring_local_seconds": 0.0245313,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 2.000841887000206
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.0622492,
+            "extract_trace_seconds": 1.22909,
+            "pack_seconds": 0.00648687,
+            "full_mask_seconds": 7.1587e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 1.33334,
+            "peak_rss_kib": 130480,
+            "mask_generation_and_input_io_seconds": 0.008760290999816789,
+            "conversion_seconds": 0.5852811610002391,
+            "ring_local_seconds": 0.0231408,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 128,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 2.0014173569998093
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 140008,
+              "children_highwater_rss_kib": 131304,
+              "elapsed_seconds": 0.4304836199999045,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 140008,
+              "children_highwater_rss_kib": 131304,
+              "elapsed_seconds": 2.000936183999329,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0620635,
+                "extract_trace_seconds": 1.22091,
+                "pack_seconds": 0.00637559,
+                "full_mask_seconds": 7.7337e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.32602,
+                "peak_rss_kib": 130476,
+                "mask_generation_and_input_io_seconds": 0.008951046999754908,
+                "conversion_seconds": 0.590119417999631,
+                "ring_local_seconds": 0.0245313,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 2.000841887000206
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 140008,
+              "children_highwater_rss_kib": 131304,
+              "elapsed_seconds": 0.14768291899963515,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 137964,
+              "children_highwater_rss_kib": 130540,
+              "elapsed_seconds": 0.43116676499994355,
+              "bytes_sent": 1767201,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 137964,
+              "children_highwater_rss_kib": 130540,
+              "elapsed_seconds": 2.0014997049993326,
+              "bytes_sent": 2555527,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 881280,
+                "dabit": 256,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.0622492,
+                "extract_trace_seconds": 1.22909,
+                "pack_seconds": 0.00648687,
+                "full_mask_seconds": 7.1587e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 1.33334,
+                "peak_rss_kib": 130480,
+                "mask_generation_and_input_io_seconds": 0.008760290999816789,
+                "conversion_seconds": 0.5852811610002391,
+                "ring_local_seconds": 0.0231408,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 128,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 2.0014173569998093
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 137964,
+              "children_highwater_rss_kib": 130540,
+              "elapsed_seconds": 0.14711204400009592,
+              "bytes_sent": 16763,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 3968,
+                "dabit": 1600,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline",
+        "route": "he_private_decryption",
+        "operation_count": 64
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "route": "shared_dense",
+        "nodes": 64,
+        "columns": 1,
+        "average_degree": 16,
+        "session": "c6832da269594589494b9340a4b6b35c",
+        "online_wall_seconds": 0.896742536999227,
+        "online_wire_bytes": 1747786,
+        "online_rounds": 128,
+        "aggregation_worker_seconds": 0.7006329440000627,
+        "offline_seconds": 0.6025192389997756,
+        "offline_generated": {
+          "arithmetic": 4096,
+          "boolean": 405246,
+          "dabit": 1600,
+          "fss": 0
+        },
+        "operation_count": 4096,
+        "scope": "Secret-shared dense matrix baseline; every P entry secret-shared"
+      }
+    ],
+    "4_activation": [
+      {
+        "status": "PASS_EQUAL_TO_PLAINTEXT",
+        "comparison_width_bits": 10,
+        "count": 32,
+        "session": "79878542d7cb7bc62c1adc6ea0143360",
+        "offline_seconds": 0.08163854999929754,
+        "keygen_seconds": 0.007431793999785441,
+        "fss_key_bytes_per_role": [
+          82864,
+          82883
+        ],
+        "serialized_preprocessing_bytes_per_role": [
+          104593,
+          104612
+        ],
+        "online_worker_seconds": 0.20809800300048664,
+        "online_wire_bytes": 30914,
+        "online_rounds": 45,
+        "online_operation_bytes": 30460,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 2687,
+          "dabit": 0,
+          "fss": 32
+        },
+        "counting": "Key bytes are serialized per-role FSS entries; full preprocessing includes other material. No network distribution was executed, so distribution wire/time is unmeasured.",
+        "public_test_vector": [
+          -511,
+          -510,
+          -1,
+          0,
+          1,
+          509,
+          510,
+          511,
+          -170,
+          96,
+          55,
+          -195,
+          -45,
+          -491,
+          65,
+          111,
+          167,
+          -396,
+          -316,
+          -228,
+          -150,
+          -215,
+          -108,
+          7,
+          -89,
+          45,
+          -417,
+          -9,
+          -183,
+          -43,
+          336,
+          -480
+        ]
+      },
+      {
+        "status": "PASS_EQUAL_TO_PLAINTEXT",
+        "comparison_width_bits": 32,
+        "count": 32,
+        "session": "6329865355f69581e9a2eb7f54dbe08f",
+        "offline_seconds": 0.3051734350001425,
+        "keygen_seconds": 0.07568787000127486,
+        "fss_key_bytes_per_role": [
+          719679,
+          719682
+        ],
+        "serialized_preprocessing_bytes_per_role": [
+          719913,
+          719916
+        ],
+        "online_worker_seconds": 0.04572185299912235,
+        "online_wire_bytes": 2040,
+        "online_rounds": 4,
+        "online_operation_bytes": 1586,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 0,
+          "dabit": 0,
+          "fss": 32
+        },
+        "counting": "Key bytes are serialized per-role FSS entries; full preprocessing includes other material. No network distribution was executed, so distribution wire/time is unmeasured.",
+        "public_test_vector": [
+          -511,
+          -510,
+          -1,
+          0,
+          1,
+          509,
+          510,
+          511,
+          -170,
+          96,
+          55,
+          -195,
+          -45,
+          -491,
+          65,
+          111,
+          167,
+          -396,
+          -316,
+          -228,
+          -150,
+          -215,
+          -108,
+          7,
+          -89,
+          45,
+          -417,
+          -9,
+          -183,
+          -43,
+          336,
+          -480
+        ]
+      }
+    ],
+    "5_inference": {
+      "status": "REUSED_ACCEPTED_FULL_64_NODE_QUERY",
+      "dataset": "Cora induced 64 nodes",
+      "test_count": 22,
+      "secure_test_accuracy": 0.8181818181818182,
+      "online_seconds": 35.761377580000044,
+      "online_wire_bytes": 96792628,
+      "online_rounds": 1306,
+      "offline_seconds": 50.62757816800149,
+      "stages": [
+        {
+          "name": "linear0",
+          "bytes_sent": 16661882,
+          "rounds": 134,
+          "max_role_seconds": 1.9040911789998063
+        },
+        {
+          "name": "aggregate_activation0",
+          "bytes_sent": 32185068,
+          "rounds": 159,
+          "max_role_seconds": 11.626707659999738
+        },
+        {
+          "name": "linear1",
+          "bytes_sent": 1521590,
+          "rounds": 123,
+          "max_role_seconds": 0.8195796919990244
+        },
+        {
+          "name": "aggregate1",
+          "bytes_sent": 37366904,
+          "rounds": 114,
+          "max_role_seconds": 12.316890677000629
+        },
+        {
+          "name": "probability_scale",
+          "bytes_sent": 166180,
+          "rounds": 46,
+          "max_role_seconds": 0.2664659940001002
+        },
+        {
+          "name": "probability",
+          "bytes_sent": 8890550,
+          "rounds": 729,
+          "max_role_seconds": 4.955944242999976
+        },
+        {
+          "name": "delivery",
+          "bytes_sent": 0,
+          "rounds": 0,
+          "max_role_seconds": 0.0014173939998727292
+        }
+      ],
+      "components": [
+        {
+          "operation": 1,
+          "stage": "he_aggregate",
+          "name": "HE_input_range",
+          "max_role_seconds": 0.3906887960001768,
+          "bytes_sent": 1296920,
+          "rounds": 48,
+          "nested_in_parent": false
+        },
+        {
+          "operation": 1,
+          "stage": "he_aggregate",
+          "name": "private_BFV_round",
+          "max_role_seconds": 2.2185180600008607,
+          "bytes_sent": 21162770,
+          "rounds": 19,
+          "nested_in_parent": true
+        },
+        {
+          "operation": 1,
+          "stage": "he_aggregate",
+          "name": "homomorphic_aggregate_convert",
+          "max_role_seconds": 10.651752937999845,
+          "bytes_sent": 30609448,
+          "rounds": 32,
+          "nested_in_parent": false
+        },
+        {
+          "operation": 1,
+          "stage": "he_aggregate",
+          "name": "aggregate_exact_truncate",
+          "max_role_seconds": 0.18767268800002057,
+          "bytes_sent": 129080,
+          "rounds": 32,
+          "nested_in_parent": false
+        },
+        {
+          "operation": 1,
+          "stage": "he_aggregate",
+          "name": "range",
+          "max_role_seconds": 0.3116339730004256,
+          "bytes_sent": 144904,
+          "rounds": 45,
+          "nested_in_parent": false
+        },
+        {
+          "operation": 1,
+          "stage": "he_aggregate",
+          "name": "fss_eval_select",
+          "max_role_seconds": 0.08114858200133312,
+          "bytes_sent": 4716,
+          "rounds": 2,
+          "nested_in_parent": false
+        },
+        {
+          "operation": 3,
+          "stage": "he_aggregate",
+          "name": "HE_input_range",
+          "max_role_seconds": 0.3903763739999704,
+          "bytes_sent": 1509412,
+          "rounds": 48,
+          "nested_in_parent": false
+        },
+        {
+          "operation": 3,
+          "stage": "he_aggregate",
+          "name": "private_BFV_round",
+          "max_role_seconds": 1.8078030310007307,
+          "bytes_sent": 24688442,
+          "rounds": 19,
+          "nested_in_parent": true
+        },
+        {
+          "operation": 3,
+          "stage": "he_aggregate",
+          "name": "homomorphic_aggregate_convert",
+          "max_role_seconds": 11.744109031000335,
+          "bytes_sent": 35709274,
+          "rounds": 34,
+          "nested_in_parent": false
+        },
+        {
+          "operation": 3,
+          "stage": "he_aggregate",
+          "name": "aggregate_exact_truncate",
+          "max_role_seconds": 0.1827039119998517,
+          "bytes_sent": 148218,
+          "rounds": 32,
+          "nested_in_parent": false
+        }
+      ],
+      "he_native_profiles": [
+        {
+          "layer": 0,
+          "roles": [
+            [
+              {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "multiply_seconds": 0.349264,
+                "extract_trace_seconds": 6.80132,
+                "pack_seconds": 0.0360742,
+                "full_mask_seconds": 0.000464707,
+                "ciphertext_bytes": 2359974,
+                "elapsed_seconds": 7.65323,
+                "peak_rss_kib": 2071620,
+                "mask_generation_and_input_io_seconds": 0.028945966998435324,
+                "conversion_seconds": 2.9003005829999893,
+                "ring_local_seconds": 0.1292117,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 768,
+                "ring_triples": 12,
+                "modulus_bits": 164,
+                "mask_coefficients": 49152,
+                "mask_items_consumed": 6,
+                "bridge_wall_seconds": 10.651274331999957
+              }
+            ],
+            [
+              {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "multiply_seconds": 0.348747,
+                "extract_trace_seconds": 6.79094,
+                "pack_seconds": 0.0367785,
+                "full_mask_seconds": 0.000436427,
+                "ciphertext_bytes": 2359974,
+                "elapsed_seconds": 7.63748,
+                "peak_rss_kib": 2071360,
+                "mask_generation_and_input_io_seconds": 0.027971227000307408,
+                "conversion_seconds": 2.917684181000368,
+                "ring_local_seconds": 0.12134617000000002,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 768,
+                "ring_triples": 12,
+                "modulus_bits": 164,
+                "mask_coefficients": 49152,
+                "mask_items_consumed": 6,
+                "bridge_wall_seconds": 10.651438015998792
+              }
+            ]
+          ]
+        },
+        {
+          "layer": 1,
+          "roles": [
+            [
+              {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "multiply_seconds": 0.411814,
+                "extract_trace_seconds": 8.03672,
+                "pack_seconds": 0.0415991,
+                "full_mask_seconds": 0.000450304,
+                "ciphertext_bytes": 2753303,
+                "elapsed_seconds": 9.0547,
+                "peak_rss_kib": 2071620,
+                "mask_generation_and_input_io_seconds": 0.030135070001051645,
+                "conversion_seconds": 2.5947220779999043,
+                "ring_local_seconds": 0.15575979999999998,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 896,
+                "ring_triples": 14,
+                "modulus_bits": 164,
+                "mask_coefficients": 57344,
+                "mask_items_consumed": 7,
+                "bridge_wall_seconds": 11.743563648000418
+              }
+            ],
+            [
+              {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "multiply_seconds": 0.413573,
+                "extract_trace_seconds": 8.0336,
+                "pack_seconds": 0.0423194,
+                "full_mask_seconds": 0.000492969,
+                "ciphertext_bytes": 2753303,
+                "elapsed_seconds": 9.05678,
+                "peak_rss_kib": 2071360,
+                "mask_generation_and_input_io_seconds": 0.028731194001011318,
+                "conversion_seconds": 2.597884144001,
+                "ring_local_seconds": 0.15073524,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 896,
+                "ring_triples": 14,
+                "modulus_bits": 164,
+                "mask_coefficients": 57344,
+                "mask_items_consumed": 7,
+                "bridge_wall_seconds": 11.743750257999636
+              }
+            ]
+          ]
+        }
+      ],
+      "functionality_screenshot": "results/local-page/connected-success.png",
+      "external_baseline": "UNMEASURED_SAME_WORKLOAD",
+      "latency_speedup_vs_external": null,
+      "communication_reduction_vs_external": null
+    },
+    "6_scale": [
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 100,
+        "trace_ciphertexts": false,
+        "average_degree": null,
+        "scope": "one HE aggregation layer with synthetic graph/input; no model or full inference",
+        "columns": 1,
+        "session": "30f7ed5ff51b94e2ef453ff4e6f26163",
+        "setup_seconds": 0.46835100000043894,
+        "offline_seconds": 2.026619264999681,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 1383200,
+          "dabit": 2900,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 3.9226922099996955,
+        "online_wire_bytes": 7139766,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 7139312,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 3.56362699499914,
+        "native_eval_seconds": 2.42921,
+        "native_multiply_seconds": 0.11156,
+        "native_extract_seconds": 2.24899,
+        "native_pack_seconds": 0.011611,
+        "conversion_seconds": 0.8561606590001247,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.11156,
+            "extract_trace_seconds": 2.24899,
+            "pack_seconds": 0.011611,
+            "full_mask_seconds": 7.2247e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 2.42921,
+            "peak_rss_kib": 181360,
+            "mask_generation_and_input_io_seconds": 0.00943232900044677,
+            "conversion_seconds": 0.8438303949997135,
+            "ring_local_seconds": 0.0240414,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 200,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 3.40266518000044
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.111534,
+            "extract_trace_seconds": 2.23439,
+            "pack_seconds": 0.0115499,
+            "full_mask_seconds": 5.8243e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 2.4162,
+            "peak_rss_kib": 181332,
+            "mask_generation_and_input_io_seconds": 0.010632223000357044,
+            "conversion_seconds": 0.8561606590001247,
+            "ring_local_seconds": 0.0232672,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 200,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 3.4024604470005215
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 197068,
+              "children_highwater_rss_kib": 181452,
+              "elapsed_seconds": 0.6906771190006111,
+              "bytes_sent": 2758810,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 1377000,
+                "dabit": 400,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 197068,
+              "children_highwater_rss_kib": 181452,
+              "elapsed_seconds": 3.402744007000365,
+              "bytes_sent": 3547497,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 1377000,
+                "dabit": 400,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.11156,
+                "extract_trace_seconds": 2.24899,
+                "pack_seconds": 0.011611,
+                "full_mask_seconds": 7.2247e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 2.42921,
+                "peak_rss_kib": 181360,
+                "mask_generation_and_input_io_seconds": 0.00943232900044677,
+                "conversion_seconds": 0.8438303949997135,
+                "ring_local_seconds": 0.0240414,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 200,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 3.40266518000044
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 197068,
+              "children_highwater_rss_kib": 181452,
+              "elapsed_seconds": 0.15786525499970594,
+              "bytes_sent": 22159,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 6200,
+                "dabit": 2500,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 197552,
+              "children_highwater_rss_kib": 182192,
+              "elapsed_seconds": 0.6917086519997611,
+              "bytes_sent": 2758810,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 1377000,
+                "dabit": 400,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 197552,
+              "children_highwater_rss_kib": 182192,
+              "elapsed_seconds": 3.4025304120004876,
+              "bytes_sent": 3547497,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 1377000,
+                "dabit": 400,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.111534,
+                "extract_trace_seconds": 2.23439,
+                "pack_seconds": 0.0115499,
+                "full_mask_seconds": 5.8243e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 2.4162,
+                "peak_rss_kib": 181332,
+                "mask_generation_and_input_io_seconds": 0.010632223000357044,
+                "conversion_seconds": 0.8561606590001247,
+                "ring_local_seconds": 0.0232672,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 200,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 3.4024604470005215
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 197552,
+              "children_highwater_rss_kib": 182192,
+              "elapsed_seconds": 0.15790495299916074,
+              "bytes_sent": 22159,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 6200,
+                "dabit": 2500,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline"
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 200,
+        "trace_ciphertexts": false,
+        "average_degree": null,
+        "scope": "one HE aggregation layer with synthetic graph/input; no model or full inference",
+        "columns": 1,
+        "session": "6d0bf00f006298fd49a2e96c72f0815f",
+        "setup_seconds": 0.7808523309995508,
+        "offline_seconds": 4.119280026000524,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 2766400,
+          "dabit": 5800,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 6.03195478500038,
+        "online_wire_bytes": 12680612,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 12680158,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 5.405901526999514,
+        "native_eval_seconds": 3.98271,
+        "native_multiply_seconds": 0.188694,
+        "native_extract_seconds": 3.70548,
+        "native_pack_seconds": 0.0197702,
+        "conversion_seconds": 1.1217975950003165,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.186543,
+            "extract_trace_seconds": 3.70548,
+            "pack_seconds": 0.019731,
+            "full_mask_seconds": 6.5193e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 3.98271,
+            "peak_rss_kib": 322584,
+            "mask_generation_and_input_io_seconds": 0.007792888000039966,
+            "conversion_seconds": 1.1217975950003165,
+            "ring_local_seconds": 0.0235733,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 400,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 5.261075606000304
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.188694,
+            "extract_trace_seconds": 3.7036,
+            "pack_seconds": 0.0197702,
+            "full_mask_seconds": 7.0434e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 3.98257,
+            "peak_rss_kib": 322576,
+            "mask_generation_and_input_io_seconds": 0.00776440299978276,
+            "conversion_seconds": 1.1191578149991983,
+            "ring_local_seconds": 0.0218883,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 400,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 5.261215245999665
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 359888,
+              "children_highwater_rss_kib": 332240,
+              "elapsed_seconds": 0.995376882000528,
+              "bytes_sent": 5513234,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 2754000,
+                "dabit": 800,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 359888,
+              "children_highwater_rss_kib": 332240,
+              "elapsed_seconds": 5.26113790799991,
+              "bytes_sent": 6303020,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 2754000,
+                "dabit": 800,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.186543,
+                "extract_trace_seconds": 3.70548,
+                "pack_seconds": 0.019731,
+                "full_mask_seconds": 6.5193e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 3.98271,
+                "peak_rss_kib": 322584,
+                "mask_generation_and_input_io_seconds": 0.007792888000039966,
+                "conversion_seconds": 1.1217975950003165,
+                "ring_local_seconds": 0.0235733,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 400,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 5.261075606000304
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 359888,
+              "children_highwater_rss_kib": 332240,
+              "elapsed_seconds": 0.14212799799952336,
+              "bytes_sent": 37059,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 12400,
+                "dabit": 5000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 360132,
+              "children_highwater_rss_kib": 331972,
+              "elapsed_seconds": 0.996366622000096,
+              "bytes_sent": 5513234,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 2754000,
+                "dabit": 800,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 360132,
+              "children_highwater_rss_kib": 331972,
+              "elapsed_seconds": 5.261278854999546,
+              "bytes_sent": 6303020,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 2754000,
+                "dabit": 800,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.188694,
+                "extract_trace_seconds": 3.7036,
+                "pack_seconds": 0.0197702,
+                "full_mask_seconds": 7.0434e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 3.98257,
+                "peak_rss_kib": 322576,
+                "mask_generation_and_input_io_seconds": 0.00776440299978276,
+                "conversion_seconds": 1.1191578149991983,
+                "ring_local_seconds": 0.0218883,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 400,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 5.261215245999665
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 360132,
+              "children_highwater_rss_kib": 331972,
+              "elapsed_seconds": 0.14208637299998372,
+              "bytes_sent": 37059,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 12400,
+                "dabit": 5000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline"
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 500,
+        "trace_ciphertexts": false,
+        "average_degree": null,
+        "scope": "one HE aggregation layer with synthetic graph/input; no model or full inference",
+        "columns": 1,
+        "session": "ed30f83b441e427ab8e29b5bc4e08bbc",
+        "setup_seconds": 2.012402447000568,
+        "offline_seconds": 9.990074786999685,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 6916000,
+          "dabit": 14500,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 15.933534443000099,
+        "online_wire_bytes": 29303250,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 29302796,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 14.486147767000148,
+        "native_eval_seconds": 10.829,
+        "native_multiply_seconds": 0.515597,
+        "native_extract_seconds": 10.1351,
+        "native_pack_seconds": 0.0546445,
+        "conversion_seconds": 3.199982915999499,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.515081,
+            "extract_trace_seconds": 10.1126,
+            "pack_seconds": 0.0546445,
+            "full_mask_seconds": 7.8884e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 10.8058,
+            "peak_rss_kib": 779300,
+            "mask_generation_and_input_io_seconds": 0.00793891800003621,
+            "conversion_seconds": 3.199982915999499,
+            "ring_local_seconds": 0.0242313,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 1000,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 14.329659051999442
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.515597,
+            "extract_trace_seconds": 10.1351,
+            "pack_seconds": 0.0545938,
+            "full_mask_seconds": 7.3298e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 10.829,
+            "peak_rss_kib": 779316,
+            "mask_generation_and_input_io_seconds": 0.007770234000417986,
+            "conversion_seconds": 3.1764950949991544,
+            "ring_local_seconds": 0.0238086,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 1000,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 14.329708020999533
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 850860,
+              "children_highwater_rss_kib": 779300,
+              "elapsed_seconds": 3.03144452000015,
+              "bytes_sent": 13776457,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 6885000,
+                "dabit": 2000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 850860,
+              "children_highwater_rss_kib": 779300,
+              "elapsed_seconds": 14.329731953000191,
+              "bytes_sent": 14569543,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 6885000,
+                "dabit": 2000,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.515081,
+                "extract_trace_seconds": 10.1126,
+                "pack_seconds": 0.0546445,
+                "full_mask_seconds": 7.8884e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 10.8058,
+                "peak_rss_kib": 779300,
+                "mask_generation_and_input_io_seconds": 0.00793891800003621,
+                "conversion_seconds": 3.199982915999499,
+                "ring_local_seconds": 0.0242313,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 1000,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 14.329659051999442
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 850860,
+              "children_highwater_rss_kib": 779300,
+              "elapsed_seconds": 0.15420678299960855,
+              "bytes_sent": 81855,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 31000,
+                "dabit": 12500,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 845740,
+              "children_highwater_rss_kib": 779316,
+              "elapsed_seconds": 3.032076989000416,
+              "bytes_sent": 13776457,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 6885000,
+                "dabit": 2000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 845740,
+              "children_highwater_rss_kib": 779316,
+              "elapsed_seconds": 14.329795792999903,
+              "bytes_sent": 14569543,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 6885000,
+                "dabit": 2000,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.515597,
+                "extract_trace_seconds": 10.1351,
+                "pack_seconds": 0.0545938,
+                "full_mask_seconds": 7.3298e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 10.829,
+                "peak_rss_kib": 779316,
+                "mask_generation_and_input_io_seconds": 0.007770234000417986,
+                "conversion_seconds": 3.1764950949991544,
+                "ring_local_seconds": 0.0238086,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 1000,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 14.329708020999533
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 845740,
+              "children_highwater_rss_kib": 779316,
+              "elapsed_seconds": 0.15397243899951718,
+              "bytes_sent": 81855,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 31000,
+                "dabit": 12500,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline"
+      },
+      {
+        "status": "PASS_OUTPUT_BITWISE",
+        "conversion": "private_decryption",
+        "nodes": 1000,
+        "trace_ciphertexts": false,
+        "average_degree": null,
+        "scope": "one HE aggregation layer with synthetic graph/input; no model or full inference",
+        "columns": 1,
+        "session": "c81dc01811b607c5809cf49974f350c3",
+        "setup_seconds": 3.683174283999506,
+        "offline_seconds": 20.348347993999596,
+        "offline_generated": {
+          "arithmetic": 0,
+          "boolean": 13832000,
+          "dabit": 29000,
+          "fss": 0,
+          "he_mask": 1,
+          "rlwe_product": 2
+        },
+        "online_wall_seconds": 29.58649144699939,
+        "online_wire_bytes": 57007374,
+        "online_rounds": 55,
+        "aggregation_wire_bytes": 57006920,
+        "aggregation_rounds": 54,
+        "aggregation_worker_seconds": 26.726501834999908,
+        "native_eval_seconds": 20.8029,
+        "native_multiply_seconds": 0.987271,
+        "native_extract_seconds": 19.4627,
+        "native_pack_seconds": 0.10836,
+        "conversion_seconds": 5.106882719999703,
+        "native_profiles": [
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.985557,
+            "extract_trace_seconds": 19.3884,
+            "pack_seconds": 0.10836,
+            "full_mask_seconds": 7.0034e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 20.7349,
+            "peak_rss_kib": 1540628,
+            "mask_generation_and_input_io_seconds": 0.00842829800058098,
+            "conversion_seconds": 5.106882719999703,
+            "ring_local_seconds": 0.0242623,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 2000,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 26.53009635699982
+          },
+          {
+            "status": "EVALUATED_WITHOUT_SECRET_KEY",
+            "trace_saved": false,
+            "multiply_seconds": 0.987271,
+            "extract_trace_seconds": 19.4627,
+            "pack_seconds": 0.108254,
+            "full_mask_seconds": 8.7254e-05,
+            "ciphertext_bytes": 393329,
+            "elapsed_seconds": 20.8029,
+            "peak_rss_kib": 1540628,
+            "mask_generation_and_input_io_seconds": 0.008602776999396156,
+            "conversion_seconds": 5.048886603999563,
+            "ring_local_seconds": 0.022540400000000002,
+            "conversion": "private_input_secure_decryption",
+            "evaluated_ciphertexts_sent": 0,
+            "clear_decryptions": 0,
+            "phase_elements": 2000,
+            "ring_triples": 2,
+            "modulus_bits": 164,
+            "mask_coefficients": 8192,
+            "mask_items_consumed": 1,
+            "bridge_wall_seconds": 26.529906507000305
+          }
+        ],
+        "online_components": [
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 1651852,
+              "children_highwater_rss_kib": 1540628,
+              "elapsed_seconds": 4.911014059000081,
+              "bytes_sent": 27548484,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 13770000,
+                "dabit": 4000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 1651852,
+              "children_highwater_rss_kib": 1540628,
+              "elapsed_seconds": 26.530168969999977,
+              "bytes_sent": 28347073,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 13770000,
+                "dabit": 4000,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.985557,
+                "extract_trace_seconds": 19.3884,
+                "pack_seconds": 0.10836,
+                "full_mask_seconds": 7.0034e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 20.7349,
+                "peak_rss_kib": 1540628,
+                "mask_generation_and_input_io_seconds": 0.00842829800058098,
+                "conversion_seconds": 5.106882719999703,
+                "ring_local_seconds": 0.0242623,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 2000,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 26.53009635699982
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 1651852,
+              "children_highwater_rss_kib": 1540628,
+              "elapsed_seconds": 0.19343139200009318,
+              "bytes_sent": 156387,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 62000,
+                "dabit": 25000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ],
+          [
+            {
+              "name": "private_BFV_round",
+              "process_highwater_rss_kib": 1654784,
+              "children_highwater_rss_kib": 1540628,
+              "elapsed_seconds": 4.911809430000176,
+              "bytes_sent": 27548484,
+              "rounds": 19,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 13770000,
+                "dabit": 4000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            },
+            {
+              "name": "homomorphic_aggregate_convert",
+              "process_highwater_rss_kib": 1654784,
+              "children_highwater_rss_kib": 1540628,
+              "elapsed_seconds": 26.529982926999764,
+              "bytes_sent": 28347073,
+              "rounds": 22,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 13770000,
+                "dabit": 4000,
+                "fss": 0,
+                "he_mask": 1,
+                "rlwe_product": 2
+              },
+              "he_profile": {
+                "status": "EVALUATED_WITHOUT_SECRET_KEY",
+                "trace_saved": false,
+                "multiply_seconds": 0.987271,
+                "extract_trace_seconds": 19.4627,
+                "pack_seconds": 0.108254,
+                "full_mask_seconds": 8.7254e-05,
+                "ciphertext_bytes": 393329,
+                "elapsed_seconds": 20.8029,
+                "peak_rss_kib": 1540628,
+                "mask_generation_and_input_io_seconds": 0.008602776999396156,
+                "conversion_seconds": 5.048886603999563,
+                "ring_local_seconds": 0.022540400000000002,
+                "conversion": "private_input_secure_decryption",
+                "evaluated_ciphertexts_sent": 0,
+                "clear_decryptions": 0,
+                "phase_elements": 2000,
+                "ring_triples": 2,
+                "modulus_bits": 164,
+                "mask_coefficients": 8192,
+                "mask_items_consumed": 1,
+                "bridge_wall_seconds": 26.529906507000305
+              }
+            },
+            {
+              "name": "aggregate_exact_truncate",
+              "process_highwater_rss_kib": 1654784,
+              "children_highwater_rss_kib": 1540628,
+              "elapsed_seconds": 0.19305393400009052,
+              "bytes_sent": 156387,
+              "rounds": 32,
+              "consumed": {
+                "arithmetic": 0,
+                "boolean": 62000,
+                "dabit": 25000,
+                "fss": 0,
+                "he_mask": 0,
+                "rlwe_product": 0
+              }
+            }
+          ]
+        ],
+        "security_condition": "private-input protected BFV decryption, trusted offline"
+      }
+    ]
+  },
+  "goals": {
+    "accuracy_drop_le_1pp_64_node": "MEASURED_ON_THIS_64_NODE_SAME_160_CHECKPOINT_PAIR",
+    "same160_accuracy_drop_percentage_points": -13.636363636363647,
+    "degree_independent_core_count": "MEASURED_64_NODE_2_4_8_16",
+    "external_20x_latency": "MISSING_COMPARABLE_BASELINE",
+    "external_400x_communication": "MISSING_COMPARABLE_BASELINE",
+    "three_real_datasets_1000_full_queries": "NOT_MEASURED",
+    "scope": "Experimental data shall not be interpreted as full-dataset accuracy or active security"
+  }
+}

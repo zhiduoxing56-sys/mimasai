@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="800" viewBox="0 0 1500 800" role="img">
+<title>单层同态聚合规模实验</title>
+<style>text{font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;fill:#17324d}.title{font-size:38px;font-weight:700}.sub{font-size:20px;fill:#52677a}.axis{font-size:20px}.legend{font-size:21px}.tick{font-size:17px}</style>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="125" y="62" class="title">单层同态聚合规模实验</text>
+<text x="125" y="104" class="sub">固定 BFV 8192 度、1 列；合成图；不代表完整模型推理</text>
+<line x1="125" x2="1450" y1="685.0" y2="685.0" stroke="#dbe5ec"/>
+<text x="109" y="691.0" class="tick" text-anchor="end">0.00</text>
+<line x1="125" x2="1450" y1="577.0" y2="577.0" stroke="#dbe5ec"/>
+<text x="109" y="583.0" class="tick" text-anchor="end">5.92</text>
+<line x1="125" x2="1450" y1="469.0" y2="469.0" stroke="#dbe5ec"/>
+<text x="109" y="475.0" class="tick" text-anchor="end">11.83</text>
+<line x1="125" x2="1450" y1="361.0" y2="361.0" stroke="#dbe5ec"/>
+<text x="109" y="367.0" class="tick" text-anchor="end">17.75</text>
+<line x1="125" x2="1450" y1="253.0" y2="253.0" stroke="#dbe5ec"/>
+<text x="109" y="259.0" class="tick" text-anchor="end">23.67</text>
+<line x1="125" x2="1450" y1="145.0" y2="145.0" stroke="#dbe5ec"/>
+<text x="109" y="151.0" class="tick" text-anchor="end">29.59</text>
+<text x="125.0" y="717" class="tick" text-anchor="middle">100</text>
+<text x="456.2" y="717" class="tick" text-anchor="middle">325</text>
+<text x="787.5" y="717" class="tick" text-anchor="middle">550</text>
+<text x="1118.8" y="717" class="tick" text-anchor="middle">775</text>
+<text x="1450.0" y="717" class="tick" text-anchor="middle">1000</text>
+<line x1="125" y1="145" x2="125" y2="685" stroke="#17324d" stroke-width="2"/>
+<line x1="125" y1="685" x2="1450" y2="685" stroke="#17324d" stroke-width="2"/>
+<text x="750.0" y="770" class="axis" text-anchor="middle">节点数</text>
+<text x="125" y="133" class="axis">在线时间（秒）</text>
+<polyline points="125.0,613.4 272.2,574.9 713.9,394.2 1450.0,145.0" fill="none" stroke="#0d6173" stroke-width="4"/>
+<circle cx="125.0" cy="613.4" r="6" fill="#0d6173"/>
+<circle cx="272.2" cy="574.9" r="6" fill="#0d6173"/>
+<circle cx="713.9" cy="394.2" r="6" fill="#0d6173"/>
+<circle cx="1450.0" cy="145.0" r="6" fill="#0d6173"/>
+<line x1="125" x2="160" y1="722" y2="722" stroke="#0d6173" stroke-width="5"/>
+<text x="173" y="729" class="legend">受保护转换</text>
+</svg>

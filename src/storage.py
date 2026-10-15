@@ -3,7 +3,7 @@ Local trusted coordinator policy, not an OS security boundary.
 """
 import contextlib, fcntl, json, os, signal, sqlite3, threading, time
 from pathlib import Path
-from .mpc import ROOT, ProtocolError, require
+from .mpc import ROOT, ProtocolError, require, settings
 
 TERMINAL = {'completed', 'aborted', 'cleaned'}
 
@@ -40,12 +40,15 @@ def estimate(plan, counts):
     material = sum(count*sizes.get(kind, 128) for kind, count in counts.items())
     ring = 0;trace=0
     for op in plan:
-        if op.get('conversion') == 'private_decryption':
-            ctx = op['he']; ring += 2*ctx['shape'][1]*ctx['degree']*len(ctx['data_moduli'])*8*24
+        if op.get('conversion') in ('private_decryption','legacy_ciphertext'):
+            ctx = op['he']; limbs=len(ctx.get('data_moduli',settings()['he_coefficient_bits']))
+            if op.get('conversion') == 'private_decryption':
+                ring += 2*ctx['shape'][1]*ctx['degree']*limbs*8*24
             # Native eval saves multiply/extract ciphertexts per public row,
             # plus packed traces, for both roles. Include them explicitly.
-            ciphertext_bound=ctx['degree']*len(ctx['data_moduli'])*2*8+4096
-            trace += 2*ctx['shape'][1]*(2*ctx['shape'][0]+1)*ciphertext_bound
+            ciphertext_bound=ctx['degree']*limbs*2*8+4096
+            if op.get('trace_ciphertexts',True):
+                trace += 2*ctx['shape'][1]*(2*ctx['shape'][0]+1)*ciphertext_bound
     base = 64*1024**2
     return dict(material_bytes=material, native_work_bytes=ring, native_trace_bytes=trace, miscellaneous_bytes=base,
                 total_bytes=int((material+ring+trace+base)*policy()['budget_multiplier']),

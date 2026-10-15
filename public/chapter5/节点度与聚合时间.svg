@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="800" viewBox="0 0 1500 800" role="img">
+<title>节点度与安全聚合时间</title>
+<style>text{font-family:"Microsoft YaHei","Noto Sans CJK SC",sans-serif;fill:#17324d}.title{font-size:38px;font-weight:700}.sub{font-size:20px;fill:#52677a}.axis{font-size:20px}.legend{font-size:21px}.tick{font-size:17px}</style>
+<rect width="100%" height="100%" fill="#fff"/>
+<text x="125" y="62" class="title">节点度与安全聚合时间</text>
+<text x="125" y="104" class="sub">固定 64 节点、1 列、BFV 参数；每点为一次独立会话，HE 与共享密集矩阵均逐值通过</text>
+<line x1="125" x2="1450" y1="685.0" y2="685.0" stroke="#dbe5ec"/>
+<text x="109" y="691.0" class="tick" text-anchor="end">0.00</text>
+<line x1="125" x2="1450" y1="577.0" y2="577.0" stroke="#dbe5ec"/>
+<text x="109" y="583.0" class="tick" text-anchor="end">0.48</text>
+<line x1="125" x2="1450" y1="469.0" y2="469.0" stroke="#dbe5ec"/>
+<text x="109" y="475.0" class="tick" text-anchor="end">0.96</text>
+<line x1="125" x2="1450" y1="361.0" y2="361.0" stroke="#dbe5ec"/>
+<text x="109" y="367.0" class="tick" text-anchor="end">1.44</text>
+<line x1="125" x2="1450" y1="253.0" y2="253.0" stroke="#dbe5ec"/>
+<text x="109" y="259.0" class="tick" text-anchor="end">1.92</text>
+<line x1="125" x2="1450" y1="145.0" y2="145.0" stroke="#dbe5ec"/>
+<text x="109" y="151.0" class="tick" text-anchor="end">2.41</text>
+<text x="125.0" y="717" class="tick" text-anchor="middle">2</text>
+<text x="456.2" y="717" class="tick" text-anchor="middle">5.5</text>
+<text x="787.5" y="717" class="tick" text-anchor="middle">9</text>
+<text x="1118.8" y="717" class="tick" text-anchor="middle">12.5</text>
+<text x="1450.0" y="717" class="tick" text-anchor="middle">16</text>
+<line x1="125" y1="145" x2="125" y2="685" stroke="#17324d" stroke-width="2"/>
+<line x1="125" y1="685" x2="1450" y2="685" stroke="#17324d" stroke-width="2"/>
+<text x="750.0" y="770" class="axis" text-anchor="middle">平均非自环节点度</text>
+<text x="125" y="133" class="axis">在线时间（秒）</text>
+<polyline points="125.0,150.3 314.3,155.2 692.9,153.5 1450.0,145.0" fill="none" stroke="#0d6173" stroke-width="4"/>
+<circle cx="125.0" cy="150.3" r="6" fill="#0d6173"/>
+<circle cx="314.3" cy="155.2" r="6" fill="#0d6173"/>
+<circle cx="692.9" cy="153.5" r="6" fill="#0d6173"/>
+<circle cx="1450.0" cy="145.0" r="6" fill="#0d6173"/>
+<line x1="125" x2="160" y1="722" y2="722" stroke="#0d6173" stroke-width="5"/>
+<text x="173" y="729" class="legend">密文多项式</text>
+<polyline points="125.0,485.9 314.3,484.0 692.9,490.3 1450.0,483.7" fill="none" stroke="#cb692b" stroke-width="4"/>
+<circle cx="125.0" cy="485.9" r="6" fill="#cb692b"/>
+<circle cx="314.3" cy="484.0" r="6" fill="#cb692b"/>
+<circle cx="692.9" cy="490.3" r="6" fill="#cb692b"/>
+<circle cx="1450.0" cy="483.7" r="6" fill="#cb692b"/>
+<line x1="525" x2="560" y1="722" y2="722" stroke="#cb692b" stroke-width="5"/>
+<text x="573" y="729" class="legend">共享密集矩阵</text>
+</svg>

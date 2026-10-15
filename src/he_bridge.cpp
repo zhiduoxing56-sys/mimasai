@@ -69,18 +69,18 @@ int main(int argc,char** argv){
    std::cout<<"{\"status\":\"LOCAL_COMPONENTS_ONLY_NO_DECRYPTION\",\"data_moduli\":";moduli_json(ctx);std::cout<<"}\n";return 0;
   }
   if(mode=="eval"){
-   check(argc==5,"HE_EVAL_USAGE");auto nodes=std::stoul(argv[3]),cols=std::stoul(argv[4]);check(nodes<=degree&&cols>0,"HE_INPUT_SHAPE");auto pk=load<PublicKey>(ctx,dir/"eval.pk");auto gk=load<GaloisKeys>(ctx,dir/"eval.gk");auto x=read32(dir/"features.bin",nodes*cols);auto masks=read32(dir/"masks.bin",degree*cols);Evaluator ev(ctx);Encryptor zero_encryptor(ctx,pk);std::vector<std::uint32_t> els;for(auto d=degree;d>=2;d/=2)els.push_back(d+1);fs::create_directories(dir/"trace");fs::create_directories(dir/"send");double multiply=0,extract=0,pack=0,mask=0;std::uint64_t ctbytes=0;
+   check(argc==5||argc==6,"HE_EVAL_USAGE");bool trace=argc==5||std::string(argv[5])=="trace";check(argc==5||trace||std::string(argv[5])=="no_trace","HE_TRACE_MODE");auto nodes=std::stoul(argv[3]),cols=std::stoul(argv[4]);check(nodes<=degree&&cols>0,"HE_INPUT_SHAPE");auto pk=load<PublicKey>(ctx,dir/"eval.pk");auto gk=load<GaloisKeys>(ctx,dir/"eval.gk");auto x=read32(dir/"features.bin",nodes*cols);auto masks=read32(dir/"masks.bin",degree*cols);Evaluator ev(ctx);Encryptor zero_encryptor(ctx,pk);std::vector<std::uint32_t> els;for(auto d=degree;d>=2;d/=2)els.push_back(d+1);if(trace)fs::create_directories(dir/"trace");fs::create_directories(dir/"send");double multiply=0,extract=0,pack=0,mask=0;std::uint64_t ctbytes=0;
    std::vector<Ciphertext> rows;for(std::size_t i=0;i<nodes;i++)rows.push_back(load<Ciphertext>(ctx,dir/"rows"/(std::to_string(i)+".ct")));
    for(std::size_t col=0;col<cols;col++){
     Plaintext f(nodes);for(std::size_t j=0;j<nodes;j++)f[j]=x[j*cols+col];Ciphertext packed;
     for(std::size_t row=0;row<nodes;row++){
-     auto a=Clock::now();Ciphertext product;if(f.is_zero())zero_encryptor.encrypt_zero(product);else ev.multiply_plain(rows[row],f,product);multiply+=seconds(a);save(product,dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_multiply.ct"));
-     a=Clock::now();auto scalar=project(product,ctx,ev,gk,els);extract+=seconds(a);save(scalar,dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_extract.ct"));
+     auto a=Clock::now();Ciphertext product;if(f.is_zero())zero_encryptor.encrypt_zero(product);else ev.multiply_plain(rows[row],f,product);multiply+=seconds(a);if(trace)save(product,dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_multiply.ct"));
+     a=Clock::now();auto scalar=project(product,ctx,ev,gk,els);extract+=seconds(a);if(trace)save(scalar,dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_extract.ct"));
      a=Clock::now();if(row){Plaintext monomial(row+1);monomial[row]=1;Ciphertext shifted;ev.multiply_plain(scalar,monomial,shifted);ev.add_inplace(packed,shifted);}else packed=std::move(scalar);pack+=seconds(a);
     }
-    save(packed,dir/"trace"/(std::to_string(col)+"_packed.ct"));auto a=Clock::now();Plaintext maskpt(degree);for(std::size_t j=0;j<degree;j++)maskpt[j]=masks[col*degree+j];ev.sub_plain_inplace(packed,maskpt);mask+=seconds(a);auto target=dir/"send"/(std::to_string(col)+".ct");save(packed,target);ctbytes+=fs::file_size(target);
+    if(trace)save(packed,dir/"trace"/(std::to_string(col)+"_packed.ct"));auto a=Clock::now();Plaintext maskpt(degree);for(std::size_t j=0;j<degree;j++)maskpt[j]=masks[col*degree+j];ev.sub_plain_inplace(packed,maskpt);mask+=seconds(a);auto target=dir/"send"/(std::to_string(col)+".ct");save(packed,target);ctbytes+=fs::file_size(target);
    }
-   std::cout<<"{\"status\":\"EVALUATED_WITHOUT_SECRET_KEY\",\"multiply_seconds\":"<<multiply<<",\"extract_trace_seconds\":"<<extract<<",\"pack_seconds\":"<<pack<<",\"full_mask_seconds\":"<<mask<<",\"ciphertext_bytes\":"<<ctbytes<<",\"elapsed_seconds\":"<<seconds(begin)<<",\"peak_rss_kib\":"<<peak()<<"}\n";return 0;
+   std::cout<<"{\"status\":\"EVALUATED_WITHOUT_SECRET_KEY\",\"trace_saved\":"<<(trace?"true":"false")<<",\"multiply_seconds\":"<<multiply<<",\"extract_trace_seconds\":"<<extract<<",\"pack_seconds\":"<<pack<<",\"full_mask_seconds\":"<<mask<<",\"ciphertext_bytes\":"<<ctbytes<<",\"elapsed_seconds\":"<<seconds(begin)<<",\"peak_rss_kib\":"<<peak()<<"}\n";return 0;
   }
   if(mode=="decrypt"){
    check(argc==4,"HE_DECRYPT_USAGE");auto cols=std::stoul(argv[3]);auto sk=load<SecretKey>(ctx,dir/"peer.sk");Decryptor dec(ctx,sk);std::vector<std::uint32_t> all;all.reserve(cols*degree);

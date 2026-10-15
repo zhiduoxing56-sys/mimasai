@@ -56,3 +56,7 @@ sh scripts/run_application.sh --nodes 64 --sampling stratified_frontier --seed 2
 本轮更新（2026-10-04）：完整源码基线与新私有 BFV 解密转换见 [验收报告](docs/security-round-acceptance.md)。旧发送求值密文路径仍是明确安全阻塞；新增路径保持模型数值规则并增加交互，半诚实、可信非串谋离线方假设不变。当时训练目标概率≥1/4限制未取消；此后范围归约秘密对数及本轮训练f14路径已接入，当前条件和限制以代表性验收报告为准。
 
 真实 Cora 实验入口：`sh scripts/run_real_data.sh`（默认96轮共享训练；下载原始锁定数据，重新生成所有私有材料）。任务、数据许可缺口、诱导子图语义及范围保障见 [真实数据说明](docs/real-data.md)。
+
+# 第五章实验（当前范围）
+
+已保存的 160 轮密态训练、模型发布与 64 节点查询数据以及新运行的隔离性能实验，可从 [第五章结果](docs/chapter5-results.md) 和 [实验运行说明](docs/chapter5-runbook.md) 查看。20 倍在线时延与 400 倍在线通信目标尚无同条件外部基线实测；1000 节点仅完成单层合成图容量实验。
