@@ -43,7 +43,9 @@ def run_query(token,client,doc):
         if registered:event(sid,value,status='started')
     try:
         with workflow_lease(sid):
-            public=policy();report=json.loads((CODE/'config/deployment-report.json').read_text());plan=inference_plan(report,'he','fss',public['allowed_targets'])
+            public=policy();report=json.loads((CODE/'config/deployment-report.json').read_text())
+            cached=call(BROKER,dict(action='overview')).get('cached_state')
+            plan=inference_plan(report,'he','fss',public['allowed_targets'],cached)
             directory=root('coordinator')/'build/requests'/sid;directory.mkdir(mode=0o700)
             budget=estimate(plan,costs(plan,32));begin(directory,sid,secrets.token_hex(16),budget['total_bytes']);registered=True
             step('admission');prepared=True;broker('prepare',sid)
@@ -60,6 +62,11 @@ def run_query(token,client,doc):
             private_record=dict(request_id=sid,offline=offline,online=online,source_iteration=160,model_id=public['model_id'],result=received['result'],authorized_receiver=public['receiver_id'],full_state_restored=False)
             destination=root('coordinator')/'results'/('query-'+sid+'.json');atomic(destination,private_record)
             transition(sid,{'running'},'completed','Authorized receiver final result and run report persisted');event(sid,'completed',status='complete',proof=dict(stopped=True))
+            try:
+                installed=broker('cache_install',sid)
+                if installed.get('installed'):event(sid,'hidden_cache_installed',status='persisted',binding=installed['binding'])
+            except BaseException:
+                event(sid,'hidden_cache_install_failed',reason='ROLE_CACHE_INSTALL_FAILED')
             step('complete');private_record['retention']=cleanup(sid);private_record['wall_seconds']=time.perf_counter()-started;atomic(destination,private_record)
             doc.update(phase='complete',terminal=True,delivery_state='complete',result=received['result'],error=None,
                 cost=dict(wall_seconds=private_record['wall_seconds'],wire_bytes=online['wire_bytes'],rounds=online['rounds']))

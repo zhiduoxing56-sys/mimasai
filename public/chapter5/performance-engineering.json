@@ -1,0 +1,82 @@
+{
+  "status": "PASS_ISOLATED_ENGINEERING_CHECKS_NOT_DEPLOYED_FULL_QUERY",
+  "he_one_layer": {
+    "scope": "64 nodes × 6 columns; private-decryption BFV conversion; fresh synthetic session; exact fixed-point output",
+    "baseline": {
+      "wall_seconds": 11.94960326599994,
+      "wire_bytes": 30738958,
+      "rounds": 65,
+      "native_eval_seconds": 7.85203
+    },
+    "optimized": {
+      "wall_seconds": 6.747535235999749,
+      "wire_bytes": 8196486,
+      "rounds": 55,
+      "native_eval_seconds": 2.86609,
+      "extraction_workers": 4
+    },
+    "intermediate": {
+      "parallel_only": {
+        "wall_seconds": 6.903432828000405,
+        "wire_bytes": 30738958,
+        "rounds": 65
+      },
+      "grouped_before_bitpacking": {
+        "wall_seconds": 7.025503212998956,
+        "wire_bytes": 26802314,
+        "rounds": 55
+      }
+    },
+    "measured_wall_speedup": 1.7709582607654848,
+    "measured_wire_reduction": 3.7502605384795387,
+    "comparison": "Independent sessions on same host; wall time subject to host load"
+  },
+  "probability": {
+    "scope": "64 rows × 7 classes, f12, same fixed-shape circuit; old published-model query versus optimized synthetic inputs",
+    "baseline": {
+      "rounds": 729,
+      "wire_bytes": 8890550,
+      "operation_seconds": 4.955944242999976
+    },
+    "optimized": {
+      "rounds": 541,
+      "wire_bytes": 1046494,
+      "operation_seconds": 3.262748212000588,
+      "values_checked": 448
+    },
+    "exact_reference": true,
+    "comparability": "Circuit cost comparable by public shape; not a new complete published-model query"
+  },
+  "hidden_cache": {
+    "scope": "7 nodes × 6 hidden coordinates, isolated HE/FSS first layer only",
+    "first_rounds": 68,
+    "reused_load_rounds": 1,
+    "first_wire_bytes": 5834514,
+    "reused_load_wire_bytes": 526,
+    "exact_values": 42,
+    "changed_source_rejected": true,
+    "installed_service_query_verified": false
+  },
+  "range_fusion": {
+    "scope": "5 secret values, signed floor f7 with k-bit range",
+    "baseline_rounds": 72,
+    "optimized_rounds": 41,
+    "baseline_wire_bytes": 37112,
+    "optimized_wire_bytes": 21098,
+    "invalid_range_rejected": true
+  },
+  "bit_wire": {
+    "format": "bitpacked-lsb0-v1",
+    "padding_rejected": true
+  },
+  "admission_budget": {
+    "full_plan_bytes": 1647183552,
+    "cached_plan_bytes": 817569728,
+    "interpretation": "Conservative admission estimates, not measured disk use or recovered space"
+  },
+  "external_baseline": {
+    "latency_20x": "NO_COMPARABLE_BASELINE",
+    "communication_400x": "NO_COMPARABLE_BASELINE"
+  },
+  "deployed_status": "SOURCE_ONLY_REQUIRES_ADMIN_RELEASE_AND_REAL_UID_REAUDIT"
+}

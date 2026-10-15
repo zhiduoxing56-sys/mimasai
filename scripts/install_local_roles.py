@@ -41,6 +41,40 @@ def sha(path):
     with path.open('rb') as stream:
         for data in iter(lambda:stream.read(1024*1024),b''):digest.update(data)
     return digest.hexdigest()
+def native_build():
+    record=PROJECT/'build/he_bridge-build.json'
+    require(record.is_file() and not record.is_symlink(),'NATIVE_BUILD_MANIFEST_MISSING: run sh scripts/build_stage3.sh first.')
+    doc=json.loads(record.read_text())
+    require(set(doc)=={'source_sha256','script_sha256','binary_sha256'} and
+            doc['source_sha256']==sha(PROJECT/'src/he_bridge.cpp') and
+            doc['script_sha256']==sha(PROJECT/'scripts/build_stage3.sh') and
+            doc['binary_sha256']==sha(PROJECT/'build/he_bridge'),'NATIVE_BUILD_SOURCE_MISMATCH: rebuild before deployment.')
+    return doc
+def install_native(doc):
+    base=OPT/'native';secure_dir(base,mode=0o755)
+    releases=base/'releases';secure_dir(releases,mode=0o755)
+    target=base/'build/he_bridge';secure_dir(target.parent,mode=0o755)
+    digest=doc['binary_sha256'];release_dir=releases/digest;secure_dir(release_dir,mode=0o755);release=release_dir/'he_bridge'
+    if not release.exists():
+        shutil.copyfile(PROJECT/'build/he_bridge',release);os.chown(release,0,0);os.chmod(release,0o555)
+    require(release.is_file() and not release.is_symlink() and sha(release)==digest,'NATIVE_RELEASE_INTEGRITY')
+    if target.exists():
+        require(target.is_file() and not target.is_symlink(),'NATIVE_TARGET_UNSAFE')
+        old_hash=sha(target)
+        if old_hash!=digest:
+            old_dir=releases/old_hash;secure_dir(old_dir,mode=0o755);old=old_dir/'he_bridge'
+            if not old.exists():os.link(target,old)
+            require(old.is_file() and not old.is_symlink() and sha(old)==old_hash,'NATIVE_OLD_RELEASE_INTEGRITY')
+        else:return digest
+    temporary=target.with_name('he_bridge.pending-'+digest[:16])
+    require(not temporary.exists() and not temporary.is_symlink(),'NATIVE_PENDING_EXISTS')
+    shutil.copyfile(release,temporary);os.chown(temporary,0,0);os.chmod(temporary,0o555)
+    with temporary.open('rb') as stream:os.fsync(stream.fileno())
+    os.replace(temporary,target)
+    fd=os.open(target.parent,os.O_DIRECTORY|os.O_RDONLY)
+    try:os.fsync(fd)
+    finally:os.close(fd)
+    return digest
 def run(args):
     args=[system_tool(Path(args[0]).name),*args[1:]]
     return subprocess.run(args,check=True,text=True,capture_output=True).stdout
@@ -114,7 +148,7 @@ def preflight():
             key=(path.stat().st_dev,path.stat().st_ino);require(key not in seen or seen[key]==role,'Cross-role hardlinked secret asset');seen[key]=role
     ledgers=[state_source(PROJECT/f'state/mpc/S{n}-ledger.sqlite') for n in (0,1)];gate=state_source(PROJECT/'state/storage/sessions.sqlite')
     for path in ledgers+[gate]:require(path.is_file(),'Original durable state missing: '+str(path))
-    open_handles(state_paths());require((PROJECT/'build/he_bridge').is_file(),'Retained native backend missing')
+    open_handles(state_paths());require((PROJECT/'build/he_bridge').is_file(),'Retained native backend missing');native=native_build()
     require(Path('/run/systemd/system').is_dir(),'Systemd deployment is required; do not launch roles manually with inherited secret FDs.')
     run(['systemctl','show','--property=Version','--value'])
     target=BASE if BASE.exists() else Path('/var/lib');require(target.stat().st_dev==PROJECT.stat().st_dev,'State migration requires the same filesystem, no fallback ledger copy/reset.')
@@ -124,7 +158,7 @@ def preflight():
         try:
             account=pwd.getpwnam('pgnn-'+role);require(account.pw_uid not in (0,PROJECT.stat().st_uid) and account.pw_shell=='/usr/sbin/nologin','Unsafe existing account: '+role)
         except KeyError:pass
-    print(json.dumps(dict(preflight='PASS',model_id=public['model_id'],source_iteration=160,nodes=64,host_probe=space['host_status'],state_files_open=False,administrator_helpers=helpers),indent=2))
+    print(json.dumps(dict(preflight='PASS',model_id=public['model_id'],source_iteration=160,nodes=64,host_probe=space['host_status'],state_files_open=False,native_binary_sha256=native['binary_sha256'],administrator_helpers=helpers),indent=2))
     return manifest,public,files
 def account(role):
     try:return pwd.getpwnam('pgnn-'+role)
@@ -198,9 +232,7 @@ def install(manifest,public,files):
     temp=OPT/'code.pending'
     if temp.exists() or temp.is_symlink():temp.unlink()
     temp.symlink_to(release,target_is_directory=True);os.replace(temp,CODE)
-    secure_dir(OPT/'native/build',mode=0o755)
-    if not (OPT/'native/build/he_bridge').exists():shutil.copyfile(PROJECT/'build/he_bridge',OPT/'native/build/he_bridge')
-    os.chown(OPT/'native/build/he_bridge',0,0);os.chmod(OPT/'native/build/he_bridge',0o555)
+    install_native(native_build())
     library=OPT/'native/deps/toolchain/usr/lib/x86_64-linux-gnu'
     if not library.exists():shutil.copytree(PROJECT/'deps/toolchain/usr/lib/x86_64-linux-gnu',library,symlinks=True)
     for directory,dirs,names in os.walk(OPT/'native'):
@@ -271,6 +303,7 @@ def verify():
     history=BASE/'admin/migration.json'
     require(history.is_file(),'INSTALLATION_NOT_COMPLETE: no migration record; installation has not reached asset migration. Resume --install; preserve existing accounts and state.')
     records=json.loads(history.read_text())
+    require(sha(OPT/'native/build/he_bridge')==native_build()['binary_sha256'],'DEPLOYED_NATIVE_OUTDATED')
     require('identities' in records,'INSTALLATION_NOT_COMPLETE: migration record exists but installation is unfinished. Resume --install; do not delete retained state.')
     require(len({identity['uid'] for identity in records['identities'].values()})==6,'UID separation failed')
     for row in records['state_files']:

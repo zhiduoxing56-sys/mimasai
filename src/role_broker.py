@@ -15,7 +15,17 @@ from .mpc import costs
 
 LOCK=threading.Lock();ADMIN=BASE/'admin'
 def report():return json.loads((CODE/'config/deployment-report.json').read_text())
-def plan():return inference_plan(report(),'he','fss',policy()['allowed_targets'])
+def hidden_state():
+    path=ADMIN/'hidden-cache.json'
+    if not path.exists():return None
+    doc=json.loads(path.read_text())
+    if doc.get('source_sha256')!=codehash():return None
+    return dict(binding=doc['binding'],source_session=doc['source_session'])
+def plan():
+    cached=hidden_state()
+    result=inference_plan(report(),'he','fss',policy()['allowed_targets'],cached)
+    if cached is None:result[1]['cache_capture']=True
+    return result
 def codehash():return json.loads((CODE/'config/source-manifest.json').read_text())['sha256']
 def database():
     conn=sqlite3.connect(ADMIN/'requests.sqlite');conn.execute('PRAGMA synchronous=FULL')
@@ -132,7 +142,7 @@ def command(request,uid):
     require(admin or coordinator,'BROKER_PEER_UID_REJECTED')
     action=request.get('action')
     if action=='audit':exact(request,('action',));require(admin,'BROKER_ADMIN_ONLY');return permission_matrix()
-    if action=='overview':exact(request,('action',));return dict(connected=attested(),source_sha256=codehash())
+    if action=='overview':exact(request,('action',));return dict(connected=attested(),source_sha256=codehash(),cached_state=hidden_state())
     if action=='fault_next':
         exact(request,('action',));require(admin,'BROKER_ADMIN_ONLY');quiet_roles();atomic(ADMIN/'fault-next.json',dict(phase='input'));return dict(armed=True)
     if action=='evidence':
@@ -216,6 +226,15 @@ def command(request,uid):
             # A shared recipient UID cannot read previous request exports.
             # Revoke directory traversal only after the recipient group stops.
             os.chown(destination,0,0);os.chmod(destination,0o700)
+    if action=='cache_install':
+        quiet_roles()
+        require(entry['state']=='completed' and (ADMIN/(sid+'-result.json')).is_file(),'HIDDEN_INSTALL_COMPLETION')
+        if plan()[0]['type']=='load_hidden':return dict(installed=False,already_cached=True)
+        backend_record=json.loads((ADMIN/(sid+'-backend.json')).read_text())
+        installed=[actor(role,'install_hidden',sid,backend_record['attempt']) for role in ('s0','s1')]
+        require(installed[0]['binding']==installed[1]['binding']==plan()[1]['cache_binding'] and installed[0]['source_session']==installed[1]['source_session']==sid,'HIDDEN_INSTALL_BINDING')
+        atomic(ADMIN/'hidden-cache.json',dict(binding=installed[0]['binding'],source_session=sid,source_sha256=codehash()))
+        return dict(installed=True,binding=installed[0]['binding'],source_session=sid)
     if action=='terminate':
         quiet_roles()
         require(entry['state']=='stopping','BROKER_TERMINATE_STATE')

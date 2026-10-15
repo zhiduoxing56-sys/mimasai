@@ -37,19 +37,23 @@ def assert_batch(e,valid,code):
     if not isinstance(e,CostCounter):
         peer=e.channel.exchange(e.op,'operator_batch_valid',[1],valid,'bit');require(valid[0]^peer[0]==1,code)
 
-def divide_unsigned(e,numerator,denominator,nbits,dbits):
+def divide_unsigned(e,numerator,denominator,nbits,dbits,*,skip_leading=0,denominator_lower_bound=0):
     """Exact floor for positive denominator; caller establishes public bounds.
     Restoring binary division with prefix subtraction and Boolean selection.
     """
     require(0<nbits<=e.bits and 0<dbits<e.bits,'DIVISION_WIDTH');n=len(numerator);require(len(denominator)==n,'DIVISION_SHAPE')
+    require(type(skip_leading)==int and 0<=skip_leading<nbits and (skip_leading==0 or
+            (type(denominator_lower_bound)==int and denominator_lower_bound>=1<<skip_leading and skip_leading<=dbits+1)),'DIVISION_PREFIX_BOUND')
     wires=e.a2b(numerator+denominator);num=[row[:n] for row in wires[:nbits]];den=[row[n:] for row in wires[:dbits]]+[[0]*n];width=dbits+1
-    remainder=[[0]*n for _ in range(width)];quotient=[]
-    for bit in reversed(num):
+    # The first skip_leading numerator bits form a prefix < 2^skip_leading.
+    # A proved denominator lower bound makes their quotient bits identically 0.
+    remainder=num[nbits-skip_leading:]+[[0]*n for _ in range(width-skip_leading)];quotient=[]
+    for bit in reversed(num[:nbits-skip_leading]):
         remainder=[bit]+remainder[:-1];difference,ge=sub_bits(e,remainder,den)
         diff=flatten([[a^b for a,b in zip(x,y)] for x,y in zip(remainder,difference)])
         selected=e.boolean_and(diff,ge*width);remainder=[[a^b for a,b in zip(remainder[j],selected[j*n:(j+1)*n])] for j in range(width)]
         quotient.append(ge)
-    ar=e.b2a(list(reversed(quotient)));return [sum(ar[j][i]*(1<<j) for j in range(nbits))%e.mod for i in range(n)]
+    ar=e.b2a(list(reversed(quotient)));return [sum(ar[j][i]*(1<<j) for j in range(len(ar)))%e.mod for i in range(n)]
 
 def average_signed(e, values, count):
     """Exact signed floor / public positive count, all signed ring values.
@@ -76,8 +80,16 @@ def probability(e,scores,rows,classes,fraction,guard=True):
     require(len(scores)==rows*classes,'PROBABILITY_SHAPE')
     require(2*radius(operand('score',fraction))<1<<(e.bits-1),'SCORE_DIFFERENCE_BOUND')
     if guard:e.check_range(scores,operand('score',fraction))
-    maxima=[scores[i*classes] for i in range(rows)]
-    for j in range(1,classes):maxima=maximum(e,maxima,[scores[i*classes+j] for i in range(rows)])
+    # Pair all class candidates at each tree level. Comparison count stays the
+    # same, while seven classes need three dependent levels instead of six.
+    candidates=[scores[i*classes:(i+1)*classes] for i in range(rows)]
+    while len(candidates[0])>1:
+        width=len(candidates[0]);pairs=width//2
+        left=[candidates[i][2*j] for i in range(rows) for j in range(pairs)]
+        right=[candidates[i][2*j+1] for i in range(rows) for j in range(pairs)]
+        merged=maximum(e,left,right)
+        candidates=[merged[i*pairs:(i+1)*pairs]+([candidates[i][-1]] if width%2 else []) for i in range(rows)]
+    maxima=[row[0] for row in candidates]
     diff=e.sub(scores,[v for v in maxima for _ in range(classes)])
     diff=maximum(e,diff,public(e,-approx['exp_clip_real']*s,len(diff)));v=e.truncate(diff,halving)
     square=e.truncate(e.multiply(v,v),fraction);half=e.truncate(square,1)
@@ -87,7 +99,8 @@ def probability(e,scores,rows,classes,fraction,guard=True):
     # max-difference is exactly zero in each row => exp(max)=S => sums>=S.
     # All exp in [0,S], so denominator<=classes*S; no denominator is opened.
     numerator=e.public_mul(exp,s);den=[v for v in sums for _ in range(classes)]
-    result=divide_unsigned(e,numerator,den,2*fraction+1,fraction+classes.bit_length())
+    result=divide_unsigned(e,numerator,den,2*fraction+1,fraction+classes.bit_length(),
+                           skip_leading=fraction,denominator_lower_bound=s)
     return result
 
 def check_dot_range(e,a,b,dims,kx,ky):
@@ -143,6 +156,11 @@ class CostCounter:
     def a2b(self,a):self.counts['boolean']+=2*(self.bits-1)*len(a);return [[0]*len(a) for _ in range(self.bits)]
     def b2a(self,a):self.counts['dabit']+=len(a)*len(a[0]);return [[0]*len(a[0]) for _ in a]
     def truncate(self,a,f):self.counts['boolean']+=2*(self.bits-1)*len(a);self.counts['dabit']+=(self.bits-f)*len(a);return [0]*len(a)
+    def truncate_checked(self,a,f,k):
+        require(0<f<self.bits and 1<=k<=self.bits,'RANGE_ARGUMENT')
+        self.truncate(a,f)
+        self.counts['boolean']+=max(len(a)*(self.bits-f-k)-1,0)
+        return [0]*len(a)
     def check_range(self,a,k):
         if isinstance(k,dict):
             from .ranges import check_interval

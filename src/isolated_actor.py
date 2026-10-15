@@ -68,6 +68,17 @@ def operation(action,sid,attempt=None,expected=None):
         hexid(attempt,16);doc=json.loads((d/own/f'metrics-{attempt}.json').read_text())
         c=doc.get('communication');communication={key:c[key] for key in ('bytes_sent','exchange_rounds')} if c else None
         return dict(role=number,success=doc['success'],error=doc.get('error','WORKER_FAILED') if not doc['success'] else None,communication=communication)
+    if action=='install_hidden':
+        from .hidden_cache import sources
+        hexid(attempt,16)
+        template=json.loads((d/'job-template.json').read_text());operations=template['operations']
+        require(len(operations)>2 and operations[1]['type']=='he_aggregate' and operations[1].get('cache_capture') is True,'HIDDEN_INSTALL_PLAN')
+        payload=json.loads((d/own/('first-layer-'+attempt+'.json')).read_text())
+        layer=operations[1];model=layer['model']
+        require(payload['role']==number and payload['source_session']==sid and payload['binding']==layer['cache_binding'] and payload['model_id']==model['model_id'] and len(payload['shares'])==layer['count'],'HIDDEN_INSTALL_BINDING')
+        require(payload['asset_hashes']==sources(ROOT/'build/assets'/own,model),'HIDDEN_INSTALL_SOURCE_CHANGED')
+        atomic(ROOT/'build/assets'/own/'hidden-state.json',payload,0o600)
+        return dict(binding=payload['binding'],source_session=sid,installed=True)
     if action=='export':
         from .role_io import main
         hexid(attempt,16);target=d/'final';target.mkdir(mode=0o700)
@@ -133,7 +144,7 @@ def probe():
     return dict(role=role,uid=os.getuid(),euid=os.geteuid(),groups=os.getgroups(),checks=rows,startup_fds=fds,readiness=readiness)
 
 def main():
-    p=argparse.ArgumentParser();p.add_argument('action',choices=('prepare','offline','input','report','export','receive','terminate','clean_preview','clean_apply','probe'));p.add_argument('sid');p.add_argument('--attempt');p.add_argument('--digest');a=p.parse_args()
+    p=argparse.ArgumentParser();p.add_argument('action',choices=('prepare','offline','input','report','install_hidden','export','receive','terminate','clean_preview','clean_apply','probe'));p.add_argument('sid');p.add_argument('--attempt');p.add_argument('--digest');a=p.parse_args()
     result=probe() if a.action=='probe' else operation(a.action,hexid(a.sid),a.attempt,a.digest)
     if result is not None:print(json.dumps(result,separators=(',',':')))
 if __name__=='__main__':

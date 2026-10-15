@@ -1,7 +1,7 @@
 """HE conversion by private-input secure decryption, not ciphertext sanitization.
 The key holder never receives the peer's evaluated ciphertext or clear phase.
 """
-import json,math,os,secrets,struct,time
+import itertools,json,math,os,secrets,struct,time
 from pathlib import Path
 from .mpc import require
 from .operators import CostCounter,flatten,sub_bits
@@ -51,17 +51,28 @@ def secure_convert(engine,own,op,mask,ids):
     other=json.loads(peer);peerids=other.pop('mask_ids',[]);expected=dict(descriptor);expected.pop('mask_ids');require(other==expected and len(peerids)==cols and len(set(peerids))==cols,'RING_PEER_BINDING');engine.materials.claim_he_ids(peerids,'peer')
     secret=read_poly(own/'peer-key-coefficients.bin',degree,qs);phase_shares=[];ring_seconds=0
     for key in range(2):
-        for col in range(cols):
-            items,span=engine.materials.take('rlwe_product',1);item=items[0];span=span+[item['material_id']];folder=Path(item['folder']);require(not folder.is_absolute() and '..' not in folder.parts,'RING_PREPROCESS_PATH')
+        items,span=engine.materials.take('rlwe_product',cols)
+        group=items[0].get('reuse_group')
+        require(isinstance(group,str) and len(group)==32 and all(item.get('reuse_group')==group and item.get('group_size')==cols for item in items),'RING_REUSE_GROUP_BINDING')
+        triples=[];d_parts=[];b_first=None
+        for col,item in enumerate(items):
+            folder=Path(item['folder']);require(not folder.is_absolute() and '..' not in folder.parts,'RING_PREPROCESS_PATH')
             triple=Path(engine.materials.directory)/folder;require(triple.resolve().is_relative_to(Path(engine.materials.directory).resolve()),'RING_PREPROCESS_PATH');require(item['degree']==degree and item['data_moduli']==qs,'RING_PREPROCESS_CONTEXT')
             a=read_poly(triple/'a.bin',degree,qs);b=read_poly(triple/'b.bin',degree,qs)
+            if b_first is None:b_first=b
+            else:require(b==b_first,'RING_REUSE_MASK_MISMATCH')
             x=read_poly(own/f'cipher-{col}-1.bin',degree,qs) if engine.role==key else [0]*size
-            y=secret if engine.role!=key else [0]*size
-            d=[(v-w)%p for l,p in enumerate(qs) for v,w in zip(x[l*degree:(l+1)*degree],a[l*degree:(l+1)*degree])];ee=[(v-w)%p for l,p in enumerate(qs) for v,w in zip(y[l*degree:(l+1)*degree],b[l*degree:(l+1)*degree])]
-            encoded=struct.pack('<'+'Q'*(2*size),*(d+ee));received=bytes(engine.channel.exchange(engine.op,'rlwe_beaver_masks',[len(encoded)],encoded,'byte',span));opened=list(struct.unpack('<'+'Q'*(2*size),received))
-            require(all(v<p for part in range(2) for l,p in enumerate(qs) for v in opened[part*size+l*degree:part*size+(l+1)*degree]),'RING_MESSAGE_RESIDUE')
-            dd=[(v+w)%p for l,p in enumerate(qs) for v,w in zip(d[l*degree:(l+1)*degree],opened[l*degree:(l+1)*degree])];ee=[(v+w)%p for l,p in enumerate(qs) for v,w in zip(ee[l*degree:(l+1)*degree],opened[size+l*degree:size+(l+1)*degree])]
-            run=own/'secure-products'/str(span[1]);(run/'ring-work').mkdir(parents=True,mode=0o700);os.link(own/'parameters.seal',run/'parameters.seal');binary_write(run/'ring-work/d.bin',struct.pack('<'+'Q'*size,*dd));binary_write(run/'ring-work/e.bin',struct.pack('<'+'Q'*size,*ee))
+            d_parts.append([(v-w)%p for l,p in enumerate(qs) for v,w in zip(x[l*degree:(l+1)*degree],a[l*degree:(l+1)*degree])]);triples.append(triple)
+        y=secret if engine.role!=key else [0]*size
+        local_e=[(v-w)%p for l,p in enumerate(qs) for v,w in zip(y[l*degree:(l+1)*degree],b_first[l*degree:(l+1)*degree])]
+        encoded=struct.pack('<'+'Q'*((cols+1)*size),*itertools.chain.from_iterable((*d_parts,local_e)))
+        received=bytes(engine.channel.exchange(engine.op,'rlwe_beaver_masks_grouped',[len(encoded)],encoded,'byte',span+[group]+[item['material_id'] for item in items]))
+        opened=list(struct.unpack('<'+'Q'*((cols+1)*size),received))
+        require(all(v<p for part in range(cols+1) for l,p in enumerate(qs) for v in opened[part*size+l*degree:part*size+(l+1)*degree]),'RING_MESSAGE_RESIDUE')
+        ee=[(v+w)%p for l,p in enumerate(qs) for v,w in zip(local_e[l*degree:(l+1)*degree],opened[cols*size+l*degree:cols*size+(l+1)*degree])]
+        for col,(item,triple,d) in enumerate(zip(items,triples,d_parts)):
+            dd=[(v+w)%p for l,p in enumerate(qs) for v,w in zip(d[l*degree:(l+1)*degree],opened[col*size+l*degree:col*size+(l+1)*degree])]
+            run=own/'secure-products'/item['material_id'];(run/'ring-work').mkdir(parents=True,mode=0o700);os.link(own/'parameters.seal',run/'parameters.seal');binary_write(run/'ring-work/d.bin',struct.pack('<'+'Q'*size,*dd));binary_write(run/'ring-work/e.bin',struct.pack('<'+'Q'*size,*ee))
             local=native(['ring_evaluate',run,engine.role,triple,run/'product.bin','no_decryption']);ring_seconds+=local['elapsed_seconds'];product=read_poly(run/'product.bin',degree,qs)
             c0=read_poly(own/f'cipher-{col}-0.bin',degree,qs) if engine.role==key else [0]*size
             for row in range(n):phase_shares.append(crt([(product[l*degree+row]+c0[l*degree+row])%p for l,p in enumerate(qs)],qs))

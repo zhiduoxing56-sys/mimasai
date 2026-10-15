@@ -45,10 +45,14 @@ def main():
             kind=op['type'];active=(idx,kind,started,start,before)
             if kind in ('add','sub','mul'):
                 require(len(x)==len(y)==op['count'],'INPUT_SHAPE')
-            elif kind in ('truncate','public_mul','sign','relu','range','checked_relu','select','fss_relu'): require(len(x)==op['count'],'INPUT_SHAPE')
+            elif kind in ('truncate','truncate_checked','public_mul','sign','relu','range','checked_relu','select','fss_relu'): require(len(x)==op['count'],'INPUT_SHAPE')
             if kind=='average':
                 from .operators import average_signed
                 require(len(x)==op['count'],'INPUT_SHAPE');out=average_signed(engine,x,op['divisor'])
+            elif kind=='load_hidden':
+                from .hidden_cache import load
+                require(idx==0 and x==[] and len(job['operations'])>1,'HIDDEN_LOAD_POSITION')
+                out=load(own,role,op,engine.mod)
             elif kind=='deliver':
                 from .query import select_result
                 out=select_result(job,op,x,idx)
@@ -98,6 +102,7 @@ def main():
             elif kind=='public_mul': out=engine.public_mul(x,op['scalar'])
             elif kind=='mul': out=engine.multiply(x,y)
             elif kind=='truncate': out=engine.truncate(x,op['fraction'])
+            elif kind=='truncate_checked':out=engine.truncate_checked(x,op['fraction'],op['k'])
             elif kind=='sign': out=engine.sign(x)
             elif kind=='select':
                 require(len(y)==len(x),'SELECT_SHAPE');out=engine.select(x,y)
@@ -113,10 +118,11 @@ def main():
                 if 'input_bound' in op:engine.measured('HE_input_range',lambda:engine.check_range(x,op['input_bound']))
                 raw,he_profile=engine.measured('homomorphic_aggregate_convert',lambda:aggregate(engine,own/op['he_slot'] if 'he_slot' in op else own,op,x))
                 engine.components[-1]['he_profile']=he_profile
-                z=engine.measured('aggregate_exact_truncate',lambda:engine.truncate(raw,op['fraction']))
-                if op.get('activation','boolean')=='none':out=raw+z
+                if op.get('activation','boolean')=='none':
+                    z=engine.measured('aggregate_exact_truncate',lambda:engine.truncate(raw,op['fraction']))
+                    out=raw+z
                 else:
-                    engine.measured('range',lambda:engine.check_range(z,op['k']))
+                    z=engine.measured('aggregate_exact_truncate_and_range',lambda:engine.truncate_checked(raw,op['fraction'],op['k']))
                     h=engine.measured('fss_eval_select',lambda:engine.fss_relu(z,op['k'])) if op.get('activation','boolean')=='fss' else engine.relu(z)
                     out=raw+z+h
             elif kind=='hidden':
@@ -145,6 +151,9 @@ def main():
                 if kind=='shared_aggregate' and op.get('activation','none')!='none':
                     engine.check_range(z,op['k']);out+=engine.fss_relu(z,op['k']) if op['activation']=='fss' else engine.relu(z)
             else: raise ProtocolError('OPERATION_TYPE')
+            if kind=='he_aggregate' and op.get('cache_capture',False):
+                from .hidden_cache import capture
+                capture(own,role,args.session,args.attempt,op,out)
             outputs.append(out)
             after=channel.metrics()
             stages.append({'operation':idx,'type':kind,'bytes_sent':after['bytes_sent']-start['bytes_sent'],'rounds':after['exchange_rounds']-start['exchange_rounds'],'elapsed_seconds':time.perf_counter()-started,'components':engine.components,'process_highwater_rss_kib':resource.getrusage(resource.RUSAGE_SELF).ru_maxrss,'children_highwater_rss_kib':resource.getrusage(resource.RUSAGE_CHILDREN).ru_maxrss,'consumed':{k:material.cursor[k]-before[k] for k in before}})

@@ -10,19 +10,23 @@ from .mpc import VERSION, private_write, costs, require, fss_widths
 def _generate(directory,session,bits,plan,limits,batch,guard):
     require(2<=bits<=32,'DEALER_BITS')
     for op in plan:
-        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus','model_layer','trace_raw','trace_ciphertexts','input_bound','loss_mode','range_strategy','input_feature_order','divisor','targets','receiver_id']),'DEALER_NONPUBLIC_FIELDS')
+        require(set(op)<=set(['type','count','dims','fraction','scalar','k','node_order','scale','activation','he','use_previous','previous_slice','he_slot','nbits','dbits','bounds','training_mask','weights_previous','threshold','window','iteration','maximum','open_stop','model','source_fraction','aggregation','degree','conversion','ciphertext_modulus','model_layer','trace_raw','trace_ciphertexts','input_bound','loss_mode','range_strategy','input_feature_order','divisor','targets','receiver_id','cache_binding','cache_capture','source_session']),'DEALER_NONPUBLIC_FIELDS')
     counts=costs(plan,bits)
     if limits: counts.update(limits)
     mod=1<<bits
     views=[{k:[] for k in counts} for _ in range(2)]
     widths=iter(fss_widths(plan));fss_seconds=0.0
     ring_ids=[secrets.token_hex(16) for _ in range(counts.get('rlwe_product',0))]
+    ring_groups=[op['he']['shape'][1] for op in plan if op['type']=='he_aggregate' and op.get('conversion')=='private_decryption' for _ in (0,1)]
+    require(sum(ring_groups)==len(ring_ids),'RING_GROUP_COUNT')
+    ring_group_ids=[secrets.token_hex(16) for _ in ring_groups]
+    ring_group_items=[(group_id,size) for group_id,size in zip(ring_group_ids,ring_groups) for _ in range(size)]
     mask_ids=[[secrets.token_hex(16) for _ in range(counts.get('he_mask',0))] for _ in (0,1)]
     private_write(Path(directory)/'material-identifiers.json',dict(session=session,batch=batch,counts=counts,ring_material_ids=ring_ids,he_mask_ids=mask_ids))
     ring_meta=None
     if counts.get('rlwe_product',0):
         from .he import native
-        ring_meta=native(['ring_preprocess',directory,counts['rlwe_product']])
+        ring_meta=native(['ring_preprocess',directory,counts['rlwe_product'],','.join(map(str,ring_groups))])
         require(all(op['he']['data_moduli']==ring_meta['data_moduli'] and op['he']['degree']==ring_meta['degree'] for op in plan if op['type']=='he_aggregate' and op.get('conversion')=='private_decryption'),'RING_DEALER_CONTEXT')
     for kind,count in counts.items():
         # Five independent uniform bits per Boolean triple. One CSPRNG read
@@ -32,7 +36,8 @@ def _generate(directory,session,bits,plan,limits,batch,guard):
             if index%4096==0:guard.check()
             if kind=='rlwe_product':
                 material_id=ring_ids[index]
-                for role in (0,1):views[role][kind].append(dict(material_id=material_id,folder='ring-preprocessing/'+str(index),degree=ring_meta['degree'],data_moduli=ring_meta['data_moduli']))
+                group_id,group_size=ring_group_items[index]
+                for role in (0,1):views[role][kind].append(dict(material_id=material_id,folder='ring-preprocessing/'+str(index),degree=ring_meta['degree'],data_moduli=ring_meta['data_moduli'],reuse_group=group_id,group_size=group_size))
                 continue
             if kind=='arithmetic':
                 a=secrets.randbelow(mod);b=secrets.randbelow(mod); values=[a,b,a*b%mod]

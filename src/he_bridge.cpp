@@ -7,6 +7,11 @@
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <atomic>
+#include <exception>
+#include <mutex>
+#include <sstream>
+#include <thread>
 #include <sys/resource.h>
 using namespace seal;
 namespace fs=std::filesystem;
@@ -56,8 +61,10 @@ int main(int argc,char** argv){
   auto p=parameters(dir);SEALContext ctx(p,true,sec_level_type::tc128);check(ctx.parameters_set(),ctx.parameter_error_message());auto degree=p.poly_modulus_degree();check(p.plain_modulus().value()==(std::uint64_t(1)<<32),"HE_RING_MISMATCH");
   if(mode=="metadata"){check(argc==3,"RING_METADATA_USAGE");std::cout<<"{\"degree\":"<<degree<<",\"security_bits\":128,\"data_moduli\":";moduli_json(ctx);std::cout<<"}\n";return 0;}
   if(mode=="ring_preprocess"){
-   check(argc==4,"RING_PREPROCESS_USAGE");auto count=std::stoul(argv[3]);auto data=ctx.first_context_data();auto n=data->parms().poly_modulus_degree();const auto& qs=data->parms().coeff_modulus();
-   for(std::size_t i=0;i<count;i++){auto a=randompoly(ctx),b=randompoly(ctx),c=ringmul(a,b,ctx);std::vector<Poly> full={a,b,c};for(std::size_t k=0;k<3;k++){auto share=randompoly(ctx);Poly peer(share.size());for(std::size_t l=0;l<qs.size();l++)for(std::size_t j=0;j<n;j++){auto idx=l*n+j;peer[idx]=(full[k][idx]+qs[l].value()-share[idx])%qs[l].value();}for(int role=0;role<2;role++){auto folder=dir/("S"+std::to_string(role))/"ring-preprocessing"/std::to_string(i);fs::create_directories(folder);fs::permissions(folder,fs::perms::owner_all);write64(folder/(std::string(1,"abc"[k])+".bin"),role==0?share:peer);}}}
+   check(argc==4||argc==5,"RING_PREPROCESS_USAGE");auto count=std::stoul(argv[3]);auto data=ctx.first_context_data();auto n=data->parms().poly_modulus_degree();const auto& qs=data->parms().coeff_modulus();
+   std::vector<std::size_t> groups;if(argc==5){std::stringstream stream(argv[4]);std::string part;std::size_t total=0;while(std::getline(stream,part,',')){check(!part.empty(),"RING_GROUP_SHAPE");auto group=std::stoul(part);check(group>0,"RING_GROUP_SHAPE");groups.push_back(group);total+=group;}check(total==count,"RING_GROUP_COUNT");}else groups.assign(count,1);
+   std::size_t i=0;for(auto group:groups){auto b=randompoly(ctx),b0=randompoly(ctx);Poly b1(b.size());for(std::size_t l=0;l<qs.size();l++)for(std::size_t j=0;j<n;j++){auto idx=l*n+j;b1[idx]=(b[idx]+qs[l].value()-b0[idx])%qs[l].value();}
+    for(std::size_t within=0;within<group;within++,i++){auto a=randompoly(ctx),c=ringmul(a,b,ctx);std::vector<Poly> full={a,b,c};for(std::size_t k=0;k<3;k++){auto share=k==1?b0:randompoly(ctx);Poly peer=k==1?b1:Poly(share.size());if(k!=1)for(std::size_t l=0;l<qs.size();l++)for(std::size_t j=0;j<n;j++){auto idx=l*n+j;peer[idx]=(full[k][idx]+qs[l].value()-share[idx])%qs[l].value();}for(int role=0;role<2;role++){auto folder=dir/("S"+std::to_string(role))/"ring-preprocessing"/std::to_string(i);fs::create_directories(folder);fs::permissions(folder,fs::perms::owner_all);write64(folder/(std::string(1,"abc"[k])+".bin"),role==0?share:peer);}}}}
    std::cout<<"{\"status\":\"INPUT_INDEPENDENT_RING_TRIPLES\",\"items\":"<<count<<",\"degree\":"<<degree<<",\"security_bits\":128,\"data_moduli\":";moduli_json(ctx);std::cout<<",\"elapsed_seconds\":"<<seconds(begin)<<"}\n";return 0;
   }
   if(mode=="ring_evaluate"){
@@ -71,16 +78,33 @@ int main(int argc,char** argv){
   if(mode=="eval"){
    check(argc==5||argc==6,"HE_EVAL_USAGE");bool trace=argc==5||std::string(argv[5])=="trace";check(argc==5||trace||std::string(argv[5])=="no_trace","HE_TRACE_MODE");auto nodes=std::stoul(argv[3]),cols=std::stoul(argv[4]);check(nodes<=degree&&cols>0,"HE_INPUT_SHAPE");auto pk=load<PublicKey>(ctx,dir/"eval.pk");auto gk=load<GaloisKeys>(ctx,dir/"eval.gk");auto x=read32(dir/"features.bin",nodes*cols);auto masks=read32(dir/"masks.bin",degree*cols);Evaluator ev(ctx);Encryptor zero_encryptor(ctx,pk);std::vector<std::uint32_t> els;for(auto d=degree;d>=2;d/=2)els.push_back(d+1);if(trace)fs::create_directories(dir/"trace");fs::create_directories(dir/"send");double multiply=0,extract=0,pack=0,mask=0;std::uint64_t ctbytes=0;
    std::vector<Ciphertext> rows;for(std::size_t i=0;i<nodes;i++)rows.push_back(load<Ciphertext>(ctx,dir/"rows"/(std::to_string(i)+".ct")));
+   const auto workers=std::min<std::size_t>(4,nodes);double extract_cpu_total=0;
    for(std::size_t col=0;col<cols;col++){
     Plaintext f(nodes);for(std::size_t j=0;j<nodes;j++)f[j]=x[j*cols+col];Ciphertext packed;
+    std::vector<Ciphertext> scalars(nodes);std::atomic<std::size_t> next{0};std::exception_ptr failure;std::mutex failure_lock;
+    std::vector<double> multiply_cpu(workers),extract_cpu(workers);std::vector<std::thread> threads;
+    auto extraction_start=Clock::now();
+    for(std::size_t worker=0;worker<workers;worker++)threads.emplace_back([&,worker]{
+     try{
+      Evaluator local_ev(ctx);Encryptor local_zero(ctx,pk);
+      for(std::size_t row;(row=next.fetch_add(1))<nodes;){
+       auto a=Clock::now();Ciphertext product;if(f.is_zero())local_zero.encrypt_zero(product);else local_ev.multiply_plain(rows[row],f,product);multiply_cpu[worker]+=seconds(a);
+       if(trace)save(product,dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_multiply.ct"));
+       a=Clock::now();scalars[row]=project(product,ctx,local_ev,gk,els);extract_cpu[worker]+=seconds(a);
+       if(trace)save(scalars[row],dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_extract.ct"));
+      }
+     }catch(...){std::lock_guard<std::mutex> lock(failure_lock);if(!failure)failure=std::current_exception();}
+    });
+    for(auto& thread:threads)thread.join();if(failure)std::rethrow_exception(failure);
+    extract+=seconds(extraction_start);
+    for(auto v:multiply_cpu)multiply+=v;
+    for(auto v:extract_cpu)extract_cpu_total+=v;
     for(std::size_t row=0;row<nodes;row++){
-     auto a=Clock::now();Ciphertext product;if(f.is_zero())zero_encryptor.encrypt_zero(product);else ev.multiply_plain(rows[row],f,product);multiply+=seconds(a);if(trace)save(product,dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_multiply.ct"));
-     a=Clock::now();auto scalar=project(product,ctx,ev,gk,els);extract+=seconds(a);if(trace)save(scalar,dir/"trace"/(std::to_string(col)+"_"+std::to_string(row)+"_extract.ct"));
-     a=Clock::now();if(row){Plaintext monomial(row+1);monomial[row]=1;Ciphertext shifted;ev.multiply_plain(scalar,monomial,shifted);ev.add_inplace(packed,shifted);}else packed=std::move(scalar);pack+=seconds(a);
+     auto a=Clock::now();if(row){Plaintext monomial(row+1);monomial[row]=1;Ciphertext shifted;ev.multiply_plain(scalars[row],monomial,shifted);ev.add_inplace(packed,shifted);}else packed=std::move(scalars[row]);pack+=seconds(a);
     }
     if(trace)save(packed,dir/"trace"/(std::to_string(col)+"_packed.ct"));auto a=Clock::now();Plaintext maskpt(degree);for(std::size_t j=0;j<degree;j++)maskpt[j]=masks[col*degree+j];ev.sub_plain_inplace(packed,maskpt);mask+=seconds(a);auto target=dir/"send"/(std::to_string(col)+".ct");save(packed,target);ctbytes+=fs::file_size(target);
    }
-   std::cout<<"{\"status\":\"EVALUATED_WITHOUT_SECRET_KEY\",\"trace_saved\":"<<(trace?"true":"false")<<",\"multiply_seconds\":"<<multiply<<",\"extract_trace_seconds\":"<<extract<<",\"pack_seconds\":"<<pack<<",\"full_mask_seconds\":"<<mask<<",\"ciphertext_bytes\":"<<ctbytes<<",\"elapsed_seconds\":"<<seconds(begin)<<",\"peak_rss_kib\":"<<peak()<<"}\n";return 0;
+   std::cout<<"{\"status\":\"EVALUATED_WITHOUT_SECRET_KEY\",\"trace_saved\":"<<(trace?"true":"false")<<",\"extraction_workers\":"<<workers<<",\"multiply_seconds\":"<<multiply<<",\"extract_trace_seconds\":"<<extract<<",\"extract_trace_includes_multiply\":true,\"extract_cpu_seconds\":"<<extract_cpu_total<<",\"pack_seconds\":"<<pack<<",\"full_mask_seconds\":"<<mask<<",\"ciphertext_bytes\":"<<ctbytes<<",\"elapsed_seconds\":"<<seconds(begin)<<",\"peak_rss_kib\":"<<peak()<<"}\n";return 0;
   }
   if(mode=="decrypt"){
    check(argc==4,"HE_DECRYPT_USAGE");auto cols=std::stoul(argv[3]);auto sk=load<SecretKey>(ctx,dir/"peer.sk");Decryptor dec(ctx,sk);std::vector<std::uint32_t> all;all.reserve(cols*degree);

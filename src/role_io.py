@@ -24,11 +24,12 @@ def main():
     if a.operation=='publication_input':
         plan=read(destination/'public-plan.json');checkpoint=read(source/own/f'output-{a.attempt}.json');require(checkpoint['role']==a.role and checkpoint['version']==VERSION and checkpoint['session']==source.name,'ROLE_IO_CHECKPOINT');jobs=copy.deepcopy(plan['plan']);count=jobs[0]['count'];jobs[0]['x']=checkpoint['shares'][0][-count:];jobs[1]['x']=[];private_write(destination/own/'input.json',dict(version=VERSION,session=plan['session'],role=a.role,bits=plan['bits'],operations=jobs))
     elif a.operation=='query_input':
-        template=read(destination/'job-template.json');inputs=read(source/own/'input-shares.json');jobs=copy.deepcopy(template['operations'])
+        template=read(destination/'job-template.json');jobs=copy.deepcopy(template['operations'])
         for op in jobs:op['x']=[]
-        jobs[0]['x']=inputs['x']
-        if template['route']=='shared':
-            for i in (1,3):jobs[i]['p']=inputs['p']
+        if jobs[0]['type']!='load_hidden':
+            inputs=read(source/own/'input-shares.json');jobs[0]['x']=inputs['x']
+            if template['route']=='shared':
+                for i in (1,3):jobs[i]['p']=inputs['p']
         private_write(destination/own/'input.json',dict(version=VERSION,session=template['session'],role=a.role,bits=template['bits'],operations=jobs,delivery=template['delivery']))
     else:
         job=read(source/own/'input.json');validate_delivery(job,read(source/own/'query-policy.json'));result=read(source/own/f'output-{a.attempt}.json');policy=job['delivery'];model=policy['model'];require(result['role']==a.role and result['session']==job['session'] and result['delivery']==policy,'ROLE_IO_RESULT_BINDING');require(len(result['shares'])==1 and len(result['shares'][0])==len(policy['targets'])*len(model['class_order']),'ROLE_IO_FINAL_ONLY');private_write(destination/f'{own}.json',dict(version='authorized-probability-shares-v1',role=a.role,request_id=job['session'],receiver_id=policy['receiver_id'],model_id=model['model_id'],targets=policy['targets'],classes=model['class_order'],fraction=model['probability_fraction_bits'],ring_bits=model['ring_bits'],shares=result['shares'][0]))

@@ -3,6 +3,7 @@ No input/intermediate reconstruction API is provided in this module.
 """
 import json
 import hashlib
+import itertools
 import math
 import os
 import resource
@@ -13,6 +14,10 @@ import time
 from pathlib import Path
 
 VERSION = 'privacy-gnn-mpc-v1'
+WIRE_ENCODING = 'bitpacked-lsb0-v1'
+_BIT_PACK={tuple((value>>bit)&1 for bit in range(8)):value for value in range(256)}
+_BIT_UNPACK=[tuple((value>>bit)&1 for bit in range(8)) for value in range(256)]
+_BIT_PADDING=[(0,)*n for n in range(9)]
 # Deployment launcher fixes this directory after dropping to the role's real
 # UID. The environment selects a layout; Unix ownership provides isolation.
 ROOT = Path(os.environ.get('PGNN_ROOT',Path(__file__).resolve().parents[1])).resolve()
@@ -132,11 +137,12 @@ class Channel:
             payload=bytes(values)
         elif dtype=='bit':
             require(all(type(v)==int and v in (0,1) for v in values),'LOCAL_BIT')
-            payload=bytes(values)
+            payload=bytes(_BIT_PACK[tuple(block)+_BIT_PADDING[8-len(block)]]
+                          for index in range(0,len(values),8) for block in (values[index:index+8],))
         else:
             require(all(type(v)==int and 0<=v<1<<32 for v in values),'LOCAL_RING')
             payload=struct.pack('<'+'I'*len(values),*values)
-        header={'version':VERSION,'session':self.session,'sequence':self.seq,'operation':op,'type':kind,'shape':shape,'dtype':dtype,'payload_length':len(payload),'material_span':span}
+        header={'version':VERSION,'wire_encoding':WIRE_ENCODING,'session':self.session,'sequence':self.seq,'operation':op,'type':kind,'shape':shape,'dtype':dtype,'payload_length':len(payload),'material_span':span}
         encoded=json.dumps(header,sort_keys=True,separators=(',',':')).encode()
         body=struct.pack('!I',len(encoded))+encoded+payload
         require(len(body)<=self.limit,'LOCAL_FRAME_LIMIT')
@@ -159,8 +165,9 @@ class Channel:
         require(len(payload)==expected['payload_length'],'PAYLOAD_LENGTH')
         if expected['dtype']=='byte': return list(payload)
         if expected['dtype']=='bit':
-            require(all(v<2 for v in payload),'PAYLOAD_BIT')
-            return list(payload)
+            count=math.prod(expected['shape'])
+            require(len(payload)==(count+7)//8 and (count%8==0 or payload[-1]>>(count%8)==0),'PAYLOAD_BIT_PADDING')
+            return list(itertools.chain.from_iterable(_BIT_UNPACK[value] for value in payload))[:count]
         require(len(payload)%4==0,'PAYLOAD_ALIGNMENT')
         return list(struct.unpack('<'+'I'*(len(payload)//4),payload))
     def exchange(self,op,kind,shape,values,dtype='u32',span=None):
@@ -179,7 +186,7 @@ class Channel:
 
 def public_descriptor(job,batch):
     plan=[{k:v for k,v in op.items() if k not in ('x','y','p','labels','indices','edge_weights','q_share')} for op in job['operations']]
-    encoded=json.dumps(dict(version=VERSION,bits=job['bits'],batch=batch,plan=plan,delivery=job.get('delivery'),numerics={key:settings()[key] for key in ('ring_bits','fraction_bits','training_reference','probability_fraction_bits','range_policy','approximation','model_reference')}),sort_keys=True,separators=(',',':')).encode()
+    encoded=json.dumps(dict(version=VERSION,wire_encoding=WIRE_ENCODING,bits=job['bits'],batch=batch,plan=plan,delivery=job.get('delivery'),numerics={key:settings()[key] for key in ('ring_bits','fraction_bits','training_reference','probability_fraction_bits','range_policy','approximation','model_reference')}),sort_keys=True,separators=(',',':')).encode()
     # Hash of public schedule only, never of secret values/parameters.
     return list(struct.unpack('<8I',hashlib.sha256(encoded).digest()))
 
@@ -232,7 +239,16 @@ class Engine:
         return [arithmetic[j*n:(j+1)*n] for j in range(len(wires))]
     def truncate(self,x,fraction):
         require(0<fraction<self.bits,'TRUNCATION_SHIFT')
-        n=len(x); kept=self.a2b(x)[fraction:]; converted=self.b2a(kept)
+        kept=self.a2b(x)[fraction:]
+        return self._signed_wires(kept)
+    def truncate_checked(self,x,fraction,k):
+        """Signed floor with the existing range guard on its retained bits."""
+        require(0<fraction<self.bits,'TRUNCATION_SHIFT')
+        kept=self.a2b(x)[fraction:]
+        self._check_range_wires(kept,k)
+        return self._signed_wires(kept)
+    def _signed_wires(self,kept):
+        n=len(kept[0]);converted=self.b2a(kept)
         output=[0]*n
         for j in range(len(kept)):
             weight=(1<<j) if j<len(kept)-1 else -(1<<j)
@@ -257,10 +273,12 @@ class Engine:
             from .ranges import check_interval
             return check_interval(self,x,k)
         require(type(k)==int and 1<=k<=self.bits and len(x)>0,'RANGE_ARGUMENT')
-        if k==self.bits:
+        return self._check_range_wires(self.a2b(x) if k<self.bits else [[0]*len(x)],k)
+    def _check_range_wires(self,wires,k):
+        require(type(k)==int and 1<=k<=self.bits and bool(wires) and bool(wires[0]),'RANGE_ARGUMENT')
+        if k>=len(wires):
             valid=int(self.role==0)
         else:
-            wires=self.a2b(x)
             # Equality of all upper bits to bit k-1, reduced across the batch.
             equal=[int(self.role==0)^hi^lo for row in wires[k:] for hi,lo in zip(row,wires[k-1])]
             while len(equal)>1:
@@ -342,6 +360,11 @@ def costs(plan,bits):
             shift=op['fraction']-op['source_fraction'];from .ranges import operand;k=operand('score',op['source_fraction'])
             require(shift>=0 and k+shift<=bits,'PRECISION_SCALE_BOUND')
             counts['boolean']+=range_cost(n,bits,k);continue
+        if kind=='truncate_checked':
+            from .operators import CostCounter
+            e=CostCounter(bits);e.truncate_checked([0]*n,op['fraction'],op['k'])
+            for key in e.counts:counts[key]+=e.counts[key]
+            continue
         if kind=='publish':
             from .operators import CostCounter
             from .ranges import operand
@@ -396,8 +419,11 @@ def costs(plan,bits):
                 counts['rlwe_product']=counts.get('rlwe_product',0)+2*op['he']['shape'][1]
                 cc=round_cost(2*n,math.prod(op['he']['data_moduli']),bits)
                 for key in cc:counts[key]+=cc[key]
-            sub=[dict(type='truncate',count=n,fraction=op['fraction'])]
-            if op.get('activation','boolean')!='none':sub.append(dict(type=('fss_relu' if op.get('activation','boolean')=='fss' else 'checked_relu'),count=n,k=op['k']))
+            active=op.get('activation','boolean')!='none'
+            sub=[dict(type='truncate_checked' if active else 'truncate',count=n,fraction=op['fraction'],**({'k':op['k']} if active else {}))]
+            if active:
+                if op.get('activation','boolean')=='fss':counts['fss']+=n
+                else:sub.append(dict(type='relu',count=n))
             cc=costs(sub,bits)
             for name in cc:counts[name]+=cc[name]
         elif kind=='hidden':

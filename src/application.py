@@ -2,7 +2,7 @@
 Owner preparation uses public Cora. Servers never import this module. The
 independent receiver accepts only exported target shares, not this workspace.
 """
-import argparse,copy,json,os,secrets,struct,subprocess,sys,time
+import argparse,copy,hashlib,json,os,secrets,struct,subprocess,sys,time
 from pathlib import Path
 from .mpc import ROOT,VERSION,private_write,settings,require
 from .reference import Fixed
@@ -174,17 +174,24 @@ def statistics(metrics,wall):
 def dealer(directory,sid,plan):
     started=time.perf_counter();write(directory/'public-plan.json',dict(session=sid,bits=settings()['ring_bits'],plan=plan));p=supervised_run([sys.executable,'-m','src.offline',str(directory),str(directory/'public-plan.json')],cwd=ROOT);result=json.loads(p.stdout);result['offline_wall_seconds']=time.perf_counter()-started;return result
 
-def inference_plan(report,route,activation,targets):
+def inference_plan(report,route,activation,targets,cached_state=None):
     c=settings();model=report['publication']['models'][-1];n,ff,h,classes=report['dimensions'];f=c['fraction_bits'];pf=c['probability_fraction_bits'];k=lambda key:operand(key,f)
     plan=[dict(type='matmul',model=model,model_layer=0,input_feature_order=model['feature_order'],dims=[n,ff,h],fraction=f,bounds=[k('feature'),k('weight')],range_strategy='row_l1')]
     for layer,width in ((0,h),(1,classes)):
         common=dict(count=n*width,fraction=f,k=bit_width(k('state')),activation=activation if layer==0 else 'none',use_previous=True,range_strategy='row_l1')
         if route=='he':
-            public=copy.deepcopy(report['he_setup']['public']);public.update(shape=[n,width],column_order=public['column_order'] if layer==0 else model['class_order']);op=dict(common,type='he_aggregate',model=model,model_layer=layer,he=public,he_slot=f'he-layer{layer}',conversion='private_decryption',input_bound=k('state'))
+            public=copy.deepcopy(report['he_setup']['public']);public.update(shape=[n,width],column_order=public['column_order'] if layer==0 else model['class_order']);op=dict(common,type='he_aggregate',model=model,model_layer=layer,he=public,he_slot=f'he-layer{layer}',conversion='private_decryption',input_bound=k('state'),trace_ciphertexts=False)
         else:op=dict(common,type='shared_aggregate',dims=[n,n,width],bounds=[k('propagation'),k('state')])
         plan.append(op)
         if layer==0:plan.append(dict(type='matmul',model=model,model_layer=1,dims=[n,h,classes],fraction=f,bounds=[k('state'),k('weight')],use_previous=True,previous_slice=[(2 if route=='he' else 1)*n*h,n*h],range_strategy='row_l1'))
     plan.extend([dict(type='precision_up',count=n*classes,source_fraction=f,fraction=pf,use_previous=True,previous_slice=[n*classes if route=='he' else 0,n*classes]),dict(type='probability',count=n*classes,dims=[n,classes],fraction=pf,use_previous=True),dict(type='deliver',model=model,targets=targets,receiver_id=report['receiver_id'],dims=[n,classes],use_previous=True)])
+    if route=='he' and activation=='fss':
+        binding=hashlib.sha256(json.dumps(plan[:2],sort_keys=True,separators=(',',':')).encode()).hexdigest()
+        plan[1]['cache_binding']=binding
+        if cached_state is not None:
+            require(cached_state['binding']==binding and len(cached_state['source_session'])==32,'HIDDEN_CACHE_BINDING')
+            plan=[dict(type='load_hidden',count=n*h,cache_binding=binding,source_session=cached_state['source_session'],model=model)]+plan[2:]
+            plan[1]['previous_slice']=[0,n*h]
     return plan
 
 def main():
