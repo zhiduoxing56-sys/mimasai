@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="570" viewBox="0 0 1200 570">
+<rect width="1200" height="570" fill="#f8fafc"/>
+<text x="62" y="55" font-family="Noto Sans CJK SC, sans-serif" font-size="27" font-weight="700" fill="#17233a">已发布模型完整双层推理：首次与缓存命中</text>
+<text x="62" y="82" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#536477">Cora 64 节点 · 551–6–7 · 授权目标 936 · 本机两方在线发送字节</text>
+<text x="62" y="112" font-family="Noto Sans CJK SC, sans-serif" font-size="19" font-weight="700" fill="#17233a">在线墙钟</text>
+<text x="62" y="163" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#23344b">优化前完整请求</text>
+<rect x="260" y="142" width="650" height="29" rx="5" fill="#e5eaf0"/>
+<rect x="260" y="142" width="581.12" height="29" rx="5" fill="#65758b"/>
+<text x="856.12" y="163" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#17233a">35.76 秒</text>
+<text x="62" y="217" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#23344b">优化后首次请求</text>
+<rect x="260" y="196" width="650" height="29" rx="5" fill="#e5eaf0"/>
+<rect x="260" y="196" width="386.13" height="29" rx="5" fill="#1b7892"/>
+<text x="661.13" y="217" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#17233a">23.76 秒</text>
+<text x="62" y="271" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#23344b">优化后缓存命中</text>
+<rect x="260" y="250" width="650" height="29" rx="5" fill="#e5eaf0"/>
+<rect x="260" y="250" width="206.12" height="29" rx="5" fill="#bd6845"/>
+<text x="481.12" y="271" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#17233a">12.68 秒</text>
+<text x="62" y="328" font-family="Noto Sans CJK SC, sans-serif" font-size="19" font-weight="700" fill="#17233a">在线通信</text>
+<text x="62" y="379" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#23344b">优化前完整请求</text>
+<rect x="260" y="358" width="650" height="29" rx="5" fill="#e5eaf0"/>
+<rect x="260" y="358" width="571.43" height="29" rx="5" fill="#65758b"/>
+<text x="846.43" y="379" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#17233a">92.31 MiB</text>
+<text x="62" y="433" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#23344b">优化后首次请求</text>
+<rect x="260" y="412" width="650" height="29" rx="5" fill="#e5eaf0"/>
+<rect x="260" y="412" width="144.74" height="29" rx="5" fill="#1b7892"/>
+<text x="419.74" y="433" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#17233a">23.38 MiB</text>
+<text x="62" y="487" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#23344b">优化后缓存命中</text>
+<rect x="260" y="466" width="650" height="29" rx="5" fill="#e5eaf0"/>
+<rect x="260" y="466" width="65.01" height="29" rx="5" fill="#bd6845"/>
+<text x="340.01" y="487" font-family="Noto Sans CJK SC, sans-serif" font-size="15" fill="#17233a">10.50 MiB</text>
+<text x="62" y="553" font-family="Noto Sans CJK SC, sans-serif" font-size="13" fill="#536477">单次真实会话；离线材料生成、图与模型准备、导出不计入在线条形。首次请求承担首层缓存建立。</text>
+</svg>

@@ -7,7 +7,7 @@ from pathlib import Path
 
 ROOT=Path(__file__).resolve().parents[1]
 OUT=ROOT/'review';OUT.mkdir(exist_ok=True)
-files=[ROOT/'docs'/name for name in ('chapter5-results.md','chapter5-runbook.md','chapter5-status.json','performance-engineering.md')]
+files=[ROOT/'docs'/name for name in ('chapter5-results.md','chapter5-runbook.md','chapter5-status.json','performance-engineering.md','full-inference-acceptance.md','full-inference-results.md','full-inference-capacity.md')]
 files += sorted((ROOT/'public/chapter5').iterdir())
 files += [ROOT/'results/local-page/connected-success.png']
 forbidden={'shares','materials','secret_key','private_key','password','token','input_shares','ledger'}

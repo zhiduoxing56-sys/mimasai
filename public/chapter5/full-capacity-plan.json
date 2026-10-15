@@ -1,0 +1,71 @@
+{
+  "status": "PUBLIC_SHAPE_ESTIMATE_ONLY",
+  "nodes": 1000,
+  "source_model_id": "829a29a6913d505e7167f418a94674ee",
+  "source_iteration": 160,
+  "source_runtime_commit": "0b58c83bb8c6464e5c3ac36933b79fa53a54d250",
+  "he_degree": 8192,
+  "ring_bits": 32,
+  "plans": {
+    "full": {
+      "operations": [
+        "matmul",
+        "he_aggregate",
+        "matmul",
+        "he_aggregate",
+        "precision_up",
+        "probability",
+        "deliver"
+      ],
+      "counts": {
+        "arithmetic": 3396000,
+        "boolean": 265797223,
+        "dabit": 1919000,
+        "fss": 6000,
+        "he_mask": 13,
+        "rlwe_product": 26
+      },
+      "admission": {
+        "material_bytes": 9771480800,
+        "native_work_bytes": 122683392,
+        "native_trace_bytes": 0,
+        "miscellaneous_bytes": 67108864,
+        "total_bytes": 19922546112,
+        "method": "Conservative public-count bound, paired JSON + native workspace/ciphertext traces + 64MiB, factor 2"
+      }
+    },
+    "cache_hit": {
+      "operations": [
+        "load_hidden",
+        "matmul",
+        "he_aggregate",
+        "precision_up",
+        "probability",
+        "deliver"
+      ],
+      "counts": {
+        "arithmetic": 90000,
+        "boolean": 130268523,
+        "dabit": 1595000,
+        "fss": 0,
+        "he_mask": 7,
+        "rlwe_product": 14
+      },
+      "admission": {
+        "material_bytes": 4304833632,
+        "native_work_bytes": 66060288,
+        "native_trace_bytes": 0,
+        "miscellaneous_bytes": 67108864,
+        "total_bytes": 8876005568,
+        "method": "Conservative public-count bound, paired JSON + native workspace/ciphertext traces + 64MiB, factor 2"
+      }
+    }
+  },
+  "capacity": {
+    "physical_memory_bytes": 50400944128,
+    "internal_available_bytes": 811087048704,
+    "host_available_bytes": 157443014656,
+    "host_status": "READABLE"
+  },
+  "interpretation": "Only existing public count and disk estimator with synthetic node IDs; no real graph, keys, materials, model rebinding, range verification, or 1000-node inference."
+}

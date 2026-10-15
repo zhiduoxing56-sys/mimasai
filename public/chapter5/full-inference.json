@@ -1,0 +1,251 @@
+{
+  "status": "PASS_TWO_FULL_REAL_PUBLISHED_MODEL_QUERIES",
+  "source_deployment": {
+    "commit": "0b58c83bb8c6464e5c3ac36933b79fa53a54d250",
+    "native_sha256": "9f849a32e99d50ea68737cd997d3c2eb1f306356528ab4c3bcae77086e936274"
+  },
+  "model_id": "829a29a6913d505e7167f418a94674ee",
+  "source_training_iteration": 160,
+  "graph_nodes": 64,
+  "model_dimensions": [
+    551,
+    6,
+    7
+  ],
+  "authorized_target": "936",
+  "reference_probability_units": [
+    2944,
+    58,
+    20,
+    938,
+    25,
+    67,
+    40
+  ],
+  "reference_fraction_bits": 12,
+  "two_queries_match_independent_fixed_reference": true,
+  "first_layer_skipped_on_second": true,
+  "fresh_material": {
+    "distinct_batches": true,
+    "ring_material_ids_disjoint": true,
+    "he_mask_ids_disjoint": true
+  },
+  "rows": [
+    {
+      "condition": "优化前完整请求",
+      "session": "7a4cda63efe0fc5b06c4a45aa9af3e32",
+      "online_seconds": 35.761377580000044,
+      "online_sent_bytes": 96792628,
+      "online_rounds": 1306,
+      "offline_seconds": 50.62757816800149,
+      "complete_request_seconds": null
+    },
+    {
+      "condition": "优化后首次请求",
+      "session": "77a34452697887f261ede68676eb6654",
+      "online_seconds": 23.761790106000262,
+      "online_sent_bytes": 24517054,
+      "online_rounds": 1064,
+      "offline_seconds": 26.799970458001553,
+      "complete_request_seconds": 53.33713433599951
+    },
+    {
+      "condition": "优化后缓存命中",
+      "session": "f868bcc9497f9a467b28cc3f46ed138d",
+      "online_seconds": 12.684277502999976,
+      "online_sent_bytes": 11012312,
+      "online_rounds": 812,
+      "offline_seconds": 11.856770571999732,
+      "complete_request_seconds": 26.376576193999426
+    }
+  ],
+  "stages": [
+    [
+      {
+        "operation": 0,
+        "type": "matmul",
+        "seconds": 1.9040911789998063,
+        "sent_bytes": 16661882,
+        "rounds": 134
+      },
+      {
+        "operation": 1,
+        "type": "he_aggregate",
+        "seconds": 11.626707659999738,
+        "sent_bytes": 32185068,
+        "rounds": 159
+      },
+      {
+        "operation": 2,
+        "type": "matmul",
+        "seconds": 0.8195796919990244,
+        "sent_bytes": 1521590,
+        "rounds": 123
+      },
+      {
+        "operation": 3,
+        "type": "he_aggregate",
+        "seconds": 12.316890677000629,
+        "sent_bytes": 37366904,
+        "rounds": 114
+      },
+      {
+        "operation": 4,
+        "type": "precision_up",
+        "seconds": 0.2664659940001002,
+        "sent_bytes": 166180,
+        "rounds": 46
+      },
+      {
+        "operation": 5,
+        "type": "probability",
+        "seconds": 4.955944242999976,
+        "sent_bytes": 8890550,
+        "rounds": 729
+      },
+      {
+        "operation": 6,
+        "type": "deliver",
+        "seconds": 0.0014173939998727292,
+        "sent_bytes": 0,
+        "rounds": 0
+      }
+    ],
+    [
+      {
+        "operation": 0,
+        "type": "matmul",
+        "seconds": 2.1790253319995827,
+        "sent_bytes": 5108186,
+        "rounds": 134
+      },
+      {
+        "operation": 1,
+        "type": "he_aggregate",
+        "seconds": 7.07175007800106,
+        "sent_bytes": 8394516,
+        "rounds": 118
+      },
+      {
+        "operation": 2,
+        "type": "matmul",
+        "seconds": 0.7011009069992724,
+        "sent_bytes": 285564,
+        "rounds": 123
+      },
+      {
+        "operation": 3,
+        "type": "he_aggregate",
+        "seconds": 6.4124444859990035,
+        "sent_bytes": 9637268,
+        "rounds": 102
+      },
+      {
+        "operation": 4,
+        "type": "precision_up",
+        "seconds": 0.2555832409998402,
+        "sent_bytes": 42418,
+        "rounds": 46
+      },
+      {
+        "operation": 5,
+        "type": "probability",
+        "seconds": 2.9576938560003327,
+        "sent_bytes": 1048576,
+        "rounds": 540
+      },
+      {
+        "operation": 6,
+        "type": "deliver",
+        "seconds": 0.0009999890007748036,
+        "sent_bytes": 0,
+        "rounds": 0
+      }
+    ],
+    [
+      {
+        "operation": 0,
+        "type": "load_hidden",
+        "seconds": 0.05372982900007628,
+        "sent_bytes": 0,
+        "rounds": 0
+      },
+      {
+        "operation": 1,
+        "type": "matmul",
+        "seconds": 0.7435068600007071,
+        "sent_bytes": 285014,
+        "rounds": 123
+      },
+      {
+        "operation": 2,
+        "type": "he_aggregate",
+        "seconds": 6.87121576500067,
+        "sent_bytes": 9637072,
+        "rounds": 102
+      },
+      {
+        "operation": 3,
+        "type": "precision_up",
+        "seconds": 0.21032486599870026,
+        "sent_bytes": 42328,
+        "rounds": 46
+      },
+      {
+        "operation": 4,
+        "type": "probability",
+        "seconds": 2.956956395000816,
+        "sent_bytes": 1047372,
+        "rounds": 540
+      },
+      {
+        "operation": 5,
+        "type": "deliver",
+        "seconds": 0.0008784070014371537,
+        "sent_bytes": 0,
+        "rounds": 0
+      }
+    ]
+  ],
+  "ratios": {
+    "baseline_over_cold_wall": 1.5049950959279654,
+    "baseline_over_warm_wall": 2.819346830873266,
+    "cold_over_warm_wall": 1.8733262576745369,
+    "baseline_over_cold_wire": 3.947971399826423,
+    "baseline_over_warm_wire": 8.789491979522555,
+    "cold_over_warm_wire": 2.2263312190936837
+  },
+  "evidence_hashes": {
+    "full_query_acceptance_sha256": "efa41a9c519935f069d926c1c73838ba29f3efa4c2414832908b971e12f28000",
+    "real_uid_permissions_sha256": "63a862ab6791a5a97a22b6a25ccabf912f8b6ff2f5d6ddf8bfa4004df38e48f7",
+    "request_attempt_sha256": [
+      "99d6054eb7a5bdedf36607edc378a9f79cb1bf7e519215347e183ef29f215979",
+      "ba034a41c0edd697820603ee97e9e7beede6378b552a998e620b64ba92e6dece"
+    ]
+  },
+  "real_uid_audit": {
+    "status": "PASS_REAL_UID_MATRIX",
+    "roles": 6,
+    "checks": 140
+  },
+  "cleanup_observations": [
+    {
+      "deleted_file_allocated_bytes": 382722048,
+      "unlinked_last_link_allocated_bytes": 382509056,
+      "removed_files": 458,
+      "reclaimable_upper_bytes": 382509056,
+      "observed_internal_available_delta": 382423040,
+      "observed_host_available_delta": 0
+    },
+    {
+      "deleted_file_allocated_bytes": 182018048,
+      "unlinked_last_link_allocated_bytes": 181903360,
+      "removed_files": 248,
+      "reclaimable_upper_bytes": 181903360,
+      "observed_internal_available_delta": 181846016,
+      "observed_host_available_delta": 0
+    }
+  ],
+  "measurements": "Single real session per condition; online wall excludes offline and delivery; both-direction sent bytes incl protocol framing; paired exchange rounds",
+  "limitations": "Historical baseline on same published model and node, different frozen code; no repetitions or external same-workload baseline; 64-node stratified sampled graph only"
+}

@@ -33,9 +33,12 @@ def reference():
     return doc,old,expected
 
 def installed():
-    revision=json.loads((CODE/'config/source-manifest.json').read_text())['commit']
-    head=__import__('subprocess').check_output(['git','rev-parse','HEAD'],cwd=ROOT,text=True).strip()
-    assert revision==head,'FROZEN_SOURCE_NOT_CURRENT'
+    manifest=json.loads((CODE/'config/source-manifest.json').read_text())
+    revision=manifest['commit']
+    # Documentation-only commits do not alter the frozen service. Compare the
+    # exact files installed by the administrator instead of comparing HEAD.
+    assert all((ROOT/row['path']).is_file() and not (ROOT/row['path']).is_symlink() and
+               digest(ROOT/row['path'])==row['sha256'] for row in manifest['files']),'FROZEN_SOURCE_DIFFERS'
     expected=json.loads((ROOT/'build/he_bridge-build.json').read_text())['binary_sha256']
     assert digest(Path('/opt/privacy-gnn/native/build/he_bridge'))==expected,'FROZEN_NATIVE_NOT_CURRENT'
     require_deployment(call(BROKER,dict(action='evidence'))['permissions'])
@@ -44,11 +47,11 @@ def installed():
 def marker():return call(BROKER,dict(action='overview')).get('cached_state')
 
 def baseline(old):
-    stages=old['online']['servers'][0]['operations']
+    stages=old['online']['servers'][0]['operations'];peer=old['online']['servers'][1]['operations']
     return dict(source='既有完整双层 HE/FSS 真实验收',session=OLD_SESSION,
                 online=dict(wall_seconds=old['online']['wall_seconds'],wire_bytes=old['online']['wire_bytes'],rounds=old['online']['rounds'],
-                            stages=[dict(type=s['type'],operation=s['operation'],elapsed_seconds=s['elapsed_seconds'],
-                                         wire_bytes=s['bytes_sent']+old['online']['servers'][1]['operations'][i]['bytes_sent'],rounds=s['rounds']) for i,s in enumerate(stages)]),
+                            stages=[dict(type=s['type'],operation=s['operation'],elapsed_seconds=max(s['elapsed_seconds'],peer[i]['elapsed_seconds']),
+                                         wire_bytes=s['bytes_sent']+peer[i]['bytes_sent'],rounds=s['rounds']) for i,s in enumerate(stages)]),
                 offline_wall_seconds=old['offline']['offline_wall_seconds'],condition='优化前，无首层缓存；同一发布模型和64节点目标')
 
 def assert_new(proof,expected,mode,cold=None):

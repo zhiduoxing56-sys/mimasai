@@ -5,5 +5,6 @@
   "external_20x_latency": "MISSING_COMPARABLE_BASELINE",
   "external_400x_communication": "MISSING_COMPARABLE_BASELINE",
   "three_real_datasets_1000_full_queries": "NOT_MEASURED",
+  "optimized_64_node_full_query": "MEASURED_COLD_AND_CACHE_HIT_SINGLE_REQUEST_EACH",
   "scope": "Experimental data shall not be interpreted as full-dataset accuracy or active security"
 }
