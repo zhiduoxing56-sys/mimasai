@@ -195,10 +195,30 @@ def main():
             latency_ratio=secure['online_wall_seconds']/legacy['online_wall_seconds'],
             communication_ratio=secure['online_wire_bytes']/legacy['online_wire_bytes'],
             conditions='one HE aggregation layer, synthetic fixture, legacy ciphertext-view limitation; not full inference or external baseline')
+    trace_run=latest('he-private_decryption-64x6-ddefault-trace-*.json')
+    trace_allocated=None;trace_files=None
+    if trace_run:
+        folder=ROOT/'build/final-experiments/runtime/build/stage3'/trace_run['session']
+        traces=list(folder.glob('S*/trace/*.ct'))
+        trace_files=len(traces)
+        trace_allocated=sum(p.stat().st_blocks*512 for p in traces)
+    extract_times=[max(profile['extract_trace_seconds'] for profile in layer['roles'][0]+layer['roles'][1])
+                   for layer in full['he_details']]
+    conversion_times=[max(profile['conversion_seconds'] for profile in layer['roles'][0]+layer['roles'][1])
+                      for layer in full['he_details']]
+    performance_findings=dict(full_inference_he_stage_wire_bytes=sum(full['phases'][i]['bytes_sent'] for i in (1,3)),
+        full_inference_he_stage_seconds=sum(full['phases'][i]['max_role_seconds'] for i in (1,3)),
+        he_extract_seconds_per_layer=extract_times,
+        protected_conversion_seconds_per_layer=conversion_times,
+        optional_trace_files=trace_files,optional_trace_allocated_bytes=trace_allocated,
+        trace_timing_comparison='NOT_VALID_FOR_SPEEDUP: trace run overlapped a 1000-node scale run; only disk blocks/count and both oracle checks are comparable',
+        optimization_targets=['Galois-key constant-term extraction','protected BFV-to-share conversion and exact rounding',
+                              'first-layer shared feature transform','probability circuit','FSS range-check cost'])
     same160_drop_pp=(float160['test']['accuracy']-published['test']['accuracy'])*100 if float160 else None
     result=dict(status='PARTIAL_MEASURED_CHAPTER5',
         groups={'1_training':training,'2_publication':publication,'3_aggregation':aggregation,
                 '4_activation':activations,'5_inference':inference,'6_scale':scale},
+        performance_findings=performance_findings,
         goals={'accuracy_drop_le_1pp_64_node':'MEASURED_ON_THIS_64_NODE_SAME_160_CHECKPOINT_PAIR' if same160_drop_pp is not None and same160_drop_pp<=1 else 'NOT_ESTABLISHED',
                'same160_accuracy_drop_percentage_points':same160_drop_pp,
                'degree_independent_core_count':'MEASURED_64_NODE_2_4_8_16' if len(aggregation)==8 else 'INCOMPLETE',
@@ -238,6 +258,12 @@ def main():
     if comparisons:
         lines.append('隔离性能路径实测（64 节点、6 列、单层）：'+', '.join(
           f'{x["conversion"]} {fmt(x["online_wall_seconds"])} 秒/{x["online_wire_bytes"]:,} 字节/{x["online_rounds"]} 轮' for x in comparisons)+'。旧路径有已知密文视图限制，不作为正式受保护服务结果。')
+    lines.extend(['', '## 性能定位与尚未达标的原因', '',
+      f'既有完整查询的两层 HE 聚合阶段合计 {performance_findings["full_inference_he_stage_wire_bytes"]:,} 字节、约 {fmt(performance_findings["full_inference_he_stage_seconds"])} 秒（各阶段较慢角色耗时相加）；原生常数项提取分别约 {fmt(extract_times[0])} 与 {fmt(extract_times[1])} 秒，受保护转换分别约 {fmt(conversion_times[0])} 与 {fmt(conversion_times[1])} 秒。全链还包括首层共享特征变换与概率电路，见分阶段机器记录。',
+      f'可选无诊断轨迹模式在一次 64 节点、6 列、双方会话中避免写入 {trace_files if trace_files is not None else "未知"} 个中间密文文件，按文件分配块计 {trace_allocated if trace_allocated is not None else "未知"} 字节；必需掩码密文仍保留。该有轨迹时延样本与 1000 节点实验重叠运行，不据其计算加速比。',
+      '后续优先定位常数项 Galois 提取与 BFV 密文到份额转换，再分析首层特征变换、概率电路及 FSS 范围检查。当前代码没有给出同条件外部系统实测，因此 20 倍与 400 倍均不可判断。',
+      '现有发布模型及预处理图严格绑定 64 节点。1000 节点单层实验只证明同态聚合子程序容量；要完成三套真实图的 1000 节点两层分类，还需真实数据、匹配模型、范围预算与全链材料/时间预算。',
+      ''])
     lines.extend(['', '## 6. 规模扩展','',
       '| 节点数 | 单层 HE 在线秒 | 在线字节 | 状态 |',
       '|---:|---:|---:|---|'])

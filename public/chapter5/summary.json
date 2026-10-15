@@ -2371,6 +2371,28 @@
       }
     ]
   },
+  "performance_findings": {
+    "full_inference_he_stage_wire_bytes": 69551972,
+    "full_inference_he_stage_seconds": 23.943598337000367,
+    "he_extract_seconds_per_layer": [
+      6.80132,
+      8.03672
+    ],
+    "protected_conversion_seconds_per_layer": [
+      2.917684181000368,
+      2.597884144001
+    ],
+    "optional_trace_files": 1548,
+    "optional_trace_allocated_bytes": 615038976,
+    "trace_timing_comparison": "NOT_VALID_FOR_SPEEDUP: trace run overlapped a 1000-node scale run; only disk blocks/count and both oracle checks are comparable",
+    "optimization_targets": [
+      "Galois-key constant-term extraction",
+      "protected BFV-to-share conversion and exact rounding",
+      "first-layer shared feature transform",
+      "probability circuit",
+      "FSS range-check cost"
+    ]
+  },
   "goals": {
     "accuracy_drop_le_1pp_64_node": "MEASURED_ON_THIS_64_NODE_SAME_160_CHECKPOINT_PAIR",
     "same160_accuracy_drop_percentage_points": -13.636363636363647,
